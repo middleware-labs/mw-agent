@@ -3,9 +3,9 @@
 # Adding APT repo address & public key to system
 mkdir -p /usr/local/bin/melt-go-agent/apt
 touch /usr/local/bin/melt-go-agent/apt/pgp-key.public
-wget -O /usr/local/bin/melt-go-agent/apt/pgp-key.public https://apt-go.melt.so/pgp-key.public
+wget -O /usr/local/bin/melt-go-agent/apt/pgp-key.public https://host-go.melt.so/pgp-key.public
 sudo touch /etc/apt/sources.list.d/melt-go.list
-echo "deb [arch=all signed-by=/usr/local/bin/melt-go-agent/apt/pgp-key.public] https://apt-go.melt.so/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/melt.list
+echo "deb [arch=all signed-by=/usr/local/bin/melt-go-agent/apt/pgp-key.public] https://host-go.melt.so/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/melt.list
 
 # Updating apt list on system
 sudo apt-get update -o Dir::Etc::sourcelist="sources.list.d/melt-go.list" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0"
@@ -75,7 +75,7 @@ mkdir -p /usr/local/bin/melt-go-agent/apt/cron
 touch /usr/local/bin/melt-go-agent/apt/cron/melt-go.log
 
 sudo crontab -l > cron_bkp
-sudo echo "*/5 * * * * (wget -O /usr/local/bin/melt-go-agent/apt/pgp-key.public https://apt-go.melt.so/pgp-key.public && sudo apt-get update -o Dir::Etc::sourcelist='sources.list.d/melt.list' -o Dir::Etc::sourceparts='-' -o APT::Get::List-Cleanup='0' && sudo apt-get install --only-upgrade telemetry-agent-host && sudo systemctl restart meltgoservice) >> /usr/local/bin/melt-go-agent/apt/cron/melt.log 2>&1 >> /usr/local/bin/melt-go-agent/apt/cron/melt.log" >> cron_bkp
+sudo echo "*/5 * * * * (wget -O /usr/local/bin/melt-go-agent/apt/pgp-key.public https://host-go.melt.so/pgp-key.public && sudo apt-get update -o Dir::Etc::sourcelist='sources.list.d/melt.list' -o Dir::Etc::sourceparts='-' -o APT::Get::List-Cleanup='0' && sudo apt-get install --only-upgrade telemetry-agent-host && sudo systemctl restart meltgoservice) >> /usr/local/bin/melt-go-agent/apt/cron/melt.log 2>&1 >> /usr/local/bin/melt-go-agent/apt/cron/melt.log" >> cron_bkp
 sudo crontab cron_bkp
 sudo rm cron_bkp
 
