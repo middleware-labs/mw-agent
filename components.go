@@ -29,7 +29,7 @@ import (
 func Components() (component.Factories, error) {
 	var err error
 	factories := component.Factories{}
-	log.Println("factories.Extensions XXXXXXXX233 setup..")
+	log.Println("factories.Extensions XXXXXXXX233 setup.....")
 	factories.Extensions, err = component.MakeExtensionFactoryMap(
 		frontend.NewAuthFactory(),
 	)
