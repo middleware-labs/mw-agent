@@ -1,0 +1,49 @@
+receivers:
+#  fluentforward:
+#    endpoint: ${FLUENT_SERVER_ADDR}
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4320
+      http:
+        endpoint: 0.0.0.0:4321
+  hostmetrics:
+    collection_interval: 1m
+    scrapers:
+      process:
+#  k8s_cluster:
+#    # auth_type: kubeConfig
+#    node_conditions_to_report: [Ready, MemoryPressure]
+#    allocatable_types_to_report: [cpu, memory]
+processors:
+  # batch:
+  # attributes/example:
+  #   actions:
+  #     - key: mw_agent
+  #       action: insert 
+  #       value: true
+  resource:
+    attributes:
+    - key: mw_agent
+      action: insert
+      value: true
+    - key: service.name
+      action: insert
+      value: "collector-service"
+
+exporters:
+  logging:
+    loglevel: debug
+  otlp/2:
+    endpoint: ${OTLP_SERVER_GRPC_ADDR}
+    tls:
+      insecure: true
+    headers:
+      authorization: ${MELT_API_TOKEN}
+
+service:
+  pipelines:
+    metrics:
+      receivers: [ hostmetrics ]
+      processors: [ resource ]
+      exporters: [ logging, otlp/2 ]
