@@ -2,10 +2,10 @@ name: Build & Push Docker Image for Host Agent
 on:
   push:
     branches:
-     - 'main'
+    #  - 'main'
     #  - 'releases/**'
     #  - 'stage'
-    #  - 'dev'
+     - 'dev'
 
 jobs:
   push_to_docker_registry:

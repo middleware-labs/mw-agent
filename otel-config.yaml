@@ -1,6 +1,4 @@
 receivers:
-#  fluentforward:
-#    endpoint: ${FLUENT_SERVER_ADDR}
   otlp:
     protocols:
       grpc:
@@ -11,17 +9,11 @@ receivers:
     collection_interval: 1m
     scrapers:
       process:
-#  k8s_cluster:
-#    # auth_type: kubeConfig
-#    node_conditions_to_report: [Ready, MemoryPressure]
-#    allocatable_types_to_report: [cpu, memory]
+  filelog:
+    include: [ /usr/bin/melt-logs/data/linux.log ]
+    start_at: beginning
+
 processors:
-  # batch:
-  # attributes/example:
-  #   actions:
-  #     - key: mw_agent
-  #       action: insert 
-  #       value: true
   resource:
     attributes:
     - key: mw_agent
@@ -43,7 +35,11 @@ exporters:
 
 service:
   pipelines:
-    metrics:
-      receivers: [ hostmetrics ]
+    # metrics:
+    #   receivers: [ hostmetrics ]
+    #   processors: [ resource ]
+    #   exporters: [ logging, otlp/2 ]
+    logs:
+      receivers: [ filelog ]
       processors: [ resource ]
       exporters: [ logging, otlp/2 ]

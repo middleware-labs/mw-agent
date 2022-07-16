@@ -11,8 +11,10 @@ import (
 	// "github.com/middleware/agents/agent-host/collector-agent/frontend/kafkaexporter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
+
 	//"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
-//	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
+	//	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -37,7 +39,8 @@ func Components() (component.Factories, error) {
 
 	factories.Receivers, err = component.MakeReceiverFactoryMap([]component.ReceiverFactory{
 		otlpreceiver.NewFactory(),
-	//	fluentforwardreceiver.NewFactory(),
+		filelogreceiver.NewFactory(),
+		//	fluentforwardreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
 		// k8sclusterreceiver.NewFactory(),
 	}...)
