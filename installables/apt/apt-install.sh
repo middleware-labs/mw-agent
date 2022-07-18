@@ -1,11 +1,18 @@
 #!/bin/bash
+MELT_LATEST_VERSION=0.0.2
+export MELT_LATEST_VERSION
+
+if [ "${MELT_VERSION}" = "" ]; then 
+  MELT_VERSION=$MELT_LATEST_VERSION
+  export MELT_VERSION
+fi
 
 # Adding APT repo address & public key to system
 mkdir -p /usr/local/bin/melt-go-agent/apt
-touch /usr/local/bin/melt-go-agent/apt/pgp-key.public
-wget -O /usr/local/bin/melt-go-agent/apt/pgp-key.public https://host-go.melt.so/pgp-key.public
+touch /usr/local/bin/melt-go-agent/apt/pgp-key-$MELT_VERSION.public
+wget -O /usr/local/bin/melt-go-agent/apt/pgp-key-$MELT_VERSION.public https://host-go.melt.so/public-keys/pgp-key-$MELT_VERSION.public
 sudo touch /etc/apt/sources.list.d/melt-go.list
-echo "deb [arch=all signed-by=/usr/local/bin/melt-go-agent/apt/pgp-key.public] https://host-go.melt.so/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/melt.list
+echo "deb [arch=all signed-by=/usr/local/bin/melt-go-agent/apt/pgp-key-$MELT_VERSION.public] https://host-go.melt.so/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/melt.list
 
 # Updating apt list on system
 sudo apt-get update -o Dir::Etc::sourcelist="sources.list.d/melt-go.list" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0"
@@ -75,7 +82,7 @@ mkdir -p /usr/local/bin/melt-go-agent/apt/cron
 touch /usr/local/bin/melt-go-agent/apt/cron/melt-go.log
 
 sudo crontab -l > cron_bkp
-sudo echo "*/5 * * * * (wget -O /usr/local/bin/melt-go-agent/apt/pgp-key.public https://host-go.melt.so/pgp-key.public && sudo apt-get update -o Dir::Etc::sourcelist='sources.list.d/melt.list' -o Dir::Etc::sourceparts='-' -o APT::Get::List-Cleanup='0' && sudo apt-get install --only-upgrade telemetry-agent-host && sudo systemctl restart meltgoservice) >> /usr/local/bin/melt-go-agent/apt/cron/melt.log 2>&1 >> /usr/local/bin/melt-go-agent/apt/cron/melt.log" >> cron_bkp
+sudo echo "*/5 * * * * (wget -O /usr/local/bin/melt-go-agent/apt/pgp-key-$MELT_VERSION.public https://host-go.melt.so/public-keys/pgp-key-$MELT_VERSION.public && sudo apt-get update -o Dir::Etc::sourcelist='sources.list.d/melt.list' -o Dir::Etc::sourceparts='-' -o APT::Get::List-Cleanup='0' && sudo apt-get install --only-upgrade telemetry-agent-host && sudo systemctl restart meltgoservice) >> /usr/local/bin/melt-go-agent/apt/cron/melt.log 2>&1 >> /usr/local/bin/melt-go-agent/apt/cron/melt.log" >> cron_bkp
 sudo crontab cron_bkp
 sudo rm cron_bkp
 
@@ -91,7 +98,7 @@ echo '
     └───melt-go-agent
             └───apt: Contains all the required components to run APT package on the system
                 └───executable: Contains the script to run agent
-                └───pgp-key.public: Contains copy of public key
+                └───pgp-key-$MELT_VERSION.public: Contains copy of public key
                 └───cron:
                     └───melt.log: Contains copy of public key
 
