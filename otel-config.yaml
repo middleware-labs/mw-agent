@@ -35,10 +35,10 @@ exporters:
 
 service:
   pipelines:
-    # metrics:
-    #   receivers: [ hostmetrics ]
-    #   processors: [ resource ]
-    #   exporters: [ logging, otlp/2 ]
+    metrics:
+      receivers: [ hostmetrics ]
+      processors: [ resource ]
+      exporters: [ logging, otlp/2 ]
     logs:
       receivers: [ filelog ]
       processors: [ resource ]
