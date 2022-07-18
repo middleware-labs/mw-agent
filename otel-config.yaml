@@ -6,7 +6,7 @@ receivers:
       http:
         endpoint: 0.0.0.0:4321
   hostmetrics:
-    collection_interval: 1m
+    collection_interval: 5s
     scrapers:
       process:
   filelog:
