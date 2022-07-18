@@ -19,9 +19,9 @@ processors:
     - key: mw_agent
       action: insert
       value: true
-    # - key: service.name
-    #   action: insert
-    #   value: "collector-service"
+    - key: service.name
+      action: insert
+      from_attribute: process.pid
 
 exporters:
   logging:
