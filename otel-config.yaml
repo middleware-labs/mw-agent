@@ -19,6 +19,9 @@ processors:
     - key: mw_agent
       action: insert
       value: true
+    - key: object_type
+      action: insert
+      value: process
     - key: service.name
       action: insert
       from_attribute: process.pid
