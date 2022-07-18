@@ -5,6 +5,7 @@ import (
 	// "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"collector-agent/frontend"
 	"collector-agent/hostmetricsreceiver"
+	"os"
 
 	// "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 	"log"
@@ -30,6 +31,9 @@ func Components() (component.Factories, error) {
 	var err error
 	factories := component.Factories{}
 	log.Println("factories.Extensions XXXXXXXX233 setup.....")
+	log.Println("OTLP_SERVER_GRPC_ADDR ===> ", os.Getenv("OTLP_SERVER_GRPC_ADDR"))
+	log.Println("MELT_API_TOKEN ===> ", os.Getenv("MELT_API_TOKEN"))
+	log.Println("MELT_API_KEY ===> ", os.Getenv("MELT_API_KEY"))
 	factories.Extensions, err = component.MakeExtensionFactoryMap(
 		frontend.NewAuthFactory(),
 	)
