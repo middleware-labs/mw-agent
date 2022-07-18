@@ -123,6 +123,8 @@ jobs:
 
           export GNUPGHOME="$(mktemp -d example/pgpkeys-XXXXXX)"
           gpg --no-tty --batch --gen-key /tmp/example-pgp-key.batch
+          mkdir -p example/public-keys
+          mkdir -p example/private-keys
           gpg --armor --export example > example/public-keys/pgp-key-$RELEASE_VERSION.public
           gpg --armor --export-secret-keys example > example/private-keys/pgp-key-$RELEASE_VERSION.private
 
