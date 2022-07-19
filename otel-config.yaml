@@ -10,9 +10,8 @@ receivers:
     scrapers:
       process:
   filelog:
-    include: [ /usr/bin/melt-logs/data/*.json ]
-    operators:
-      - type: json_parser
+    include: [ /usr/bin/melt-logs/data/*.log ]
+    start_at: beginning
 
 processors:
   resource:
