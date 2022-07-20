@@ -1,0 +1,28 @@
+version: "3.4"
+services:  
+  melt-agent-host-go:
+    # image: ghcr.io/middleware-labs/agent-host-go:dev
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+      target: local
+    command: api-server start
+    restart: always
+    pid: host
+    ports:
+      - 4320:4320
+      - 4321:4321
+    volumes:
+      - ../../:/app
+    environment:
+      OTLP_SERVER_GRPC_ADDR: http://localhost:4317 
+      MELT_API_TOKEN: ox83a2gqhp5d8jm03op38c6byy79xrc4ffmx
+    network_mode: host
+  test-apm:
+    build:
+      context: ./test-apm
+      dockerfile: Dockerfile
+    command: node movies.js
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4320
+    network_mode: host
