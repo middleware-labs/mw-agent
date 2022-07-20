@@ -15,8 +15,8 @@ services:
     volumes:
       - ../../:/app
     environment:
-      OTLP_SERVER_GRPC_ADDR: http://localhost:4317 
-      MELT_API_TOKEN: ox83a2gqhp5d8jm03op38c6byy79xrc4ffmx
+      TARGET: http://localhost:4317 
+      MELT_API_KEY: ox83a2gqhp5d8jm03op38c6byy79xrc4ffmx
     network_mode: host
   test-apm:
     build:

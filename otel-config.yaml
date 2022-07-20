@@ -30,11 +30,11 @@ exporters:
   logging:
     loglevel: debug
   otlp/2:
-    endpoint: ${OTLP_SERVER_GRPC_ADDR}
+    endpoint: ${TARGET}
     tls:
       insecure: true
     headers:
-      authorization: ${MELT_API_TOKEN}
+      authorization: ${MELT_API_KEY}
 
 service:
   pipelines:
