@@ -11,7 +11,7 @@ agent-host-go
 
 ## Docker Installation
 ```
-docker run -e MELT_API_KEY=<fetch_token_from_account> -e OTLP_SERVER_GRPC_ADDR=<refer target list> -d --pid host --restart always -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/middleware-labs/agent-host:dev
+docker run -e MELT_API_TOKEN=<fetch_token_from_account> -e OTLP_SERVER_GRPC_ADDR=<refer target list> -d --pid host --restart always -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/middleware-labs/agent-host:dev
 ```
 OR create a `docker-compose.yml` with content given below :
 ```
