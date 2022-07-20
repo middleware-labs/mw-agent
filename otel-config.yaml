@@ -10,7 +10,7 @@ receivers:
     scrapers:
       process:
   filelog:
-    include: [ /usr/bin/melt-logs/data/*.log ]
+    include: [ /var/log/linux.log ]
     start_at: beginning
 
 processors:
@@ -46,3 +46,7 @@ service:
       receivers: [ filelog ]
       processors: [ resource ]
       exporters: [ logging, otlp/2 ]
+    traces:
+      receivers: [ otlp ]
+      processors: [ resource ]
+      exporters: [ otlp/2 ]
