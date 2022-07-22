@@ -19,6 +19,9 @@ processors:
     - key: mw_agent
       action: insert
       value: true
+    - key: agent_identifier
+      action: insert
+      value: go
     - key: object_type
       action: insert
       value: process
