@@ -30,8 +30,8 @@ processors:
       from_attribute: process.pid
 
 exporters:
-  logging:
-    loglevel: debug
+  # logging:
+  #   loglevel: debug
   otlp/2:
     endpoint: ${TARGET}
     tls:
@@ -44,12 +44,12 @@ service:
     metrics:
       receivers: [ hostmetrics ]
       processors: [ resource ]
-      exporters: [ logging, otlp/2 ]
+      exporters: [ otlp/2 ]
     logs:
       receivers: [ filelog ]
       processors: [ resource ]
-      exporters: [ logging, otlp/2 ]
+      exporters: [ otlp/2 ]
     traces:
       receivers: [ otlp ]
       processors: [ resource ]
-      exporters: [ otlp/2, logging ]
+      exporters: [ otlp/2 ]
