@@ -37,17 +37,7 @@ ____________________________________________
 
 ### Target List
 
-| Platform      | Target        |    
-| ------------- | ------------- | 
-| local         |  http://localhost:4317      |
-| agent         |  https://us1-v1-grpc-agent.melt.so:9443   |
-| front         |  https://us1-v1-grpc-front.melt.so:9443   |
-| conflux       |  https://us1-v1-grpc-conflux.melt.so:9443 |
-| capture       |  https://us1-v1-grpc-capture.melt.so:9443 |
-| stage         |  https://us1-v1-grpc-stage.melt.so        |
-| live          |  https://us1-v1-grpc.melt.so              |
-
-*No need to specify target in live environment
+List available at https://github.com/middleware-labs/agent-host-rs README.md
 
 ----------------------------------------------
 
