@@ -9,9 +9,9 @@ receivers:
     collection_interval: 5s
     scrapers:
       process:
-  filelog:
-    include: [ /var/log/linux.log ]
-    start_at: beginning
+  # filelog:
+  #   include: [ /var/log/linux.log ]
+  #   start_at: beginning
 
 processors:
   resource:
@@ -45,10 +45,10 @@ service:
       receivers: [ hostmetrics ]
       processors: [ resource ]
       exporters: [ otlp/2 ]
-    logs:
-      receivers: [ filelog ]
-      processors: [ resource ]
-      exporters: [ otlp/2 ]
+    # logs:
+    #   receivers: [ filelog ]
+    #   processors: [ resource ]
+    #   exporters: [ otlp/2 ]
     traces:
       receivers: [ otlp ]
       processors: [ resource ]
