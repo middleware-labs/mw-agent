@@ -13,6 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 
 	//"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 	//	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
@@ -44,7 +45,7 @@ func Components() (component.Factories, error) {
 	factories.Receivers, err = component.MakeReceiverFactoryMap([]component.ReceiverFactory{
 		otlpreceiver.NewFactory(),
 		filelogreceiver.NewFactory(),
-		//	fluentforwardreceiver.NewFactory(),
+		fluentforwardreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
 		// k8sclusterreceiver.NewFactory(),
 	}...)

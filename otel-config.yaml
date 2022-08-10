@@ -12,6 +12,8 @@ receivers:
   # filelog:
   #   include: [ /var/log/linux.log ]
   #   start_at: beginning
+  fluentforward:
+    endpoint: 0.0.0.0:8006
 
 processors:
   resource:
@@ -30,8 +32,8 @@ processors:
       from_attribute: process.pid
 
 exporters:
-  # logging:
-  #   loglevel: debug
+  logging:
+    loglevel: debug
   otlp/2:
     endpoint: ${TARGET}
     tls:
@@ -41,15 +43,15 @@ exporters:
 
 service:
   pipelines:
-    metrics:
-      receivers: [ hostmetrics ]
-      processors: [ resource ]
-      exporters: [ otlp/2 ]
-    # logs:
-    #   receivers: [ filelog ]
+    # metrics:
+    #   receivers: [ hostmetrics ]
     #   processors: [ resource ]
     #   exporters: [ otlp/2 ]
-    traces:
-      receivers: [ otlp ]
+    logs:
+      receivers: [ fluentforward ]
       processors: [ resource ]
       exporters: [ otlp/2 ]
+    # traces:
+    #   receivers: [ otlp ]
+    #   processors: [ resource ]
+    #   exporters: [ otlp/2 ]
