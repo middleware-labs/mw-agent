@@ -5,13 +5,19 @@ receivers:
         endpoint: 0.0.0.0:4320
       http:
         endpoint: 0.0.0.0:4321
+
+  # Scrapping OS metrics (Infra Metrics)
   hostmetrics:
     collection_interval: 5s
     scrapers:
       process:
-  # filelog:
-  #   include: [ /var/log/linux.log ]
-  #   start_at: beginning
+
+  # Read log files (Infra logs + APM logs)
+  filelog:
+    include: [ /var/log/linux.log ]
+    start_at: beginning
+
+  # Read log sent through fluent protocol (APM logs)
   fluentforward:
     endpoint: 0.0.0.0:8006
 
@@ -46,12 +52,12 @@ service:
     # metrics:
     #   receivers: [ hostmetrics ]
     #   processors: [ resource ]
-    #   exporters: [ otlp/2 ]
+    #   exporters: [ logging, otlp/2 ]
     logs:
       receivers: [ fluentforward ]
       processors: [ resource ]
-      exporters: [ otlp/2 ]
+      exporters: [ logging, otlp/2 ]
     # traces:
     #   receivers: [ otlp ]
     #   processors: [ resource ]
-    #   exporters: [ otlp/2 ]
+    #   exporters: [ logging, otlp/2 ]

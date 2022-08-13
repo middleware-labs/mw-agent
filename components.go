@@ -7,15 +7,16 @@ import (
 	"collector-agent/hostmetricsreceiver"
 	"os"
 
-	// "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
+	"collector-agent/fluentforwardreceiver"
+
+	// "collector-agent/fluentforwardreceiver"
 	"log"
 	// "github.com/middleware/agents/agent-host/collector-agent/frontend/kafkaexporter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 
-	//"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
+	//"collector-agent/fluentforwardreceiver"
 	//	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"

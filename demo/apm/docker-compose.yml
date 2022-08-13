@@ -9,20 +9,28 @@ services:
     command: api-server start
     restart: always
     pid: host
-    ports:
-      - 4320:4320
-      - 4321:4321
     volumes:
       - ../../:/app
     environment:
       TARGET: http://localhost:4317 
       MELT_API_KEY: ox83a2gqhp5d8jm03op38c6byy79xrc4ffmx
     network_mode: host
-  test-apm:
+
+  test-traces:
     build:
-      context: ./test-apm
+      context: ./test-traces
       dockerfile: Dockerfile
     command: node movies.js
     environment:
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4320
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4317
     network_mode: host
+
+  test-logs:
+    build:
+      context: ./test-logs
+      dockerfile: Dockerfile
+    command: node fluent.js
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4317
+    network_mode: host
+#local command: TARGET=http://localhost:4317 MELT_API_KEY=ox83a2gqhp5d8jm03op38c6byy79xrc4ffmx api-server start
