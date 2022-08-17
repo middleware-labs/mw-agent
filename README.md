@@ -33,6 +33,14 @@ MELT_API_KEY=<fetch_token_from_your_account> TARGET=<refer target list> bash -c 
 ```
 ____________________________________________
 
+### Advanced Options 
+
+
+| ENV variables         | Usage            
+| -------------         | ------------- 
+| MELT_COLLECTION_TYPE          | Select among `metrics`, `traces` & `logs` to enable only a single pipeline
+____________________________________________
+
 ### Target List
 
 List available at https://github.com/middleware-labs/agent-host-rs README.md

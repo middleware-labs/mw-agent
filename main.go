@@ -36,6 +36,15 @@ func Try[T any](item T, err error) T {
 
 // air --build.cmd "go build -o /tmp/api-server /app/*.go" --build.bin "/tmp/api-server $*"
 func app() *cli.App {
+
+	collectionType := "all"
+	value, hasCollectionType := os.LookupEnv("MELT_COLLECTION_TYPE")
+	if hasCollectionType {
+		collectionType = value
+	}
+	configFile := ""
+	configFile = "configyamls/" + collectionType + "/otel-config.yaml"
+
 	return &cli.App{
 		Name:  "api-server",
 		Usage: "The API",
@@ -47,7 +56,7 @@ func app() *cli.App {
 				Action: func(c *cli.Context) error {
 
 					configProvider, err := service.NewConfigProvider(service.ConfigProviderSettings{
-						Locations: []string{"otel-config.yaml"},
+						Locations: []string{configFile},
 						MapProviders: map[string]confmap.Provider{
 							"file": fileprovider.New(),
 							"yaml": yamlprovider.New(),

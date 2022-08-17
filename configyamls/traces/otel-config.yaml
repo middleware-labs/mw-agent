@@ -1,0 +1,40 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4320
+      http:
+        endpoint: 0.0.0.0:4321
+
+processors:
+  resource:
+    attributes:
+    - key: mw_agent
+      action: insert
+      value: true
+    - key: agent_identifier
+      action: insert
+      value: go
+    - key: object_type
+      action: insert
+      value: process
+    - key: service.name
+      action: insert
+      from_attribute: process.pid
+
+exporters:
+  logging:
+    loglevel: debug
+  otlp/2:
+    endpoint: ${TARGET}
+    tls:
+      insecure: true
+    headers:
+      authorization: ${MELT_API_KEY}
+
+service:
+  pipelines:
+    traces:
+      receivers: [ otlp ]
+      processors: [ resource ]
+      exporters: [ logging, otlp/2 ]

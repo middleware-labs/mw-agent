@@ -21,5 +21,5 @@ RUN CGO_ENABLED=0 go build -o /tmp/api-server ./*.go
 FROM busybox:glibc as prod
 WORKDIR /app
 COPY --from=build /tmp/api-server /usr/bin/api-server
-COPY --from=build /app/otel-config.yaml /app/otel-config.yaml
+COPY --from=build /app/configyamls /app/configyamls
 CMD ["api-server", "start"]

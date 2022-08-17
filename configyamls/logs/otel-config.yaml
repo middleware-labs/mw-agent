@@ -1,0 +1,49 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4320
+      http:
+        endpoint: 0.0.0.0:4321
+
+  # Read log files (Infra logs + APM logs)
+  filelog:
+    include: [ /var/log/linux.log ]
+    start_at: beginning
+
+  # Read log sent through fluent protocol (APM logs)
+  fluentforward:
+    endpoint: 0.0.0.0:8006
+
+processors:
+  resource:
+    attributes:
+    - key: mw_agent
+      action: insert
+      value: true
+    - key: agent_identifier
+      action: insert
+      value: go
+    - key: object_type
+      action: insert
+      value: process
+    - key: service.name
+      action: insert
+      from_attribute: process.pid
+
+exporters:
+  logging:
+    loglevel: debug
+  otlp/2:
+    endpoint: ${TARGET}
+    tls:
+      insecure: true
+    headers:
+      authorization: ${MELT_API_KEY}
+
+service:
+  pipelines:
+    logs:
+      receivers: [ fluentforward ]
+      processors: [ resource ]
+      exporters: [ logging, otlp/2 ]
