@@ -7,8 +7,10 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@middlewarelabs-devs/melt-node-metrics": "^1.6.0",
-    "express": "^4.17.1"
+    "@middlewarelabs-devs/melt-node-metrics": "^1.7.0",
+    "express": "^4.17.1",
+    "mysql": "^2.18.1",
+    "cors": "^2.8.5"
   },
   "author": "",
   "license": "ISC"
