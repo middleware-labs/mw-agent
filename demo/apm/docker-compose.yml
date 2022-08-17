@@ -1,36 +1,53 @@
 version: "3.4"
 services:  
-  melt-agent-host-go:
-    # image: ghcr.io/middleware-labs/agent-host-go:dev
-    build:
-      context: ../../
-      dockerfile: Dockerfile
-      target: local
-    command: api-server start
-    restart: always
-    pid: host
-    volumes:
-      - ../../:/app
-    environment:
-      TARGET: http://localhost:4317 
-      MELT_API_KEY: ox83a2gqhp5d8jm03op38c6byy79xrc4ffmx
-    network_mode: host
+  # melt-agent-host-go:
+  #   # image: ghcr.io/middleware-labs/agent-host-go:dev
+  #   build:
+  #     context: ../../
+  #     dockerfile: Dockerfile
+  #     target: local
+  #   command: api-server start
+  #   restart: always
+  #   pid: host
+  #   volumes:
+  #     - ../../:/app
+  #   environment:
+  #     TARGET: http://localhost:4317 
+  #     MELT_API_KEY: ox83a2gqhp5d8jm03op38c6byy79xrc4ffmx
+  #   network_mode: host
 
   test-traces:
     build:
-      context: ./test-traces
+      context: ./test-traces-node
       dockerfile: Dockerfile
     command: node movies.js
     environment:
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4317
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4320    # sends data to host agent
+      # OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4317  # sends data to capture directly
     network_mode: host
 
-  test-logs:
-    build:
-      context: ./test-logs
-      dockerfile: Dockerfile
-    command: node fluent.js
-    environment:
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4317
-    network_mode: host
+  # test-logs:
+  #   build:
+  #     context: ./test-logs-node-fluent
+  #     dockerfile: Dockerfile
+  #   command: node fluent.js
+  #   environment:
+  #     OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4320    # sends data to host agent
+  #     # OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4317  # sends data to capture directly
+  #   network_mode: host
+
+  # test-traces-python:
+  #   # image: ghcr.io/middleware-labs/agent-python-apm:dev
+  #   build: 
+  #     context: ./test-traces-python
+  #     dockerfile: Dockerfile
+  #   ports:
+  #   - 9099:9099
+  #   environment:
+  #     OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4320    # sends data to host agent
+  #     # OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4317  # sends data to capture directly
+  #   command: opentelemetry-instrument python3 -m flask run
+  #   network_mode: host
+
+
 #local command: TARGET=http://localhost:4317 MELT_API_KEY=ox83a2gqhp5d8jm03op38c6byy79xrc4ffmx api-server start

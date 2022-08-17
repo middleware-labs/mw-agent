@@ -49,15 +49,15 @@ exporters:
 
 service:
   pipelines:
-    # metrics:
-    #   receivers: [ hostmetrics ]
-    #   processors: [ resource ]
-    #   exporters: [ logging, otlp/2 ]
+    metrics:
+      receivers: [ hostmetrics ]
+      processors: [ resource ]
+      exporters: [ logging, otlp/2 ]
     logs:
       receivers: [ fluentforward ]
       processors: [ resource ]
       exporters: [ logging, otlp/2 ]
-    # traces:
-    #   receivers: [ otlp ]
-    #   processors: [ resource ]
-    #   exporters: [ logging, otlp/2 ]
+    traces:
+      receivers: [ otlp ]
+      processors: [ resource ]
+      exporters: [ logging, otlp/2 ]

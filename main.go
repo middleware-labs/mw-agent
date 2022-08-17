@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
+
 	// "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/prometheus/common/version"
 	"github.com/sirupsen/logrus"
@@ -62,9 +63,9 @@ func app() *cli.App {
 					}
 					p := service.CollectorSettings{
 						DisableGracefulShutdown: true,
-						LoggingOptions: []zap.Option{
-							zap.Development(),
-							zap.IncreaseLevel(zap.DebugLevel),
+						LoggingOptions:          []zap.Option{
+							// zap.Development(),
+							// zap.IncreaseLevel(zap.DebugLevel),
 						},
 						BuildInfo: component.BuildInfo{
 							Command:     "otelcontribcol",
