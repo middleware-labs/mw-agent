@@ -15,7 +15,7 @@ CREATE DATABASE /*!32312 IF NOT EXISTS*/`todo` /*!40100 DEFAULT CHARACTER SET ut
 
 /*Table structure for table `tutorials` */
 
-CREATE TABLE `tutorials` (
+CREATE TABLE `todo`.`tutorials` (
   `id` int(22) NOT NULL AUTO_INCREMENT,
   `title` varchar(255) DEFAULT NULL,
   `description` text DEFAULT NULL,
@@ -25,7 +25,7 @@ CREATE TABLE `tutorials` (
 
 /*Data for the table `tutorials` */
 
-insert  into `tutorials`(`id`,`title`,`description`,`published`) values (1,'git-put','test description',NULL);
+insert  into `todo`.`tutorials`(`id`,`title`,`description`,`published`) values (1,'git-put','test description',NULL);
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;

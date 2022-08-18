@@ -17,6 +17,21 @@ services:
       MELT_COLLECTION_TYPE: traces
     network_mode: host
 
+  mysql:
+    image: mysql:5.7
+    container_name: mysql
+    environment:
+      MYSQL_DATABASE: 'todo'
+      MYSQL_ALLOW_EMPTY_PASSWORD: "true"
+    ports:
+      - "3306:3306"
+    command: --init-file /docker-entrypoint-initdb.d/init.sql
+    volumes:
+      - ./data/conf.d:/etc/mysql/conf.d
+      - ./data/logs:/logs
+      - /usr/local/var/mysql:/var/lib/mysql
+      - ./node-apm-demo/todo.sql:/docker-entrypoint-initdb.d/init.sql
+
   # test-traces:
   #   build:
   #     context: ./test-traces-node
