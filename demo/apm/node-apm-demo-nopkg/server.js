@@ -1,6 +1,24 @@
+require("./tracing");
+require("./fluent")
 const express = require('express');
 const app = express()
-const port = 3002
+const port = 3003
+const http = require('http');
+
+
+app.get('/movies', async function (req, res) {
+    res.type('json')
+    setTimeout((() => {
+        res.send(({
+            movies: [
+                {name: 'Jaws', genre: 'Thriller'},
+                {name: 'Annie', genre: 'Family'},
+                {name: 'Jurassic Park', genre: 'Action'},
+            ]
+        }))
+    }), 1000)
+})
+
 const cors = require("cors");
 
 app.use(cors({origin: `http://localhost:${port}`}));
@@ -22,8 +40,3 @@ app.listen(port, () => {
 })
 
 require("./app/routes/tutorial.routes.js")(app);
-
-const tracker = require('@middlewarelabs-devs/melt-node-metrics')
-
-tracker.track()
-

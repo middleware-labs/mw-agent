@@ -1,1 +1,4 @@
-demo/*
+demo/apm/test-traces/node_modules
+demo/apm/node-apm-demo/node_modules
+demo/apm/node-apm-demo2/node_modules
+demo/apm/test-logs/node_modules

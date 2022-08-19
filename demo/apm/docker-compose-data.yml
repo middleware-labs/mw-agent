@@ -1,0 +1,45 @@
+version: "3.4"
+services:  
+  # Host Agent : Metrics (hostreceivermetrics) + Traces (forwarded via OTLP) + Logs (filelogreceiver)
+  melt-agent-host-go:
+    image: ghcr.io/middleware-labs/agent-host-go:dev
+    command: api-server start
+    restart: always
+    pid: host
+    environment:
+      TARGET: http://localhost:4317 
+      MELT_API_KEY: ox83a2gqhp5d8jm03op38c6byy79xrc4ffmx
+      MELT_COLLECTION_TYPE: traces
+    network_mode: host
+
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: 'todo'
+      MYSQL_ALLOW_EMPTY_PASSWORD: "true"
+    ports:
+      - "3306:3306"
+    command: --init-file /docker-entrypoint-initdb.d/init.sql
+    volumes:
+      - ./data/conf.d:/etc/mysql/conf.d
+      - ./data/logs:/logs
+      - /usr/local/var/mysql:/var/lib/mysql
+      - ./node-apm-demo/todo.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # APM Metrics
+  node-apm-demo:
+    image: ghcr.io/middleware-labs/agent-node-apm:pkg
+    command: node server.js
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4320    # sends data to host agent
+      # MELT_APM_PAUSE_METRICS: "true"                      # if you want to PAUSE metrics data
+      MELT_APM_PAUSE_TRACES: "true"                         # if you want to PAUSE traces data
+    network_mode: host
+
+  # APM Traces + Logs
+  node-apm-demo-nopkg:
+    image: ghcr.io/middleware-labs/agent-node-apm:nopkg
+    command: node server.js
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4320    # sends data to host agent
+    network_mode: host

@@ -1,0 +1,30 @@
+{
+  "name": "node-apm-demo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@fluent-org/logger": "^1.0.9",
+    "@opentelemetry/api": "^1.0.4",
+    "@opentelemetry/auto-instrumentations-node": "^0.28.0",
+    "@opentelemetry/auto-instrumentations-web": "^0.27.2",
+    "@opentelemetry/exporter-metrics-otlp-grpc": "^0.27.0",
+    "@opentelemetry/exporter-metrics-otlp-http": "^0.27.0",
+    "@opentelemetry/exporter-trace-otlp-grpc": "^0.27.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.27.0",
+    "@opentelemetry/instrumentation-http": "^0.27.0",
+    "@opentelemetry/propagator-b3": "^1.1.1",
+    "@opentelemetry/sdk-metrics-base": "^0.27.0",
+    "@opentelemetry/sdk-node": "^0.27.0",
+    "@opentelemetry/sdk-trace-base": "^1.0.1",
+    "@opentelemetry/sdk-trace-node": "^1.0.1",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "mysql": "^2.18.1"
+  },
+  "author": "",
+  "license": "ISC"
+}
