@@ -7,10 +7,10 @@ receivers:
         endpoint: 0.0.0.0:4321
 
   # Scrapping OS metrics (Infra Metrics)
-  hostmetrics:
-    collection_interval: 5s
-    scrapers:
-      process:
+  # hostmetrics:
+  #   collection_interval: 5s
+  #   scrapers:
+  #     process:
 
   # Read log files (Infra logs + APM logs)
   filelog:
@@ -50,11 +50,11 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [ hostmetrics ]
+      receivers: [ hostmetrics, otlp ]
       processors: [ resource ]
       exporters: [ logging, otlp/2 ]
     logs:
-      receivers: [ fluentforward ]
+      receivers: [ fluentforward, otlp ]
       processors: [ resource ]
       exporters: [ logging, otlp/2 ]
     traces:

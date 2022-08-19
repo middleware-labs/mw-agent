@@ -41,6 +41,6 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [ hostmetrics ]
+      receivers: [ hostmetrics, otlp ]
       processors: [ resource ]
       exporters: [ logging, otlp/2 ]

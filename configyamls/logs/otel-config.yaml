@@ -44,6 +44,6 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [ fluentforward ]
+      receivers: [ fluentforward, otlp ]
       processors: [ resource ]
       exporters: [ logging, otlp/2 ]

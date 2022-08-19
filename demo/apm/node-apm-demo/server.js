@@ -1,3 +1,6 @@
+const tracker = require('@middlewarelabs-devs/melt-node-metrics')
+tracker.track()
+
 const express = require('express');
 const app = express()
 const port = 3002
@@ -22,8 +25,6 @@ app.listen(port, () => {
 })
 
 require("./app/routes/tutorial.routes.js")(app);
+require("./fluent")
 
-const tracker = require('@middlewarelabs-devs/melt-node-metrics')
-
-tracker.track()
 

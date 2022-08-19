@@ -1,7 +1,9 @@
 version: "3.4"
+
 services:  
   # Host Agent : Metrics (hostreceivermetrics) + Traces (forwarded via OTLP) + Logs (filelogreceiver)
   melt-agent-host-go:
+    container_name: melt-agent-host-go
     # image: ghcr.io/middleware-labs/agent-host-go:dev
     build:
       context: ../../
@@ -13,9 +15,12 @@ services:
     volumes:
       - ../../:/app
     environment:
-      TARGET: http://localhost:4317 
+      TARGET: capture-v1:4317 
       MELT_API_KEY: ox83a2gqhp5d8jm03op38c6byy79xrc4ffmx
-    network_mode: host
+    ports:
+      - 4320:4320
+      - 4321:4321
+      - 8006:8006
 
   mysql:
     image: mysql:5.7
@@ -23,7 +28,7 @@ services:
       MYSQL_DATABASE: 'todo'
       MYSQL_ALLOW_EMPTY_PASSWORD: "true"
     ports:
-      - "3306:3306"
+      - 3306:3306
     command: --init-file /docker-entrypoint-initdb.d/init.sql
     volumes:
       - ./data/conf.d:/etc/mysql/conf.d
@@ -40,20 +45,24 @@ services:
       dockerfile: Dockerfile
     command: node server.js
     environment:
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4320    # sends data to host agent
+      OTEL_EXPORTER_OTLP_ENDPOINT: melt-agent-host-go:4320    # sends data to host agent
       # MELT_APM_PAUSE_METRICS: "true"                      # if you want to PAUSE metrics data
-      MELT_APM_PAUSE_TRACES: "true"                         # if you want to PAUSE traces data
-    network_mode: host
+      # MELT_APM_PAUSE_TRACES: "true"                       # if you want to PAUSE traces data
+    depends_on:
+      - mysql
+    ports:
+      - 3002:3002
 
   # APM Traces + Logs
-  node-apm-demo-nopkg:
-    build:
-      context: ./node-apm-demo-nopkg
-      dockerfile: Dockerfile
-    command: node server.js
-    environment:
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4320    # sends data to host agent
-    network_mode: host   
+  # node-apm-demo-nopkg:
+  #   build:
+  #     context: ./node-apm-demo-nopkg
+  #     dockerfile: Dockerfile
+  #   command: node server.js
+  #   environment:
+  #     OTEL_EXPORTER_OTLP_ENDPOINT: melt-agent-host-go:4320
+  #   ports:
+  #     - 3003:3003
 
   # test-logs:
   #   build:

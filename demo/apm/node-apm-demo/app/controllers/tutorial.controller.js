@@ -1,5 +1,14 @@
 const Tutorial = require("../models/tutorial.model.js");
 
+exports.ping = (req, res) => {
+  // Validate request
+
+  res.status(200).send({
+    message: "success",
+  });
+
+
+};
 // Create and Save a new Tutorial
 exports.create = (req, res) => {
   // Validate request

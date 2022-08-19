@@ -3,6 +3,8 @@ module.exports = app => {
 
   const router = require("express").Router();
 
+  router.get("/ping", tutorials.ping);
+
   // Create a new Tutorial
   router.post("/", tutorials.create);
 
