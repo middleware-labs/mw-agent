@@ -1,3 +1,6 @@
+const tracker = require('@middlewarelabs-devs/melt-node-metrics')
+tracker.track()
+
 const express = require('express');
 const app = express()
 const port = 3002
@@ -23,10 +26,4 @@ app.listen(port, () => {
 
 require("./app/routes/tutorial.routes.js")(app);
 
-const tracker = require('@middlewarelabs-devs/melt-node-metrics')
-
-tracker.track({
-    MELT_APM_PAUSE_METRICS: true,
-    MELT_API_KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySWQiOjEsIkFjY291bnRJZCI6MSwiQXV0aFR5cGUiOiIiLCJUaW1lIjoiMjAyMi0wOC0wOFQxMDoyMjo0My4yNTQxODRaIiwiaXNzIjoibXdfX2xvZ2luIiwic3ViIjoibG9naW4ifQ._kD_wnP6WKaHYq9VHaEpiEiktKS7hjRCiui4OveAWgE'
-})
 
