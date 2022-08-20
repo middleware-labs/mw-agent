@@ -15,12 +15,13 @@ services:
     volumes:
       - ../../:/app
     environment:
+      MELT_COLLECTION_TYPE: traces
       TARGET: capture-v1:4317 
       MELT_API_KEY: ox83a2gqhp5d8jm03op38c6byy79xrc4ffmx
     ports:
       - 4320:4320
       - 4321:4321
-      - 8006:8006
+      # - 8006:8006
 
   mysql:
     image: mysql:5.7
@@ -45,9 +46,10 @@ services:
       dockerfile: Dockerfile
     command: node server.js
     environment:
+      MELT_AUTOGENERATE_TRACING_DATA: "true"
       OTEL_EXPORTER_OTLP_ENDPOINT: melt-agent-host-go:4320    # sends data to host agent
-      # MELT_APM_PAUSE_METRICS: "true"                      # if you want to PAUSE metrics data
-      # MELT_APM_PAUSE_TRACES: "true"                       # if you want to PAUSE traces data
+      MELT_APM_PAUSE_METRICS: "true"                      # if you want to PAUSE metrics data
+      MELT_APM_PAUSE_TRACES: "true"                       # if you want to PAUSE traces data
     depends_on:
       - mysql
     ports:

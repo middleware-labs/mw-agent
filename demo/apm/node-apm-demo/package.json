@@ -11,7 +11,9 @@
     "@middlewarelabs-devs/melt-node-metrics": "^2.0.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",
-    "mysql": "^2.18.1"
+    "http": "0.0.1-security",
+    "mysql": "^2.18.1",
+    "request": "^2.88.2"
   },
   "author": "",
   "license": "ISC"

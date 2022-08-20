@@ -25,6 +25,5 @@ app.listen(port, () => {
 })
 
 require("./app/routes/tutorial.routes.js")(app);
+require("./tracingloop")
 require("./fluent")
-
-
