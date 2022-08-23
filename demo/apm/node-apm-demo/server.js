@@ -12,6 +12,10 @@ app.use(express.json()); /* bodyParser.json() is deprecated */
 
 app.use(express.urlencoded({ extended: true })); /* bodyParser.urlencoded() is deprecated */
 
+app.get('/304-error', async function (req, res) {
+    return res.status(304).send('Not Modified');
+})
+
 app.get('/500-error', async function (req, res) {
     return res.status(500).send('Internal Server Occurred');
 })
@@ -26,4 +30,8 @@ app.listen(port, () => {
 
 require("./app/routes/tutorial.routes.js")(app);
 require("./tracingloop")
-require("./fluent")
+
+if (!process.env.MELT_APM_PAUSE_LOGS) {
+    require("./fluent")
+    require("./fluent-winston")
+}

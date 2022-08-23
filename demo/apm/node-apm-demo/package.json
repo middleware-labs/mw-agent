@@ -11,9 +11,11 @@
     "@middlewarelabs-devs/melt-node-metrics": "^2.0.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",
+    "fluent-logger": "^3.4.1",
     "http": "0.0.1-security",
     "mysql": "^2.18.1",
-    "request": "^2.88.2"
+    "request": "^2.88.2",
+    "winston": "^3.8.1"
   },
   "author": "",
   "license": "ISC"
