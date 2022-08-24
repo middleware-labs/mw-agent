@@ -20,7 +20,13 @@ processors:
       value: process
     - key: service.name
       action: insert
-      from_attribute: process.pid
+      value: static-service
+    - key: mw.account
+      action: insert
+      value: "52"
+    - key: mw.account_key
+      action: insert
+      value: ${MELT_API_KEY}
 
 exporters:
   logging:
