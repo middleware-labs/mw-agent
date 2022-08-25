@@ -15,21 +15,6 @@ receivers:
 processors:
   resource:
     attributes:
-    - key: mw_agent
-      action: insert
-      value: true
-    - key: agent_identifier
-      action: insert
-      value: go
-    - key: object_type
-      action: insert
-      value: process
-    - key: service.name
-      action: insert
-      value: static-service
-    - key: mw.account
-      action: insert
-      value: ${MELT_ACCOUNT_ID}
     - key: mw.account_key
       action: insert
       value: ${MELT_API_KEY}
