@@ -1,5 +1,5 @@
 #!/bin/bash
-MELT_LATEST_VERSION=0.0.2
+MELT_LATEST_VERSION=0.0.3
 export MELT_LATEST_VERSION
 
 if [ "${MELT_VERSION}" = "" ]; then 
