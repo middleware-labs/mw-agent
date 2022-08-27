@@ -143,6 +143,7 @@ jobs:
 
     - name: Remove extra files & Upload to APT Repo
       run: |
+        mkdir -p example/scripts
         cp installables/apt/apt-install.sh example/scripts/apt-install.sh
         rm -rf example/pgpkeys-*
         rm -rf example/generate-release.sh
