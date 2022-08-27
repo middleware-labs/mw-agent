@@ -1,5 +1,5 @@
 #!/bin/bash
-MELT_LATEST_VERSION=0.0.4
+MELT_LATEST_VERSION=0.0.5
 export MELT_LATEST_VERSION
 
 if [ "${MELT_VERSION}" = "" ]; then 
@@ -12,6 +12,16 @@ sudo mkdir -p /usr/local/bin/melt-go-agent/apt
 sudo touch /usr/local/bin/melt-go-agent/apt/pgp-key-$MELT_VERSION.public
 sudo wget -O /usr/local/bin/melt-go-agent/apt/pgp-key-$MELT_VERSION.public https://host.melt.so/public-keys/pgp-key-$MELT_VERSION.public
 sudo touch /etc/apt/sources.list.d/melt-go.list
+
+sudo mkdir -p /usr/bin/configyamls/all
+sudo wget -O /usr/bin/configyamls/all/otel-config.yaml https://host.melt.so/configyamls/all/otel-config.yaml
+sudo mkdir -p /usr/bin/configyamls/metrics
+sudo wget -O /usr/bin/configyamls/metrics/otel-config.yaml https://host.melt.so/configyamls/metrics/otel-config.yaml
+sudo mkdir -p /usr/bin/configyamls/traces
+sudo wget -O /usr/bin/configyamls/traces/otel-config.yaml https://host.melt.so/configyamls/traces/otel-config.yaml
+sudo mkdir -p /usr/bin/configyamls/logs
+sudo wget -O /usr/bin/configyamls/logs/otel-config.yaml https://host.melt.so/configyamls/logs/otel-config.yaml
+
 echo "deb [arch=all signed-by=/usr/local/bin/melt-go-agent/apt/pgp-key-$MELT_VERSION.public] https://host.melt.so/repos/$MELT_VERSION/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/melt-go.list
 
 # Updating apt list on system
