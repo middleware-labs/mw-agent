@@ -50,16 +50,14 @@ if [ ! "${TARGET}" = "" ]; then
 
 cat << EOIF > /usr/local/bin/melt-go-agent/apt/executable
 #!/bin/sh
-export MELT_API_KEY = $MELT_API_KEY
-melt-go-agent-host start
+MELT_API_KEY=$MELT_API_KEY TARGET=$TARGET melt-go-agent-host start
 EOIF
 
 else 
 
 cat << EOELSE > /usr/local/bin/melt-go-agent/apt/executable
 #!/bin/sh
-export MELT_API_KEY = $MELT_API_KEY
-melt-go-agent-host start
+MELT_API_KEY=$MELT_API_KEY melt-go-agent-host start
 EOELSE
 
 fi
