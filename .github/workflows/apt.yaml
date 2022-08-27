@@ -9,13 +9,12 @@ on:
       - 'apt*'
 
 env:
-  DEB_DIR: melt-agent-go_0.0.2-1_all
   ARCH: all
   BINARY_SOURCE: release/melt-go-agent-host
   RELEASE_VERSION: 0.0.2
-
+  
 jobs:
-  build:
+  build:  
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
@@ -26,50 +25,44 @@ jobs:
             ~/.cache/go-build
             ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+    
+    - name: Creating Required Folder Structure
+      run: |
+          mkdir -p example/melt-agent_$RELEASE_VERSION-1_all/usr/bin
+          mkdir -p example/melt-agent_$RELEASE_VERSION-1_all/DEBIAN
+          mkdir -p example/repos/$RELEASE_VERSION/apt-repo/pool/main/
+          mkdir -p example/repos/$RELEASE_VERSION/apt-repo/dists/stable/main/binary-$ARCH
+          
+    - name: Rust Build
+      run: cargo build --release
 
-      - name: Creating Required Folder Structure
-        run: |
-          mkdir -p example/$DEB_DIR/usr/bin
-          mkdir -p example/$DEB_DIR/DEBIAN
-          mkdir -p example/apt-repo/pool/main/
-          mkdir -p example/apt-repo/dists/stable/main/binary-$ARCH
+    - name: Copying Code Binary into target location
+      run: |
+          cp $BINARY_SOURCE example/melt-agent_$RELEASE_VERSION-1_all/usr/bin/.
 
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.18
+    - name: Creating Control File
+      run: |
+          cp installables/apt/deb/control example/melt-agent_$RELEASE_VERSION-1_all/DEBIAN/control
 
-      - name: Go Build
-        run: |
-          go build -o $BINARY_SOURCE
+    - name: Creating DEB package
+      run: |
+          dpkg --build example/melt-agent_$RELEASE_VERSION-1_all
+          dpkg-deb --info example/melt-agent_$RELEASE_VERSION-1_all.deb
+          dpkg-deb --contents example/melt-agent_$RELEASE_VERSION-1_all.deb
 
-      - name: Copying Code Binary into target location
-        run: |
-          cp $BINARY_SOURCE example/$DEB_DIR/usr/bin/.
+    - name: Creating APT Repo structure & Adding DEB into it
+      run: |
+          cp example/melt-agent_$RELEASE_VERSION-1_all.deb example/repos/$RELEASE_VERSION/apt-repo/pool/main/.
 
-      - name: Creating Control File
-        run: |
-          cp installables/apt/deb/control-go example/$DEB_DIR/DEBIAN/control
-
-      - name: Creating DEB package
-        run: |
-          dpkg --build example/$DEB_DIR
-          dpkg-deb --info example/$DEB_DIR.deb
-          dpkg-deb --contents example/$DEB_DIR.deb
-
-      - name: Creating APT Repo structure & Adding DEB into it
-        run: |
-          cp example/$DEB_DIR.deb example/apt-repo/pool/main/.
-
-      - name: Building Packages along with compressed version
-        run: |
-          cd example/apt-repo
+    - name: Building Packages along with compressed version
+      run: |  
+          cd example/repos/$RELEASE_VERSION/apt-repo
           dpkg-scanpackages --arch $ARCH pool/ > dists/stable/main/binary-$ARCH/Packages
-          cd ../../
-          cat example/apt-repo/dists/stable/main/binary-$ARCH/Packages | gzip -9 > example/apt-repo/dists/stable/main/binary-$ARCH/Packages.gz
+          cd ../../../../
+          cat example/repos/$RELEASE_VERSION/apt-repo/dists/stable/main/binary-$ARCH/Packages | gzip -9 > example/repos/$RELEASE_VERSION/apt-repo/dists/stable/main/binary-$ARCH/Packages.gz
 
-      - name: Generating Release
-        run: |
+    - name: Generating Release
+      run: |
           echo '#!/bin/sh
           set -e
 
@@ -102,15 +95,15 @@ jobs:
           do_hash "SHA256" "sha256sum"
           ' > example/generate-release.sh && chmod +x example/generate-release.sh
 
-      - name: Run bash script
-        run: |
-          cd example/apt-repo/dists/stable/
-          ../../../generate-release.sh > Release
-          cd ../../../../
+    - name: Run bash script
+      run: |
+          cd example/repos/$RELEASE_VERSION/apt-repo/dists/stable/
+          ../../../../../generate-release.sh > Release
+          cd ../../../../../
           ls
 
-      - name: Creating PGP Key Pairs
-        run: |
+    - name: Creating PGP Key Pairs
+      run: |
           echo "%echo Generating an example PGP key
             Key-Type: RSA
             Key-Length: 4096
@@ -128,24 +121,24 @@ jobs:
           gpg --armor --export example > example/public-keys/pgp-key-$RELEASE_VERSION.public
           gpg --armor --export-secret-keys example > example/private-keys/pgp-key-$RELEASE_VERSION.private
 
-      - name: Generating GPG for Release - Creating InRelease
-        run: |
+    - name: Generating GPG for Release - Creating InRelease
+      run: |
           export GNUPGHOME="$(mktemp -d example/pgpkeys-XXXXXX)"
           cat example/private-keys/pgp-key-$RELEASE_VERSION.private | gpg --import
-          cat example/apt-repo/dists/stable/Release | gpg --default-key example -abs > example/apt-repo/dists/stable/Release.gpg
-          cat example/apt-repo/dists/stable/Release | gpg --default-key example -abs --clearsign > example/apt-repo/dists/stable/InRelease
+          cat example/repos/$RELEASE_VERSION/apt-repo/dists/stable/Release | gpg --default-key example -abs > example/repos/$RELEASE_VERSION/apt-repo/dists/stable/Release.gpg
+          cat example/repos/$RELEASE_VERSION/apt-repo/dists/stable/Release | gpg --default-key example -abs --clearsign > example/repos/$RELEASE_VERSION/apt-repo/dists/stable/InRelease
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-2
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-2
 
-      - name: Remove extra files & Upload to APT Repo
-        run: |
+    - name: Deploy
+      run: |
           rm -rf example/pgpkeys-*
           rm -rf example/generate-release.sh
-          rm -rf example/$DEB_DIR
-          rm -rf example/$DEB_DIR.deb
-          aws s3 sync example/ s3://host-go.melt.so
+          rm -rf example/melt-agent_$RELEASE_VERSION-1_all
+          rm -rf example/melt-agent_$RELEASE_VERSION-1_all.deb
+          aws s3 sync example/ s3://host.melt.so
