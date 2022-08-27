@@ -1,5 +1,5 @@
 Package: melt-go-agent-host
-Version: 0.0.3
+Version: 0.0.4
 Maintainer: example <example@example.com>
 Depends: libc6
 Architecture: all
