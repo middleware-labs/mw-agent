@@ -35,6 +35,7 @@ exporters:
     endpoint: ${TARGET}
     tls:
       insecure: true
+      insecure_skip_verify: true
     headers:
       authorization: ${MELT_API_KEY}
 
