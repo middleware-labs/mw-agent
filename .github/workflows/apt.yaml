@@ -19,28 +19,28 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+    - uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
 
-      - name: Creating Required Folder Structure
-        run: |
-          mkdir -p example/melt-agent_$RELEASE_VERSION-1_all/usr/bin
-          mkdir -p example/melt-agent_$RELEASE_VERSION-1_all/DEBIAN
-          mkdir -p example/repos/$RELEASE_VERSION/apt-repo/pool/main/
-          mkdir -p example/repos/$RELEASE_VERSION/apt-repo/dists/stable/main/binary-$ARCH
+    - name: Creating Required Folder Structure
+      run: |
+        mkdir -p example/melt-agent_$RELEASE_VERSION-1_all/usr/bin
+        mkdir -p example/melt-agent_$RELEASE_VERSION-1_all/DEBIAN
+        mkdir -p example/repos/$RELEASE_VERSION/apt-repo/pool/main/
+        mkdir -p example/repos/$RELEASE_VERSION/apt-repo/dists/stable/main/binary-$ARCH
 
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.18
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.18
 
-      - name: Go Build
-        run: |
-          go build -o $BINARY_SOURCE
+    - name: Go Build
+      run: |
+        go build -o $BINARY_SOURCE
 
     - name: Copying Code Binary into target location
       run: |
@@ -101,51 +101,51 @@ jobs:
           do_hash "SHA256" "sha256sum"
           ' > example/generate-release.sh && chmod +x example/generate-release.sh
 
-      - name: Run bash script
-        run: |
-          cd example/repos/$RELEASE_VERSION/apt-repo/dists/stable/
-          ../../../../../generate-release.sh > Release
-          cd ../../../../../
-          ls
+    - name: Run bash script
+      run: |
+        cd example/repos/$RELEASE_VERSION/apt-repo/dists/stable/
+        ../../../../../generate-release.sh > Release
+        cd ../../../../../
+        ls
 
-      - name: Creating PGP Key Pairs
-        run: |
-          echo "%echo Generating an example PGP key
-            Key-Type: RSA
-            Key-Length: 4096
-            Name-Real: example
-            Name-Email: example@example.com
-            Expire-Date: 0
-            %no-ask-passphrase
-            %no-protection
-            %commit" > /tmp/example-pgp-key.batch
+    - name: Creating PGP Key Pairs
+      run: |
+        echo "%echo Generating an example PGP key
+          Key-Type: RSA
+          Key-Length: 4096
+          Name-Real: example
+          Name-Email: example@example.com
+          Expire-Date: 0
+          %no-ask-passphrase
+          %no-protection
+          %commit" > /tmp/example-pgp-key.batch
 
-          export GNUPGHOME="$(mktemp -d example/pgpkeys-XXXXXX)"
-          gpg --no-tty --batch --gen-key /tmp/example-pgp-key.batch
-          mkdir -p example/public-keys
-          mkdir -p example/private-keys
-          gpg --armor --export example > example/public-keys/pgp-key-$RELEASE_VERSION.public
-          gpg --armor --export-secret-keys example > example/private-keys/pgp-key-$RELEASE_VERSION.private
+        export GNUPGHOME="$(mktemp -d example/pgpkeys-XXXXXX)"
+        gpg --no-tty --batch --gen-key /tmp/example-pgp-key.batch
+        mkdir -p example/public-keys
+        mkdir -p example/private-keys
+        gpg --armor --export example > example/public-keys/pgp-key-$RELEASE_VERSION.public
+        gpg --armor --export-secret-keys example > example/private-keys/pgp-key-$RELEASE_VERSION.private
 
-      - name: Generating GPG for Release - Creating InRelease
-        run: |
-          export GNUPGHOME="$(mktemp -d example/pgpkeys-XXXXXX)"
-          cat example/private-keys/pgp-key-$RELEASE_VERSION.private | gpg --import
-          cat example/repos/$RELEASE_VERSION/apt-repo/dists/stable/Release | gpg --default-key example -abs > example/repos/$RELEASE_VERSION/apt-repo/dists/stable/Release.gpg
-          cat example/repos/$RELEASE_VERSION/apt-repo/dists/stable/Release | gpg --default-key example -abs --clearsign > example/repos/$RELEASE_VERSION/apt-repo/dists/stable/InRelease
+    - name: Generating GPG for Release - Creating InRelease
+      run: |
+        export GNUPGHOME="$(mktemp -d example/pgpkeys-XXXXXX)"
+        cat example/private-keys/pgp-key-$RELEASE_VERSION.private | gpg --import
+        cat example/repos/$RELEASE_VERSION/apt-repo/dists/stable/Release | gpg --default-key example -abs > example/repos/$RELEASE_VERSION/apt-repo/dists/stable/Release.gpg
+        cat example/repos/$RELEASE_VERSION/apt-repo/dists/stable/Release | gpg --default-key example -abs --clearsign > example/repos/$RELEASE_VERSION/apt-repo/dists/stable/InRelease
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-2
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-2
 
-      - name: Remove extra files & Upload to APT Repo
-        run: |
-          cp installables/apt/apt-install.sh example/scripts/apt-install.sh
-          rm -rf example/pgpkeys-*
-          rm -rf example/generate-release.sh
-          rm -rf example/melt-agent_$RELEASE_VERSION-1_all
-          rm -rf example/melt-agent_$RELEASE_VERSION-1_all.deb
-          aws s3 sync example/ s3://host.melt.so
+    - name: Remove extra files & Upload to APT Repo
+      run: |
+        cp installables/apt/apt-install.sh example/scripts/apt-install.sh
+        rm -rf example/pgpkeys-*
+        rm -rf example/generate-release.sh
+        rm -rf example/melt-agent_$RELEASE_VERSION-1_all
+        rm -rf example/melt-agent_$RELEASE_VERSION-1_all.deb
+        aws s3 sync example/ s3://host.melt.so
