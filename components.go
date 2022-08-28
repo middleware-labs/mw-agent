@@ -1,23 +1,13 @@
 package main
 
 import (
-
-	// "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
-	"collector-agent/frontend"
-	"collector-agent/hostmetricsreceiver"
-	"os"
-
 	"collector-agent/fluentforwardreceiver"
-
-	// "collector-agent/fluentforwardreceiver"
+	"collector-agent/hostmetricsreceiver"
 	"log"
-	// "github.com/middleware/agents/agent-host/collector-agent/frontend/kafkaexporter"
+	"os"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
-
-	//"collector-agent/fluentforwardreceiver"
-	//	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -25,8 +15,6 @@ import (
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	// processors
-	// frontend "collector-agent/frontend"
 )
 
 func Components() (component.Factories, error) {
@@ -35,9 +23,8 @@ func Components() (component.Factories, error) {
 	log.Println("factories.Extensions XXXXXXXX233 setup......")
 	log.Println("TARGET ===> ", os.Getenv("TARGET"))
 	log.Println("MELT_API_KEY ===> ", os.Getenv("MELT_API_KEY"))
-	log.Println("MELT_API_KEY ===> ", os.Getenv("MELT_API_KEY"))
 	factories.Extensions, err = component.MakeExtensionFactoryMap(
-		frontend.NewAuthFactory(),
+	// frontend.NewAuthFactory(),
 	)
 	if err != nil {
 		return component.Factories{}, err
@@ -48,14 +35,12 @@ func Components() (component.Factories, error) {
 		filelogreceiver.NewFactory(),
 		fluentforwardreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
-		// k8sclusterreceiver.NewFactory(),
 	}...)
 	if err != nil {
 		return component.Factories{}, err
 	}
 
 	factories.Exporters, err = component.MakeExporterFactoryMap([]component.ExporterFactory{
-		// kafkaexporter.NewFactory(),
 		loggingexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
@@ -65,10 +50,9 @@ func Components() (component.Factories, error) {
 	}
 
 	factories.Processors, err = component.MakeProcessorFactoryMap([]component.ProcessorFactory{
-		frontend.NewProcessorFactory(),
+		// frontend.NewProcessorFactory(),
 		batchprocessor.NewFactory(),
 		memorylimiterprocessor.NewFactory(),
-		// attributesprocessor.NewFactory(),
 		resourceprocessor.NewFactory(),
 	}...)
 	if err != nil {
