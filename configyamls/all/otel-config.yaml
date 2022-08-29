@@ -14,11 +14,11 @@ receivers:
       load:
         cpu_average: true
       memory: {}
-      paging: {}
-      disk: {}
-      filesystem: {}
-      network: {}
-      processes: {}
+      # paging: {}
+      # disk: {}
+      # filesystem: {}
+      # network: {}
+      # processes: {}
       process: {}
 
   docker_stats:
