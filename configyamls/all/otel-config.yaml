@@ -28,6 +28,15 @@ processors:
       action: insert
       value: ${MELT_API_KEY}
 
+  resource/2:
+    attributes:
+    - key: mw.account_key
+      action: insert
+      value: ${MELT_API_KEY}
+    - key: service.name
+      action: insert
+      value: middleware-logs
+
 exporters:
   logging:
     loglevel: debug
@@ -47,7 +56,7 @@ service:
       exporters: [ logging, otlp/2 ]
     logs:
       receivers: [ fluentforward, otlp ]
-      processors: [ resource ]
+      processors: [ resource/2 ]
       exporters: [ logging, otlp/2 ]
     traces:
       receivers: [ otlp ]
