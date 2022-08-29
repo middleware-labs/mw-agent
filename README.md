@@ -3,6 +3,7 @@
 ## Project Structure
 ```text
 agent-host-go
+    ├───configyamls: Set of otel-config.yamls based on MELT_COLLECTION_TYPE filter
     ├───installables: Contains files required to install agent on Client system
     |       └───docker: Contains Docker deployable script
     |       └───apt: Contains files required to build APT package (Used in workflow)
