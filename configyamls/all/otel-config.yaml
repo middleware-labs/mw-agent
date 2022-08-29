@@ -10,7 +10,23 @@ receivers:
   hostmetrics:
     collection_interval: 5s
     scrapers:
-      process:
+      cpu:
+      load:
+        cpu_average: true
+      memory: {}
+      paging: {}
+      disk: {}
+      filesystem: {}
+      network: {}
+      processes: {}
+      process: {}
+
+  docker_stats:
+    endpoint: unix:///var/run/docker.sock
+    collection_interval: 2s
+    timeout: 20s
+    api_version: 1.24
+    provide_per_core_cpu_metrics: true
 
   # Read log files (Infra logs + APM logs)
   filelog:
@@ -22,12 +38,17 @@ receivers:
     endpoint: 0.0.0.0:8006
 
 processors:
+  # metrics
   resource:
     attributes:
     - key: mw.account_key
       action: insert
       value: ${MELT_API_KEY}
+    - key: host.id
+      from_attribute: host.name
+      action: upsert
 
+  # logs
   resource/2:
     attributes:
     - key: mw.account_key
@@ -36,6 +57,24 @@ processors:
     - key: service.name
       action: insert
       value: middleware-logs
+    - key: host.id
+      from_attribute: host.name
+      action: upsert
+
+  # traces
+  resource/3:
+    attributes:
+    - key: mw.account_key
+      action: insert
+      value: ${MELT_API_KEY}
+    - key: host.id
+      from_attribute: host.name
+      action: upsert
+
+  resourcedetection:
+    detectors: [ env, system, docker ]
+    timeout: 5s
+    override: false
 
 exporters:
   logging:
@@ -52,13 +91,13 @@ service:
   pipelines:
     metrics:
       receivers: [ hostmetrics, otlp ]
-      processors: [ resource ]
-      exporters: [ logging, otlp/2 ]
+      processors: [ resourcedetection, resource ]
+      exporters: [ otlp/2 ]
     logs:
       receivers: [ fluentforward, otlp ]
-      processors: [ resource/2 ]
-      exporters: [ logging, otlp/2 ]
+      processors: [ resourcedetection, resource/2 ]
+      exporters: [ otlp/2 ]
     traces:
       receivers: [ otlp ]
-      processors: [ resource ]
-      exporters: [ logging, otlp/2 ]
+      processors: [ resourcedetection, resource/3 ]
+      exporters: [ otlp/2 ]

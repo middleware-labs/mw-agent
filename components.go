@@ -6,7 +6,9 @@ import (
 	"log"
 	"os"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
@@ -35,6 +37,7 @@ func Components() (component.Factories, error) {
 		filelogreceiver.NewFactory(),
 		fluentforwardreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
+		dockerstatsreceiver.NewFactory(),
 	}...)
 	if err != nil {
 		return component.Factories{}, err
@@ -54,6 +57,7 @@ func Components() (component.Factories, error) {
 		batchprocessor.NewFactory(),
 		memorylimiterprocessor.NewFactory(),
 		resourceprocessor.NewFactory(),
+		resourcedetectionprocessor.NewFactory(),
 	}...)
 	if err != nil {
 		return component.Factories{}, err
