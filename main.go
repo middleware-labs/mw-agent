@@ -1,6 +1,7 @@
 package main
 
 import (
+	"collector-agent/package/utils"
 	"context"
 	"fmt"
 	"log"
@@ -38,7 +39,7 @@ func Try[T any](item T, err error) T {
 // air --build.cmd "go build -o /tmp/api-server /app/*.go" --build.bin "/tmp/api-server $*"
 func app() *cli.App {
 
-	InitializeEnv()
+	utils.InitializeEnv()
 
 	collectionType := os.Getenv("MELT_COLLECTION_TYPE")
 	configFile := filepath.Join("configyamls", collectionType, "otel-config.yaml")
