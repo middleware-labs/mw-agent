@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/urfave/cli/v2"
 	expandconverter "go.opentelemetry.io/collector/config/mapconverter/expandmapconverter"
@@ -37,13 +38,10 @@ func Try[T any](item T, err error) T {
 // air --build.cmd "go build -o /tmp/api-server /app/*.go" --build.bin "/tmp/api-server $*"
 func app() *cli.App {
 
-	collectionType := "all"
-	value, hasCollectionType := os.LookupEnv("MELT_COLLECTION_TYPE")
-	if hasCollectionType {
-		collectionType = value
-	}
-	configFile := ""
-	configFile = "configyamls/" + collectionType + "/otel-config.yaml"
+	InitializeEnv()
+
+	collectionType := os.Getenv("MELT_COLLECTION_TYPE")
+	configFile := filepath.Join("configyamls", collectionType, "otel-config.yaml")
 
 	return &cli.App{
 		Name:  "api-server",
