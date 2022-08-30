@@ -1,2 +1,1 @@
-main.go                 @dixudx
-components.go           @dixudx
+*.go         @dixudx
