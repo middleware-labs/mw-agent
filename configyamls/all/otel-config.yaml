@@ -90,7 +90,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [ hostmetrics, otlp ]
+      receivers: [ hostmetrics, docker_stats, otlp ]
       processors: [ resourcedetection, resource ]
       exporters: [ otlp/2 ]
     logs:
