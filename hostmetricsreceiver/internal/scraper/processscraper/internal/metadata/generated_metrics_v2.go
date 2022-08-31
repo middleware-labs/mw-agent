@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"math"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -24,6 +25,7 @@ type MetricsSettings struct {
 	ProcessDiskIoWrite         MetricSettings `mapstructure:"process.disk.io.write"`
 	ProcessMemoryPhysicalUsage MetricSettings `mapstructure:"process.memory.physical_usage"`
 	ProcessMemoryVirtualUsage  MetricSettings `mapstructure:"process.memory.virtual_usage"`
+	ProcessCPUPercent          MetricSettings `mapstructure:"process.cpu.percent"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
@@ -44,6 +46,9 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		ProcessMemoryVirtualUsage: MetricSettings{
+			Enabled: true,
+		},
+		ProcessCPUPercent: MetricSettings{
 			Enabled: true,
 		},
 	}
@@ -103,6 +108,59 @@ var MapAttributeState = map[string]AttributeState{
 	"system": AttributeStateSystem,
 	"user":   AttributeStateUser,
 	"wait":   AttributeStateWait,
+}
+
+/////
+
+type metricProcessCPUPercent struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+func (m *metricProcessCPUPercent) init() {
+	m.data.SetName("process.cpu.percent")
+	m.data.SetDescription("How many percent of the CPU time this process uses")
+	m.data.SetUnit("s")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricProcessCPUPercent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, stateAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleVal(math.Round(val*100) / 100)
+	dp.Attributes().Insert("state", pcommon.NewValueString(stateAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricProcessCPUPercent) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricProcessCPUPercent) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+func newMetricProcessCPUPercent(settings MetricSettings) metricProcessCPUPercent {
+	m := metricProcessCPUPercent{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
 }
 
 type metricProcessCPUTime struct {
@@ -429,6 +487,7 @@ type MetricsBuilder struct {
 	metricProcessDiskIoWrite         metricProcessDiskIoWrite
 	metricProcessMemoryPhysicalUsage metricProcessMemoryPhysicalUsage
 	metricProcessMemoryVirtualUsage  metricProcessMemoryVirtualUsage
+	metricProcessCPUPercent          metricProcessCPUPercent
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -452,6 +511,7 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricProcessDiskIoWrite:         newMetricProcessDiskIoWrite(settings.ProcessDiskIoWrite),
 		metricProcessMemoryPhysicalUsage: newMetricProcessMemoryPhysicalUsage(settings.ProcessMemoryPhysicalUsage),
 		metricProcessMemoryVirtualUsage:  newMetricProcessMemoryVirtualUsage(settings.ProcessMemoryVirtualUsage),
+		metricProcessCPUPercent:          newMetricProcessCPUPercent(settings.ProcessCPUPercent),
 	}
 	for _, op := range options {
 		op(mb)
@@ -559,6 +619,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricProcessDiskIoWrite.emit(ils.Metrics())
 	mb.metricProcessMemoryPhysicalUsage.emit(ils.Metrics())
 	mb.metricProcessMemoryVirtualUsage.emit(ils.Metrics())
+	mb.metricProcessCPUPercent.emit(ils.Metrics())
 	for _, op := range rmo {
 		op(rm)
 	}
@@ -576,6 +637,10 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	mb.metricsBuffer.MoveTo(metrics)
 	return metrics
+}
+
+func (mb *MetricsBuilder) RecordProcessCPUPercentDataPoint(ts pcommon.Timestamp, val float64, stateAttributeValue AttributeState) {
+	mb.metricProcessCPUPercent.recordDataPoint(mb.startTime, ts, val, stateAttributeValue.String())
 }
 
 // RecordProcessCPUTimeDataPoint adds a data point to process.cpu.time metric.

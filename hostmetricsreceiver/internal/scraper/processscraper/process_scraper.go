@@ -20,15 +20,13 @@ import (
 	"fmt"
 	"time"
 
+	"collector-agent/hostmetricsreceiver/coreinternal/processor/filterset"
+	"collector-agent/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 	"github.com/shirou/gopsutil/v3/host"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.opentelemetry.io/collector/service/featuregate"
-
-	"collector-agent/hostmetricsreceiver/coreinternal/processor/filterset"
-	"collector-agent/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
 
 const (
@@ -100,9 +98,12 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 	for _, md := range data {
 		now := pcommon.NewTimestampFromTime(time.Now())
-
 		if err = s.scrapeAndAppendCPUTimeMetric(now, md.handle); err != nil {
 			errs.AddPartial(cpuMetricsLen, fmt.Errorf("error reading cpu times for process %q (pid %v): %w", md.executable.name, md.pid, err))
+		}
+
+		if err = s.scrapeAndAppendCPUPercentMetric(now, md.pid); err != nil {
+			errs.AddPartial(cpuMetricsLen, fmt.Errorf("error reading cpu percent for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
 		if err = s.scrapeAndAppendMemoryUsageMetrics(now, md.handle); err != nil {
@@ -160,7 +161,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 			errs.AddPartial(0, fmt.Errorf("error reading username for process %q (pid %v): %w", executable.name, pid, err))
 		}
 
-		createTime,err := handle.CreateTime()
+		createTime, err := handle.CreateTime()
 		if err != nil {
 			errs.AddPartial(0, fmt.Errorf("error reading createTime"))
 		}
@@ -171,7 +172,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 			command:    command,
 			username:   username,
 			handle:     handle,
-			createTime:createTime,
+			createTime: createTime,
 		}
 
 		data = append(data, md)
@@ -187,6 +188,11 @@ func (s *scraper) scrapeAndAppendCPUTimeMetric(now pcommon.Timestamp, handle pro
 	}
 
 	s.recordCPUTimeMetric(now, times)
+	return nil
+}
+
+func (s *scraper) scrapeAndAppendCPUPercentMetric(now pcommon.Timestamp, pid int32) error {
+	s.recordCPUPercentMetric(now, pid)
 	return nil
 }
 
@@ -207,12 +213,8 @@ func (s *scraper) scrapeAndAppendDiskIOMetric(now pcommon.Timestamp, handle proc
 		return err
 	}
 
-	if featuregate.GetRegistry().IsEnabled(removeDirectionAttributeFeatureGateID) {
-		s.mb.RecordProcessDiskIoReadDataPoint(now, int64(io.ReadBytes))
-		s.mb.RecordProcessDiskIoWriteDataPoint(now, int64(io.WriteBytes))
-	} else {
-		s.mb.RecordProcessDiskIoDataPoint(now, int64(io.ReadBytes), metadata.AttributeDirectionRead)
-		s.mb.RecordProcessDiskIoDataPoint(now, int64(io.WriteBytes), metadata.AttributeDirectionWrite)
-	}
+	s.mb.RecordProcessDiskIoReadDataPoint(now, int64(io.ReadBytes))
+	s.mb.RecordProcessDiskIoWriteDataPoint(now, int64(io.WriteBytes))
+
 	return nil
 }

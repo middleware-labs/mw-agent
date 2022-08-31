@@ -24,6 +24,8 @@ import (
 
 func (s *scraper) recordCPUTimeMetric(now pcommon.Timestamp, cpuTime *cpu.TimesStat) {}
 
+func (s *scraper) recordCPUPercentMetric(now pcommon.Timestamp, pid int32) {}
+
 func getProcessExecutable(processHandle) (*executableMetadata, error) {
 	return nil, nil
 }

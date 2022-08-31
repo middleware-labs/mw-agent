@@ -19,6 +19,7 @@ package processscraper // import "collector-agent/hostmetricsreceiver/internal/s
 
 import (
 	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"collector-agent/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
@@ -28,6 +29,12 @@ func (s *scraper) recordCPUTimeMetric(now pcommon.Timestamp, cpuTime *cpu.TimesS
 	s.mb.RecordProcessCPUTimeDataPoint(now, cpuTime.User, metadata.AttributeStateUser)
 	s.mb.RecordProcessCPUTimeDataPoint(now, cpuTime.System, metadata.AttributeStateSystem)
 	s.mb.RecordProcessCPUTimeDataPoint(now, cpuTime.Iowait, metadata.AttributeStateWait)
+}
+
+func (s *scraper) recordCPUPercentMetric(now pcommon.Timestamp, pid int32) {
+	p := process.Process{Pid: pid}
+	cpuPercent, _ := p.CPUPercent()
+	s.mb.RecordProcessCPUPercentDataPoint(now, cpuPercent, metadata.AttributeStateUser)
 }
 
 func getProcessExecutable(proc processHandle) (*executableMetadata, error) {
