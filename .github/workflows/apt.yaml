@@ -152,4 +152,4 @@ jobs:
         rm -rf example/generate-release.sh
         rm -rf example/melt-agent_$RELEASE_VERSION-1_all
         rm -rf example/melt-agent_$RELEASE_VERSION-1_all.deb
-        aws s3 sync example/ s3://host.melt.so
+        aws s3 sync example/ host.middleware.io

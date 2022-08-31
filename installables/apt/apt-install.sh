@@ -10,19 +10,19 @@ fi
 # Adding APT repo address & public key to system
 sudo mkdir -p /usr/local/bin/melt-go-agent/apt
 sudo touch /usr/local/bin/melt-go-agent/apt/pgp-key-$MELT_VERSION.public
-sudo wget -O /usr/local/bin/melt-go-agent/apt/pgp-key-$MELT_VERSION.public https://host.melt.so/public-keys/pgp-key-$MELT_VERSION.public
+sudo wget -O /usr/local/bin/melt-go-agent/apt/pgp-key-$MELT_VERSION.public https://host.middleware.io/public-keys/pgp-key-$MELT_VERSION.public
 sudo touch /etc/apt/sources.list.d/melt-go.list
 
 sudo mkdir -p /usr/bin/configyamls/all
-sudo wget -O /usr/bin/configyamls/all/otel-config.yaml https://host.melt.so/configyamls/all/otel-config.yaml
+sudo wget -O /usr/bin/configyamls/all/otel-config.yaml https://host.middleware.io/configyamls/all/otel-config.yaml
 sudo mkdir -p /usr/bin/configyamls/metrics
-sudo wget -O /usr/bin/configyamls/metrics/otel-config.yaml https://host.melt.so/configyamls/metrics/otel-config.yaml
+sudo wget -O /usr/bin/configyamls/metrics/otel-config.yaml https://host.middleware.io/configyamls/metrics/otel-config.yaml
 sudo mkdir -p /usr/bin/configyamls/traces
-sudo wget -O /usr/bin/configyamls/traces/otel-config.yaml https://host.melt.so/configyamls/traces/otel-config.yaml
+sudo wget -O /usr/bin/configyamls/traces/otel-config.yaml https://host.middleware.io/configyamls/traces/otel-config.yaml
 sudo mkdir -p /usr/bin/configyamls/logs
-sudo wget -O /usr/bin/configyamls/logs/otel-config.yaml https://host.melt.so/configyamls/logs/otel-config.yaml
+sudo wget -O /usr/bin/configyamls/logs/otel-config.yaml https://host.middleware.io/configyamls/logs/otel-config.yaml
 
-echo "deb [arch=all signed-by=/usr/local/bin/melt-go-agent/apt/pgp-key-$MELT_VERSION.public] https://host.melt.so/repos/$MELT_VERSION/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/melt-go.list
+echo "deb [arch=all signed-by=/usr/local/bin/melt-go-agent/apt/pgp-key-$MELT_VERSION.public] https://host.middleware.io/repos/$MELT_VERSION/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/melt-go.list
 
 # Updating apt list on system
 sudo apt-get update -o Dir::Etc::sourcelist="sources.list.d/melt-go.list" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0"
@@ -90,7 +90,7 @@ sudo mkdir -p /usr/local/bin/melt-go-agent/apt/cron
 sudo touch /usr/local/bin/melt-go-agent/apt/cron/melt-go.log
 
 sudo crontab -l > cron_bkp
-sudo echo "*/5 * * * * (wget -O /usr/local/bin/melt-go-agent/apt/pgp-key-$MELT_VERSION.public https://host.melt.so/public-keys/pgp-key-$MELT_VERSION.public && sudo apt-get update -o Dir::Etc::sourcelist='sources.list.d/melt-go.list' -o Dir::Etc::sourceparts='-' -o APT::Get::List-Cleanup='0' && sudo apt-get install --only-upgrade telemetry-agent-host && sudo systemctl restart meltgoservice) >> /usr/local/bin/melt-go-agent/apt/cron/melt.log 2>&1 >> /usr/local/bin/melt-go-agent/apt/cron/melt.log" >> cron_bkp
+sudo echo "*/5 * * * * (wget -O /usr/local/bin/melt-go-agent/apt/pgp-key-$MELT_VERSION.public https://host.middleware.io/public-keys/pgp-key-$MELT_VERSION.public && sudo apt-get update -o Dir::Etc::sourcelist='sources.list.d/melt-go.list' -o Dir::Etc::sourceparts='-' -o APT::Get::List-Cleanup='0' && sudo apt-get install --only-upgrade telemetry-agent-host && sudo systemctl restart meltgoservice) >> /usr/local/bin/melt-go-agent/apt/cron/melt.log 2>&1 >> /usr/local/bin/melt-go-agent/apt/cron/melt.log" >> cron_bkp
 sudo crontab cron_bkp
 sudo rm cron_bkp
 
