@@ -19,7 +19,8 @@ receivers:
       # filesystem: {}
       # network: {}
       # processes: {}
-      process: {}
+      process:
+        mute_process_name_error: true
 
   docker_stats:
     endpoint: unix:///var/run/docker.sock
@@ -101,3 +102,6 @@ service:
       receivers: [ otlp ]
       processors: [ resourcedetection, resource/3 ]
       exporters: [ otlp/2 ]
+  telemetry:
+    logs:
+      level: debug
