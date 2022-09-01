@@ -37,9 +37,9 @@ sudo su << EOSUDO
 
 
 # Running Agent as a Daemon Service
-touch /etc/systemd/system/meltservice.service
+touch /etc/systemd/system/mwservice.service
 
-cat << EOF > /etc/systemd/system/meltservice.service
+cat << EOF > /etc/systemd/system/mwservice.service
 [Unit]
 Description=Melt daemon!
 [Service]
@@ -77,10 +77,10 @@ chmod 777 /usr/local/bin/mw-go-agent/apt/executable
 EOSUDO
 
 sudo systemctl daemon-reload
-sudo systemctl enable meltservice
+sudo systemctl enable mwservice
 
 if [ "${MW_AUTO_START}" = true ]; then	
-    sudo systemctl start meltservice
+    sudo systemctl start mwservice
 fi
 
 
@@ -90,7 +90,7 @@ sudo mkdir -p /usr/local/bin/mw-go-agent/apt/cron
 sudo touch /usr/local/bin/mw-go-agent/apt/cron/mw-go.log
 
 sudo crontab -l > cron_bkp
-sudo echo "*/5 * * * * (wget -O /usr/local/bin/mw-go-agent/apt/pgp-key-$MW_VERSION.public https://host.middleware.io/public-keys/pgp-key-$MW_VERSION.public && sudo apt-get update -o Dir::Etc::sourcelist='sources.list.d/mw-go.list' -o Dir::Etc::sourceparts='-' -o APT::Get::List-Cleanup='0' && sudo apt-get install --only-upgrade telemetry-agent-host && sudo systemctl restart meltservice) >> /usr/local/bin/mw-go-agent/apt/cron/melt.log 2>&1 >> /usr/local/bin/mw-go-agent/apt/cron/melt.log" >> cron_bkp
+sudo echo "*/5 * * * * (wget -O /usr/local/bin/mw-go-agent/apt/pgp-key-$MW_VERSION.public https://host.middleware.io/public-keys/pgp-key-$MW_VERSION.public && sudo apt-get update -o Dir::Etc::sourcelist='sources.list.d/mw-go.list' -o Dir::Etc::sourceparts='-' -o APT::Get::List-Cleanup='0' && sudo apt-get install --only-upgrade telemetry-agent-host && sudo systemctl restart mwservice) >> /usr/local/bin/mw-go-agent/apt/cron/melt.log 2>&1 >> /usr/local/bin/mw-go-agent/apt/cron/melt.log" >> cron_bkp
 sudo crontab cron_bkp
 sudo rm cron_bkp
 
@@ -116,6 +116,6 @@ echo '
     |                └─── mw-go.list: Contains the APT repo entry
     └─── systemd
            └───system
-                └─── meltservice.service: Service Entry for Melt Agent
+                └─── mwservice.service: Service Entry for Melt Agent
 '
 EOSUDO
