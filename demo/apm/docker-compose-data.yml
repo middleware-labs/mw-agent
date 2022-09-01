@@ -2,15 +2,15 @@ version: "3.4"
 
 services:  
   # Host Agent : Metrics (hostreceivermetrics) + Traces (forwarded via OTLP) + Logs (filelogreceiver)
-  melt-agent-host-go:
-    container_name: melt-agent-host-go
+  mw-agent-host-go:
+    container_name: mw-agent-host-go
     image: ghcr.io/middleware-labs/agent-host-go:dev
     command: api-server start
     restart: always
     pid: host
     environment:
       TARGET: host.docker.internal:4317 
-      MELT_API_KEY: ox83a2gqhp5d8jm03op38c6byy79xrc4ffmx
+      MW_API_KEY: ox83a2gqhp5d8jm03op38c6byy79xrc4ffmx
     ports:
       - 4320:4320
       - 4321:4321
@@ -37,10 +37,10 @@ services:
     image: ghcr.io/middleware-labs/agent-node-apm:pkg
     command: node server.js
     environment:
-      MELT_AUTOGENERATE_TRACING_DATA: "true"
-      OTEL_EXPORTER_OTLP_ENDPOINT: melt-agent-host-go:4320    # sends data to host agent
-      # MELT_APM_PAUSE_METRICS: "true"                      # if you want to PAUSE metrics data
-      # MELT_APM_PAUSE_TRACES: "true"                       # if you want to PAUSE traces data
+      MW_AUTOGENERATE_TRACING_DATA: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: mw-agent-host-go:4320    # sends data to host agent
+      # MW_APM_PAUSE_METRICS: "true"                      # if you want to PAUSE metrics data
+      # MW_APM_PAUSE_TRACES: "true"                       # if you want to PAUSE traces data
     depends_on:
       - mysql
     ports:

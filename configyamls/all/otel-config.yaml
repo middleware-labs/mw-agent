@@ -44,7 +44,7 @@ processors:
     attributes:
     - key: mw.account_key
       action: insert
-      value: ${MELT_API_KEY}
+      value: ${MW_API_KEY}
     - key: host.id
       from_attribute: host.name
       action: upsert
@@ -54,7 +54,7 @@ processors:
     attributes:
     - key: mw.account_key
       action: insert
-      value: ${MELT_API_KEY}
+      value: ${MW_API_KEY}
     - key: service.name
       action: insert
       value: middleware-logs
@@ -67,7 +67,7 @@ processors:
     attributes:
     - key: mw.account_key
       action: insert
-      value: ${MELT_API_KEY}
+      value: ${MW_API_KEY}
     - key: host.id
       from_attribute: host.name
       action: upsert
@@ -86,7 +86,7 @@ exporters:
       insecure: true
       insecure_skip_verify: true
     headers:
-      authorization: ${MELT_API_KEY}
+      authorization: ${MW_API_KEY}
 
 service:
   pipelines:

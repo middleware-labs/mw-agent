@@ -2,7 +2,7 @@ const http = require('http');
 var request = require('request');
 
 
-if (process.env.MELT_AUTOGENERATE_TRACING_DATA) {
+if (process.env.MW_AUTOGENERATE_TRACING_DATA) {
     setTimeout(() => {}, 5000);
 
     setInterval(()=>{

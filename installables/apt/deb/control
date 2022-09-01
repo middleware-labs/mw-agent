@@ -1,4 +1,4 @@
-Package: melt-go-agent-host
+Package: mw-go-agent-host
 Version: 0.0.5
 Maintainer: example <example@example.com>
 Depends: libc6

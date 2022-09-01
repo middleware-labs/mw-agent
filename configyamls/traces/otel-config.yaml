@@ -11,7 +11,7 @@ processors:
     attributes:
     - key: mw.account_key
       action: insert
-      value: ${MELT_API_KEY}
+      value: ${MW_API_KEY}
 
 exporters:
   logging:
@@ -21,7 +21,7 @@ exporters:
     tls:
       insecure: true
     headers:
-      authorization: ${MELT_API_KEY}
+      authorization: ${MW_API_KEY}
 
 service:
   pipelines:

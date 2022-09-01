@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "@fluent-org/logger": "^1.0.9",
-    "@middlewarelabs-devs/melt-node-metrics": "^2.0.0",
+    "@middlewarelabs-devs/mw-node-metrics": "^2.0.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "fluent-logger": "^3.4.1",

@@ -1,6 +1,6 @@
 var winston = require('winston');
 var config = {
-  host: process.env.MELT_LOGS_TARGET,
+  host: process.env.MW_LOGS_TARGET,
   port: 8006,
   timeout: 3.0,
   requireAckResponse: true // Add this option to wait response from Fluentd certainly

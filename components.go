@@ -24,7 +24,7 @@ func Components() (component.Factories, error) {
 	factories := component.Factories{}
 	log.Println("factories.Extensions XXXXXXXX233 setup......")
 	log.Println("TARGET ===> ", os.Getenv("TARGET"))
-	log.Println("MELT_API_KEY ===> ", os.Getenv("MELT_API_KEY"))
+	log.Println("MW_API_KEY ===> ", os.Getenv("MW_API_KEY"))
 	factories.Extensions, err = component.MakeExtensionFactoryMap(
 	// frontend.NewAuthFactory(),
 	)

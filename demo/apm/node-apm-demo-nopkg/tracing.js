@@ -14,7 +14,7 @@ const {OTLPTraceExporter} = require('@opentelemetry/exporter-trace-otlp-grpc');
 
 let meta = new Metadata();
 meta.add('client', '5d03c-integration1');
-meta.add('authorization', process.env.MELT_API_KEY);
+meta.add('authorization', process.env.MW_API_KEY);
 
 // Traces.... 
 const sdk = new opentelemetry.NodeSDK({

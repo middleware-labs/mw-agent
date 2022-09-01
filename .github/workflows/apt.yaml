@@ -10,7 +10,7 @@ on:
 
 env:
   ARCH: all
-  BINARY_SOURCE: release/melt-go-agent-host
+  BINARY_SOURCE: release/mw-go-agent-host
   RELEASE_VERSION: 0.0.4
 
 jobs:
@@ -28,8 +28,8 @@ jobs:
 
     - name: Creating Required Folder Structure
       run: |
-        mkdir -p example/melt-agent_$RELEASE_VERSION-1_all/usr/bin
-        mkdir -p example/melt-agent_$RELEASE_VERSION-1_all/DEBIAN
+        mkdir -p example/mw-agent_$RELEASE_VERSION-1_all/usr/bin
+        mkdir -p example/mw-agent_$RELEASE_VERSION-1_all/DEBIAN
         mkdir -p example/repos/$RELEASE_VERSION/apt-repo/pool/main/
         mkdir -p example/repos/$RELEASE_VERSION/apt-repo/dists/stable/main/binary-$ARCH
 
@@ -44,21 +44,21 @@ jobs:
 
     - name: Copying Code Binary into target location
       run: |
-          cp $BINARY_SOURCE example/melt-agent_$RELEASE_VERSION-1_all/usr/bin/.
+          cp $BINARY_SOURCE example/mw-agent_$RELEASE_VERSION-1_all/usr/bin/.
 
     - name: Creating Control File
       run: |
-          cp installables/apt/deb/control example/melt-agent_$RELEASE_VERSION-1_all/DEBIAN/control
+          cp installables/apt/deb/control example/mw-agent_$RELEASE_VERSION-1_all/DEBIAN/control
 
     - name: Creating DEB package
       run: |
-          dpkg --build example/melt-agent_$RELEASE_VERSION-1_all
-          dpkg-deb --info example/melt-agent_$RELEASE_VERSION-1_all.deb
-          dpkg-deb --contents example/melt-agent_$RELEASE_VERSION-1_all.deb
+          dpkg --build example/mw-agent_$RELEASE_VERSION-1_all
+          dpkg-deb --info example/mw-agent_$RELEASE_VERSION-1_all.deb
+          dpkg-deb --contents example/mw-agent_$RELEASE_VERSION-1_all.deb
 
     - name: Creating APT Repo structure & Adding DEB into it
       run: |
-          cp example/melt-agent_$RELEASE_VERSION-1_all.deb example/repos/$RELEASE_VERSION/apt-repo/pool/main/.
+          cp example/mw-agent_$RELEASE_VERSION-1_all.deb example/repos/$RELEASE_VERSION/apt-repo/pool/main/.
 
     - name: Building Packages along with compressed version
       run: |  
@@ -150,6 +150,6 @@ jobs:
         cp configyamls/all/otel-config.yaml example/otel-config.yaml
         rm -rf example/pgpkeys-*
         rm -rf example/generate-release.sh
-        rm -rf example/melt-agent_$RELEASE_VERSION-1_all
-        rm -rf example/melt-agent_$RELEASE_VERSION-1_all.deb
+        rm -rf example/mw-agent_$RELEASE_VERSION-1_all
+        rm -rf example/mw-agent_$RELEASE_VERSION-1_all.deb
         aws s3 sync example/ host.middleware.io

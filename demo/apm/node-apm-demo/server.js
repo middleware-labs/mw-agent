@@ -1,4 +1,4 @@
-const tracker = require('@middlewarelabs-devs/melt-node-metrics')
+const tracker = require('@middlewarelabs-devs/mw-node-metrics')
 tracker.track()
 
 const express = require('express');
@@ -31,7 +31,7 @@ app.listen(port, () => {
 require("./app/routes/tutorial.routes.js")(app);
 require("./tracingloop")
 
-if (!process.env.MELT_APM_PAUSE_LOGS) {
+if (!process.env.MW_APM_PAUSE_LOGS) {
     require("./fluent")
     require("./fluent-winston")
 }
