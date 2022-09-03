@@ -19,7 +19,7 @@ metrics:
     attributes: [state]
 
   system.memory.utilization:
-    enabled: false
+    enabled: true
     description: Percentage of memory bytes in use.
     unit: 1
     gauge:
