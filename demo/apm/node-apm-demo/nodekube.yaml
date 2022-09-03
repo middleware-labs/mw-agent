@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: nodeapp
+  name: nodeapp
+spec:
+  selector:
+    matchLabels:
+      io.kompose.service: nodeapp
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: nodeapp
+    spec:
+      containers:
+        ports:
+          - containerPort: 3002
+        - command: 
+          - node server.js
+          image: ghcr.io/middleware-labs/agent-node-apm:new
+          imagePullPolicy: Always
+          name: nodeapp
+          env:
+            - name: MW_AUTOGENERATE_TRACING_DATA
+              value: true
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: mw-service.mw-agent-ns.svc.cluster.local
+          resources: {}
+      restartPolicy: Always
+      serviceAccountName: telemetry-app
