@@ -28,7 +28,7 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		SystemMemoryUtilization: MetricSettings{
-			Enabled: false,
+			Enabled: true,
 		},
 	}
 }
