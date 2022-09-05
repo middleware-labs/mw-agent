@@ -5,7 +5,7 @@ on:
     #  - 'main'
     #  - 'releases/**'
     #  - 'stage'
-     - 'dev'
+     - 'master'
 
 jobs:
   push_to_docker_registry:
