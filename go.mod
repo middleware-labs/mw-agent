@@ -160,3 +160,5 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib => github.com/middleware-labs/opentelemetry-collector-contrib v0.0.0-20220904175421-35035099b418
