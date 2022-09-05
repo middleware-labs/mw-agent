@@ -6,17 +6,15 @@ import (
 	"log"
 	"os"
 
+	"github.com/prometheus/common/version"
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
-	expandconverter "go.opentelemetry.io/collector/config/mapconverter/expandmapconverter"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	expandconverter "go.opentelemetry.io/collector/confmap/converter/expandconverter"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
-
-	// "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
-	"github.com/prometheus/common/version"
-	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service"
 	"go.uber.org/zap"
 )
@@ -56,15 +54,17 @@ func app() *cli.App {
 				Action: func(c *cli.Context) error {
 
 					configProvider, err := service.NewConfigProvider(service.ConfigProviderSettings{
-						Locations: []string{configFile},
-						MapProviders: map[string]confmap.Provider{
-							"file": fileprovider.New(),
-							"yaml": yamlprovider.New(),
-							"env":  envprovider.New(),
-						},
-						MapConverters: []confmap.Converter{
-							expandconverter.New(),
-							//overwritepropertiesconverter.New(getSetFlag()),
+						ResolverSettings: confmap.ResolverSettings{
+							Providers: map[string]confmap.Provider{
+								"file": fileprovider.New(),
+								"yaml": yamlprovider.New(),
+								"env":  envprovider.New(),
+							},
+							Converters: []confmap.Converter{
+								expandconverter.New(),
+								//overwritepropertiesconverter.New(getSetFlag()),
+							},
+							URIs: []string{configFile},
 						},
 					})
 					if err != nil {
