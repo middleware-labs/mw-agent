@@ -1,0 +1,71 @@
+name: reviewdog
+on:
+  push:
+    branches:
+      - 'dev'
+  pull_request:
+jobs:
+  reviewdog:
+    name: reviewdog
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "1.18.0"
+
+      - name: Install Linters & Tools
+        run: |
+          echo '::group::🐶 Installing golangci-lint...'
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.49.0
+          golangci-lint --version
+          echo '::endgroup::'
+          
+          echo '::group::🐶 Installing staticcheck...'
+          go install honnef.co/go/tools/cmd/staticcheck@v0.3.3
+          staticcheck -version
+          echo '::endgroup::'
+          
+          echo '::group::🐶 Installing reviewdog...'
+          curl -sfL https://raw.githubusercontent.com/reviewdog/reviewdog/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v0.14.1
+          reviewdog -version
+          echo '::endgroup::'
+      - name: Run Checks
+        env:
+          MW_APP_APPID: ${{ secrets.MW_APP_APPID }}
+          MW_APP_INSTALL_ID: ${{ secrets.MW_APP_INSTALL_ID }}
+          MW_APP_KEY: ${{ secrets.MW_APP_KEY }}
+        run: |
+          
+          
+          MW_APP_KEY=`cat key.pem`
+          
+          echo '::group::🐶 Init...'
+          curl -L https://github.com/mike-engel/jwt-cli/releases/download/5.0.3/jwt-linux.tar.gz |  tar -xz  -C $(go env GOPATH)/bin
+          echo $MW_APP_KEY>key.pem
+          cat key.pem
+          echo $MW_APP_APPID
+          AJWT=`jwt encode --alg RS256 --exp "+60 sec" --iss $MW_APP_APPID --secret=$MW_APP_KEY`
+          echo $AJWT
+          REVIEWDOG_GITHUB_API_TOKEN=`curl  -s -X POST -H "Authorization: Bearer $AJWT" -H "Accept: application/vnd.github+json" https://api.github.com/app/installations/$MW_APP_INSTALL_ID/access_tokens  | grep -Eo 'ghs_[^\"]*'`
+          rm key.pem
+          echo $REVIEWDOG_GITHUB_API_TOKEN
+          echo '::endgroup::'
+                                            
+          echo '::group::🐶 Testing govet...'
+          reviewdog -reporter=github-pr-review -runners=govet -fail-on-error=true
+          echo '::endgroup::'
+          
+          echo '::group::🐶 Testing golangci-lint...'
+          reviewdog -reporter=github-pr-review -runners=golangci-lint -fail-on-error=true --filter-mode=nofilter
+          echo '::endgroup::'
+         
+          
+          echo '::group::🐶 Testing staticcheck...'
+          staticcheck -f=json ./... | jq -f ".github/workflows/to-rdjsonl.jq" -c | reviewdog -f="rdjsonl" -name="staticcheck"  -reporter=github-pr-review -fail-on-error=false         
+          echo '::endgroup::'
+      - name: Test
+        uses: robherley/go-test-action@v0.1.0
