@@ -2,8 +2,8 @@ name: Build & Push Go APT Package
 
 on:
   push:
-    # branches:
-    #   - 'dev'
+    branches:
+      - 'dev'
 
     tags:
       - 'apt*'
