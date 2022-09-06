@@ -394,8 +394,8 @@ github.com/mattn/go-runewidth v0.0.8/go.mod h1:H031xJmbD/WCDINGzjvQ9THkh0rPKHF+m
 github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
 github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 h1:I0XW9+e1XWDxdcEniV4rQAIOPUGDq67JSCiRCgGCZLI=
 github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369/go.mod h1:BSXmuO+STAnVfrANrmjBb36TMTDstsz7MSK+HVaYKv4=
-github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.0.0-20220906100650-c573a655bd51 h1:cfneiod/RDH22gZl13ZUz50lsIflSXiFMNLxix00ImA=
-github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.0.0-20220906100650-c573a655bd51/go.mod h1:VgnuGLszutWVWNYo5FaIxckgEXC0MB//D0Fddys13BQ=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.0.0-20220906132226-1b5283d6c0c7 h1:5gB9HVyUa/Yohdnd6hXT9F5v/l+p1NY+BRMGnVaQpwk=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.0.0-20220906132226-1b5283d6c0c7/go.mod h1:VgnuGLszutWVWNYo5FaIxckgEXC0MB//D0Fddys13BQ=
 github.com/miekg/dns v1.1.26/go.mod h1:bPDLeHnStXmXAq1m/Ch/hvfNHr14JKNPMBo3VZKjuso=
 github.com/miekg/dns v1.1.41 h1:WMszZWJG0XmzbK9FEmzH2TVcqYzFesusSIB41b8KHxY=
 github.com/miekg/dns v1.1.41/go.mod h1:p6aan82bvRIyn+zDIv9xYNUpwa73JcSh9BKwknJysuI=
