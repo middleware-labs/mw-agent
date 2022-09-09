@@ -1,6 +1,7 @@
 #!/bin/bash
-MW_LATEST_VERSION=0.0.5
+MW_LATEST_VERSION=0.0.7
 export MW_LATEST_VERSION
+export MW_AUTO_START=true
 
 if [ "${MW_VERSION}" = "" ]; then 
   MW_VERSION=$MW_LATEST_VERSION
@@ -60,14 +61,14 @@ if [ ! "${TARGET}" = "" ]; then
 
 cat << EOIF > /usr/local/bin/mw-go-agent/apt/executable
 #!/bin/sh
-MW_API_KEY=$MW_API_KEY TARGET=$TARGET mw-go-agent-host start
+cd /usr/bin && MW_API_KEY=$MW_API_KEY TARGET=$TARGET mw-go-agent-host start
 EOIF
 
 else 
 
 cat << EOELSE > /usr/local/bin/mw-go-agent/apt/executable
 #!/bin/sh
-MW_API_KEY=$MW_API_KEY mw-go-agent-host start
+cd /usr/bin && MW_API_KEY=$MW_API_KEY mw-go-agent-host start
 EOELSE
 
 fi

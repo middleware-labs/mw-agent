@@ -11,7 +11,7 @@ on:
 env:
   ARCH: all
   BINARY_SOURCE: release/mw-go-agent-host
-  RELEASE_VERSION: 0.0.4
+  RELEASE_VERSION: 0.0.7
 
 jobs:
   build:
@@ -145,11 +145,11 @@ jobs:
       run: |
         mkdir -p example/scripts
         mkdir -p example/configyamls
-        cp -r configyamls example/configyamls
+        cp -r configyamls example
         cp installables/apt/apt-install.sh example/scripts/apt-install.sh
         cp configyamls/all/otel-config.yaml example/otel-config.yaml
         rm -rf example/pgpkeys-*
         rm -rf example/generate-release.sh
         rm -rf example/mw-agent_$RELEASE_VERSION-1_all
         rm -rf example/mw-agent_$RELEASE_VERSION-1_all.deb
-        aws s3 sync example/ host.middleware.io
+        aws s3 sync example host.middleware.io
