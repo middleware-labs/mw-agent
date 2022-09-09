@@ -394,6 +394,8 @@ github.com/mattn/go-runewidth v0.0.8/go.mod h1:H031xJmbD/WCDINGzjvQ9THkh0rPKHF+m
 github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
 github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 h1:I0XW9+e1XWDxdcEniV4rQAIOPUGDq67JSCiRCgGCZLI=
 github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369/go.mod h1:BSXmuO+STAnVfrANrmjBb36TMTDstsz7MSK+HVaYKv4=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.0.0-20220909053630-db221748baf3 h1:413+xVhN8LgvkuO/uAz13+szA/hZOzbbPLgp2IGGHxo=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.0.0-20220909053630-db221748baf3/go.mod h1:p1Y9xkfJMZKinznwrrWpme/Y56SCGL2wX7eDm63FazQ=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.0.0-20220909053630-db221748baf3 h1:dlAhPR9oDajtxsIe12IxoqmejsXxK+BFAY5+K5xEcHM=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.0.0-20220909053630-db221748baf3/go.mod h1:VgnuGLszutWVWNYo5FaIxckgEXC0MB//D0Fddys13BQ=
 github.com/miekg/dns v1.1.26/go.mod h1:bPDLeHnStXmXAq1m/Ch/hvfNHr14JKNPMBo3VZKjuso=
@@ -464,8 +466,6 @@ github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsre
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.59.0/go.mod h1:6psFMRN+1zPyBTMcNV8wlDP6UCQFJJGwgR0JLbzfGrw=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.59.0 h1:icn0oqjnrasefIY96hS5sAH7MW7xG4BSjMslcrGE1P4=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.59.0/go.mod h1:hF1IhnT2l0h2WbCaJwqkbq4E4Q74PXsY5ZZrSrBQ/wE=
-github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.59.0 h1:SzIFDqQDlXWul44ebIwvp/BuYqbAYsG3NaTfMwQFLHs=
-github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.59.0/go.mod h1:p1Y9xkfJMZKinznwrrWpme/Y56SCGL2wX7eDm63FazQ=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.0.2 h1:9yCKha/T5XdGtO0q9Q9a6T5NUCsTn/DrBg0D7ufOcFM=
