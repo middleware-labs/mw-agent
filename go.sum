@@ -394,10 +394,12 @@ github.com/mattn/go-runewidth v0.0.8/go.mod h1:H031xJmbD/WCDINGzjvQ9THkh0rPKHF+m
 github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
 github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 h1:I0XW9+e1XWDxdcEniV4rQAIOPUGDq67JSCiRCgGCZLI=
 github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369/go.mod h1:BSXmuO+STAnVfrANrmjBb36TMTDstsz7MSK+HVaYKv4=
-github.com/middleware-labs/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.0.0-20220909053630-db221748baf3 h1:413+xVhN8LgvkuO/uAz13+szA/hZOzbbPLgp2IGGHxo=
-github.com/middleware-labs/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.0.0-20220909053630-db221748baf3/go.mod h1:p1Y9xkfJMZKinznwrrWpme/Y56SCGL2wX7eDm63FazQ=
-github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.0.0-20220909053630-db221748baf3 h1:dlAhPR9oDajtxsIe12IxoqmejsXxK+BFAY5+K5xEcHM=
-github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.0.0-20220909053630-db221748baf3/go.mod h1:VgnuGLszutWVWNYo5FaIxckgEXC0MB//D0Fddys13BQ=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.0.0-20220910104746-99c549546861 h1:oTVMXrXlB9evxxEtFtYxHKNr7Y1wLMhGUnq3nXM1Bb0=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.0.0-20220910104746-99c549546861/go.mod h1:6psFMRN+1zPyBTMcNV8wlDP6UCQFJJGwgR0JLbzfGrw=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.0.0-20220910104746-99c549546861 h1:L1RYxmOvx0SZcPVkaxRL3PNlntCZLipCMpgpPlOHymY=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.0.0-20220910104746-99c549546861/go.mod h1:p1Y9xkfJMZKinznwrrWpme/Y56SCGL2wX7eDm63FazQ=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.0.0-20220910104746-99c549546861 h1:x4acgLRkGKzRv0ez/jJ/pE9qIiJyS9fsBqbwU6yuxRM=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.0.0-20220910104746-99c549546861/go.mod h1:VgnuGLszutWVWNYo5FaIxckgEXC0MB//D0Fddys13BQ=
 github.com/miekg/dns v1.1.26/go.mod h1:bPDLeHnStXmXAq1m/Ch/hvfNHr14JKNPMBo3VZKjuso=
 github.com/miekg/dns v1.1.41 h1:WMszZWJG0XmzbK9FEmzH2TVcqYzFesusSIB41b8KHxY=
 github.com/miekg/dns v1.1.41/go.mod h1:p6aan82bvRIyn+zDIv9xYNUpwa73JcSh9BKwknJysuI=
@@ -462,8 +464,6 @@ github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedete
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.59.0/go.mod h1:U6f1YRLbyDVAUUWHwUD1Ct5Q4kfAWiUsvYoIV6vazmU=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.59.0 h1:f7ATuUahmHYNPTI1Wt6GLOoz3WI1VE8/ZGtgNdCWAnU=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.59.0/go.mod h1:nhnX/K9se/lAqUHu6mHDVsFZylq3vPUIj1VCuGWyEg0=
-github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.59.0 h1:Yxd16zdcfHzeSfVJNAnR4UBe3zQd4HPn9uhTJDDZuP8=
-github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.59.0/go.mod h1:6psFMRN+1zPyBTMcNV8wlDP6UCQFJJGwgR0JLbzfGrw=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.59.0 h1:icn0oqjnrasefIY96hS5sAH7MW7xG4BSjMslcrGE1P4=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.59.0/go.mod h1:hF1IhnT2l0h2WbCaJwqkbq4E4Q74PXsY5ZZrSrBQ/wE=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
