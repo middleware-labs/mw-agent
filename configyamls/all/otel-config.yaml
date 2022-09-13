@@ -28,12 +28,12 @@ receivers:
       process:
         mute_process_name_error: true
 
-  docker_stats:
-    endpoint: unix:///var/run/docker.sock
-    collection_interval: 5s
-    timeout: 20s
-    api_version: 1.24
-    provide_per_core_cpu_metrics: true
+  # docker_stats:
+  #   endpoint: unix:///var/run/docker.sock
+  #   collection_interval: 5s
+  #   timeout: 20s
+  #   api_version: 1.24
+  #   provide_per_core_cpu_metrics: true
 
   # Read log files (Infra logs + APM logs)
   filelog:
@@ -97,7 +97,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [ hostmetrics, docker_stats, otlp ]
+      receivers: [ otlp ]
       processors: [ resourcedetection, resource ]
       exporters: [ otlp/2 ]
     logs:
