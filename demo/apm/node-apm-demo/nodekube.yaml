@@ -1,33 +1,37 @@
-apiVersion: apps/v1
 kind: Deployment
+apiVersion: apps/v1
 metadata:
   creationTimestamp: null
-  labels:
-    io.kompose.service: nodeapp
-  name: nodeapp
+  name: mw-kube-apm
+  namespace: mw-agent-ns
 spec:
   selector:
     matchLabels:
-      io.kompose.service: nodeapp
+      app: mw-app
+  replicas: 1
+  strategy: {}
   template:
     metadata:
-      creationTimestamp: null
       labels:
-        io.kompose.service: nodeapp
+        app: mw-app
+        k8s-app: mw-app
+      creationTimestamp: null
     spec:
       containers:
-        ports:
-          - containerPort: 3002
-        - command: 
-          - node server.js
+        - args: 
+          - node 
+          - server.js
+          env:
+            - name: MW_API_KEY
+              value: 7ltv4sbvc73yaa2aa8doowqvf5i3923a9qdl
+            - name: MW_LOGS_TARGET
+              value: "mw-service.mw-agent-ns.svc.cluster.local"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "mw-service.mw-agent-ns.svc.cluster.local:4317"
           image: ghcr.io/middleware-labs/agent-node-apm:new
           imagePullPolicy: Always
-          name: nodeapp
-          env:
-            - name: MW_AUTOGENERATE_TRACING_DATA
-              value: true
-            - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: mw-service.mw-agent-ns.svc.cluster.local
+          name: mw-kube-agent
           resources: {}
+          ports:
+          - containerPort: 3002
       restartPolicy: Always
-      serviceAccountName: telemetry-app
