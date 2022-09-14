@@ -99,15 +99,15 @@ service:
     metrics:
       receivers: [ otlp ]
       processors: [ resourcedetection, resource ]
-      exporters: [ otlp/2 ]
+      exporters: [ otlp/2, logging ]
     logs:
       receivers: [ fluentforward, otlp ]
       processors: [ resourcedetection, resource/2 ]
-      exporters: [ otlp/2 ]
+      exporters: [ otlp/2, logging ]
     traces:
       receivers: [ otlp ]
       processors: [ resourcedetection, resource/3 ]
-      exporters: [ otlp/2 ]
+      exporters: [ otlp/2, logging ]
   telemetry:
     logs:
       level: debug
