@@ -1,0 +1,106 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4320
+      http:
+        endpoint: 0.0.0.0:4321
+
+  # Scrapping OS metrics (Infra Metrics)
+  hostmetrics:
+    collection_interval: 5s
+    scrapers:
+      cpu:
+        metrics:
+          system.cpu.utilization:
+            enabled: true
+      load:
+        cpu_average: true
+      memory:
+        metrics:
+          system.memory.utilization:
+            enabled: true
+      paging: {}
+      disk: {}
+      filesystem: {}
+      network: {}
+      processes: {}
+      process:
+        mute_process_name_error: true
+
+  # Read log files (Infra logs + APM logs)
+  filelog:
+    include: [ /var/log/linux.log ]
+    start_at: beginning
+
+  # Read log sent through fluent protocol (APM logs)
+  fluentforward:
+    endpoint: 0.0.0.0:8006
+
+processors:
+  # metrics
+  resource:
+    attributes:
+    - key: mw.account_key
+      action: upsert
+      value: ${MW_API_KEY}
+    - key: host.id
+      from_attribute: host.name
+      action: upsert
+
+  # logs
+  resource/2:
+    attributes:
+    - key: mw.account_key
+      action: upsert
+      value: ${MW_API_KEY}
+    - key: service.name
+      action: insert
+      value: middleware-logs
+    - key: host.id
+      from_attribute: host.name
+      action: upsert
+
+  # traces
+  resource/3:
+    attributes:
+    - key: mw.account_key
+      action: upsert
+      value: ${MW_API_KEY}
+    - key: host.id
+      from_attribute: host.name
+      action: upsert
+
+  resourcedetection:
+    detectors: [ env, system, docker ]
+    timeout: 5s
+    override: false
+
+exporters:
+  logging:
+    loglevel: debug
+  otlp/2:
+    endpoint: ${TARGET}
+    tls:
+      insecure: true
+      insecure_skip_verify: true
+    headers:
+      authorization: ${MW_API_KEY}
+
+service:
+  pipelines:
+    metrics:
+      receivers: [ hostmetrics, otlp ]
+      processors: [ resourcedetection, resource ]
+      exporters: [ otlp/2 ]
+    logs:
+      receivers: [ fluentforward, otlp ]
+      processors: [ resourcedetection, resource/2 ]
+      exporters: [ otlp/2 ]
+    traces:
+      receivers: [ otlp ]
+      processors: [ resourcedetection, resource/3 ]
+      exporters: [ otlp/2 ]
+  telemetry:
+    logs:
+      level: debug

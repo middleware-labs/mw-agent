@@ -36,6 +36,11 @@ func Try[T any](item T, err error) T {
 func app() *cli.App {
 
 	collectionType := "all"
+	_, err := os.Stat("/var/run/docker.sock")
+	if err != nil {
+		collectionType = "nodocker"
+	}
+
 	value, hasCollectionType := os.LookupEnv("MW_COLLECTION_TYPE")
 	if hasCollectionType {
 		collectionType = value
