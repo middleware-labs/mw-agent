@@ -22,6 +22,10 @@ spec:
           - node 
           - server.js
           env:
+            - name: MW_AUTOGENERATE_TRACING_DATA
+              value: "true"
+            - name: MYSQL_HOST
+              value: "mysql.mw-agent-ns.svc.cluster.local"
             - name: MW_API_KEY
               value: 7ltv4sbvc73yaa2aa8doowqvf5i3923a9qdl
             - name: MW_LOGS_TARGET
