@@ -48,7 +48,7 @@ processors:
   resource:
     attributes:
     - key: mw.account_key
-      action: insert
+      action: upsert
       value: ${MW_API_KEY}
     - key: host.id
       from_attribute: host.name
@@ -58,7 +58,7 @@ processors:
   resource/2:
     attributes:
     - key: mw.account_key
-      action: insert
+      action: upsert
       value: ${MW_API_KEY}
     - key: service.name
       action: insert
@@ -71,7 +71,7 @@ processors:
   resource/3:
     attributes:
     - key: mw.account_key
-      action: insert
+      action: upsert
       value: ${MW_API_KEY}
     - key: host.id
       from_attribute: host.name
