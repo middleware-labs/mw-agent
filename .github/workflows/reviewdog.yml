@@ -1,0 +1,143 @@
+name: reviewdog
+on:
+  push:
+    branches:
+      - 'master'
+      - 'stage'
+  pull_request:
+jobs:
+  reviewdog:
+    name: reviewdog
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "1.18.0"
+
+      #- name: Cache Primes
+      #  id: cache-primes
+      #  uses: actions/cache@v3
+      #  with:
+      #    path: prime-numbers
+       #   key: ${{ runner.os }}-primes
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ matrix.go }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-${{ matrix.go }}
+            ${{ runner.os }}-go-
+
+      - name: Install Linters & Tools
+        run: |
+          echo '::group::🐶 Installing golangci-lint...'
+          curl -sL https://github.com/golangci/golangci-lint/releases/download/v1.49.0/golangci-lint-1.49.0-linux-amd64.tar.gz |  tar -xz --strip-components=1  -C $(go env GOPATH)/bin
+          golangci-lint --version
+          echo '::endgroup::'
+          
+          echo '::group::🐶 Installing staticcheck...'
+          curl -sL https://github.com/dominikh/go-tools/releases/download/v0.3.3/staticcheck_linux_amd64.tar.gz |  tar -xz --strip-components=1 -C $(go env GOPATH)/bin
+          staticcheck -version
+          echo '::endgroup::'
+          
+          echo '::group::🐶 Installing reviewdog...'
+          curl -sL https://github.com/reviewdog/reviewdog/releases/download/v0.14.1/reviewdog_0.14.1_Linux_x86_64.tar.gz |  tar -xz  -C $(go env GOPATH)/bin
+          reviewdog -version
+          echo '::endgroup::'
+          
+          
+          go install github.com/axw/gocov/gocov@v1.1.0
+          go install github.com/AlekSi/gocov-xml@latest
+          curl -sL https://github.com/jstemmer/go-junit-report/releases/download/v2.0.0/go-junit-report-v2.0.0-linux-amd64.tar.gz | tar -xz  -C $(go env GOPATH)/bin
+          curl -sL https://github.com/haveyoudebuggedit/gotestfmt/releases/download/v2.3.2/gotestfmt_2.3.2_linux_amd64.tar.gz  |  tar -xz  -C $(go env GOPATH)/bin
+          curl -sL https://github.com/gotestyourself/gotestsum/releases/download/v1.8.2/gotestsum_1.8.2_linux_amd64.tar.gz |  tar -xz  -C $(go env GOPATH)/bin
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/golangci-lint
+          key: golangci-lint.cache-${{runner.os}}-${{ hashFiles('go.mod') }}-${{ github.sha }}
+          restore-keys: |
+            golangci-lint.cache-${{runner.os}}-${{ hashFiles('go.mod') }}-
+            golangci-lint.cache-${{runner.os}}-
+            golangci-lint.cache-
+
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cache/staticcheck
+          key: staticcheck-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            staticcheck-${{ runner.os }}-
+            staticcheck-
+
+      - name: Middleware App Setup
+        env:
+          MW_APP_APPID: ${{ secrets.MW_APP_APPID }}
+          MW_APP_INSTALL_ID: ${{ secrets.MW_APP_INSTALL_ID }}
+          MW_APP_KEY: ${{ secrets.MW_APP_KEY }}
+        run: |
+          curl -sL https://github.com/mike-engel/jwt-cli/releases/download/5.0.3/jwt-linux.tar.gz |  tar -xz  -C $(go env GOPATH)/bin
+          IFS=
+          echo $MW_APP_KEY>>key.pem
+          AJWT=`jwt encode --alg RS256 --exp "+60 sec" --iss $MW_APP_APPID --secret=@key.pem`
+          export GITHUB_API_TOKEN=`curl  -s -X POST -H "Authorization: Bearer $AJWT" -H "Accept: application/vnd.github+json" https://api.github.com/app/installations/$MW_APP_INSTALL_ID/access_tokens  | grep -Eo 'ghs_[^\"]*'`
+          rm key.pem
+          echo "MW_APP_TOKEN=$GITHUB_API_TOKEN" >> $GITHUB_ENV
+
+      - name: Run Checks
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ env.MW_APP_TOKEN }}
+        run: |                   
+          echo '::group::🐶 Testing golangci-lint...'
+          RESULT1=$(reviewdog -reporter=github-pr-check -runners=golangci-lint -fail-on-error=true  -filter-mode=nofilter  2>&1 && exit_status=$? || exit_status=$?)
+          echo "result $RESULT1"
+          echo '::endgroup::'
+         
+          
+          echo '::group::🐶 Testing staticcheck...'
+          export STATICCHECK_CACHE="${{ runner.temp }}/staticcheck"
+          RESULT2=$(staticcheck -f=json ./... | jq -f ".github/workflows/to-rdjsonl.jq" -c | reviewdog -f="rdjsonl" -name="staticcheck"   -filter-mode=nofilter -reporter=github-pr-check -fail-on-error=true 2>&1 && exit_status=$? || exit_status=$?)         
+          echo "result $RESULT2"
+          echo '::endgroup::'
+        
+          echo '::group::🐶 Testing cases'
+          RESULT4=$(go test -v -coverprofile _cover.out -json -coverpkg=./... ./... | cat > _report.json 2>&1 && exit_status=$? || exit_status=$?)
+          
+          #RESULT3=$(cat _report.json | go-junit-report -parser gojson > _report.xml 2>&1 && exit_status=$? || exit_status=$?)
+          RESULT3=$(cat _report.json | gotestsum --raw-command --junitfile _report.xml --hide-summary=all -- cat 2>&1 && exit_status=$? || exit_status=$?)
+          
+          RESULT5=$(gocov convert _cover.out | gocov-xml  > _cover.xml)
+          cat _report.json | gotestfmt -nofail 2>&1 && exit_status=$? || exit_status=$?
+          echo '::endgroup::'
+          
+          exit 0
+
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v3
+        with:
+          token: ${{ env.MW_APP_TOKEN }}
+          check_name: unit tests
+          summary: true
+          detailed_summary: true
+          report_paths: '_report.xml'
+          annotate_notice: false
+          include_passed: false
+
+      - uses: dev-mraj/cobertura-action@master
+        name: Publish Coverage Report
+        with:
+          path: _cover.xml
+          minimum_coverage: 30
+          report_name: coverage
+          show_missing: true
+          link_missing_lines: true
+          exclude_sources: '(exporter\/|internal\/|internal\/coreinternal\/|receiver\/hostmetricsreceiver\/internal\/scraper).*'
+          fail_below_threshold: false
+          repo_token: ${{ env.MW_APP_TOKEN }}

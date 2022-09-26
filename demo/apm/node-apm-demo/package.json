@@ -1,0 +1,23 @@
+{
+  "name": "node-apm-demo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@fluent-org/logger": "^1.0.9",
+    "@middleware.io/node-apm": "^1.0.3",
+    "@middlewarelabs-devs/mw-node-apm": "^2.0.9",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "fluent-logger": "^3.4.1",
+    "http": "0.0.1-security",
+    "mysql": "^2.18.1",
+    "request": "^2.88.2",
+    "winston": "^3.8.1"
+  },
+  "author": "",
+  "license": "ISC"
+}

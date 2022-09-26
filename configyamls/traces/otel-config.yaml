@@ -1,0 +1,31 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4320
+      http:
+        endpoint: 0.0.0.0:4321
+
+processors:
+  resource:
+    attributes:
+    - key: mw.account_key
+      action: insert
+      value: ${MW_API_KEY}
+
+exporters:
+  logging:
+    loglevel: debug
+  otlp/2:
+    endpoint: ${TARGET}
+    tls:
+      insecure: true
+    headers:
+      authorization: ${MW_API_KEY}
+
+service:
+  pipelines:
+    traces:
+      receivers: [ otlp ]
+      processors: [ resource ]
+      exporters: [ logging, otlp/2 ]

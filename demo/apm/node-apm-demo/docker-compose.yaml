@@ -1,0 +1,36 @@
+version: "3.4"
+services:  
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: 'todo'
+      MYSQL_ALLOW_EMPTY_PASSWORD: "true"
+    ports:
+      - 3306:3306
+    command: --init-file /docker-entrypoint-initdb.d/init.sql
+    volumes:
+      - ./data/conf.d:/etc/mysql/conf.d
+      - ./data/logs:/logs
+      - /usr/local/var/mysql:/var/lib/mysql
+      - ./todo.sql:/docker-entrypoint-initdb.d/init.sql
+
+  node-apm-demo:
+    build:
+      context: ./
+    # image: ghcr.io/middleware-labs/agent-node-apm:new
+    command: node server.js
+    environment:
+      MW_AUTOGENERATE_TRACING_DATA: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: 127.0.0.1:4320    # sends data to host agent
+    network_mode: host
+    depends_on:
+      - mysql
+    ports:
+      - 3002:3002
+
+volumes:
+  kafka-zookeeper:
+  kafka-data:
+  clickhouse:
+  elasticsearch-db:
+  cassandra-db:

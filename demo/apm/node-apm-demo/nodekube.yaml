@@ -1,0 +1,41 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  creationTimestamp: null
+  name: mw-kube-apm
+  namespace: mw-agent-ns-fktzp
+spec:
+  selector:
+    matchLabels:
+      app: mw-app
+  replicas: 1
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: mw-app
+        k8s-app: mw-app
+      creationTimestamp: null
+    spec:
+      containers:
+        - args: 
+          - node 
+          - server.js
+          env:
+            - name: MW_AUTOGENERATE_TRACING_DATA
+              value: "true"
+            - name: MYSQL_HOST
+              value: "mysql.mw-agent-ns-fktzp.svc.cluster.local"
+            - name: MW_API_KEY
+              value: fktzpvgssq4p2rkk3fdbh8vkxihye64b5qk4
+            - name: MW_LOGS_TARGET
+              value: "mw-service.mw-agent-ns-fktzp.svc.cluster.local"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "mw-service.mw-agent-ns-fktzp.svc.cluster.local:4317"
+          image: ghcr.io/middleware-labs/agent-node-apm:new
+          imagePullPolicy: Always
+          name: mw-kube-agent
+          resources: {}
+          ports:
+          - containerPort: 3002
+      restartPolicy: Always
