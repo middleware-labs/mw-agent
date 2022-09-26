@@ -73,7 +73,7 @@ func app() *cli.App {
 						},
 					})
 					if err != nil {
-						log.Fatalf("config provider error thrown ", err.Error())
+						log.Fatalf("config provider error thrown %v", err.Error())
 					}
 					p := service.CollectorSettings{
 						DisableGracefulShutdown: true,
