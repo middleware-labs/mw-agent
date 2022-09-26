@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mysql
-  namespace: mw-agent-ns
+  namespace: mw-agent-ns-fktzp
 spec:
   selector:
     matchLabels:
@@ -42,7 +42,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: mysql-initdb-config
-  namespace: mw-agent-ns
+  namespace: mw-agent-ns-fktzp
 data:
   initdb.sql: |
     CREATE DATABASE `todo`;
@@ -53,7 +53,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mysql
-  namespace: mw-agent-ns
+  namespace: mw-agent-ns-fktzp
 spec:
   ports:
   - port: 3306
@@ -64,7 +64,7 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: mysql-pv-volume
-  namespace: mw-agent-ns
+  namespace: mw-agent-ns-fktzp
   labels:
     type: local
 spec:
@@ -80,7 +80,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: mysql-pv-claim
-  namespace: mw-agent-ns
+  namespace: mw-agent-ns-fktzp
 spec:
   storageClassName: manual
   accessModes:

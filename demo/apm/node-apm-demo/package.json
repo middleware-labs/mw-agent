@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@fluent-org/logger": "^1.0.9",
+    "@middleware.io/node-apm": "^1.0.1",
     "@middlewarelabs-devs/mw-node-apm": "^2.0.9",
     "cors": "^2.8.5",
     "express": "^4.17.1",

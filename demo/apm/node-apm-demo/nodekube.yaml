@@ -3,7 +3,7 @@ apiVersion: apps/v1
 metadata:
   creationTimestamp: null
   name: mw-kube-apm
-  namespace: mw-agent-ns
+  namespace: mw-agent-ns-fktzp
 spec:
   selector:
     matchLabels:
@@ -25,13 +25,13 @@ spec:
             - name: MW_AUTOGENERATE_TRACING_DATA
               value: "true"
             - name: MYSQL_HOST
-              value: "mysql.mw-agent-ns.svc.cluster.local"
+              value: "mysql.mw-agent-ns-fktzp.svc.cluster.local"
             - name: MW_API_KEY
-              value: 7ltv4sbvc73yaa2aa8doowqvf5i3923a9qdl
+              value: fktzpvgssq4p2rkk3fdbh8vkxihye64b5qk4
             - name: MW_LOGS_TARGET
-              value: "mw-service.mw-agent-ns.svc.cluster.local"
+              value: "mw-service.mw-agent-ns-fktzp.svc.cluster.local"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: "mw-service.mw-agent-ns.svc.cluster.local:4317"
+              value: "mw-service.mw-agent-ns-fktzp.svc.cluster.local:4317"
           image: ghcr.io/middleware-labs/agent-node-apm:new
           imagePullPolicy: Always
           name: mw-kube-agent
