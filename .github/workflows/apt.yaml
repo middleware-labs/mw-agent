@@ -150,6 +150,7 @@ jobs:
         cp -r example/private-keys/* install.middleware.io/private-keys/
         cp -r example/public-keys/* install.middleware.io/public-keys/
         cp -r example/repos/* install.middleware.io/repos/
+        cd install.middleware.io
         git config --global user.email "keval@middleware.io"
         git config --global user.name "bhogayatakb"
         git add .
