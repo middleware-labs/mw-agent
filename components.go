@@ -1,9 +1,7 @@
 package main
 
 import (
-	"log"
-	"os"
-
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
@@ -17,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"log"
+	"os"
 )
 
 func Components() (component.Factories, error) {
@@ -58,6 +58,7 @@ func Components() (component.Factories, error) {
 		memorylimiterprocessor.NewFactory(),
 		resourceprocessor.NewFactory(),
 		resourcedetectionprocessor.NewFactory(),
+		attributesprocessor.NewFactory(),
 	}...)
 	if err != nil {
 		return component.Factories{}, err
