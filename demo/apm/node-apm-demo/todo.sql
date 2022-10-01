@@ -15,7 +15,7 @@ CREATE DATABASE /*!32312 IF NOT EXISTS*/`todo` /*!40100 DEFAULT CHARACTER SET ut
 
 /*Table structure for table `tutorials` */
 
-CREATE TABLE `todo`.`tutorials` (
+CREATE TABLE IF NOT EXISTS `todo`.`tutorials` (
   `id` int(22) NOT NULL AUTO_INCREMENT,
   `title` varchar(255) DEFAULT NULL,
   `description` text DEFAULT NULL,

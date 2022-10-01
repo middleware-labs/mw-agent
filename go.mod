@@ -16,6 +16,7 @@ require (
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.59.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.59.0

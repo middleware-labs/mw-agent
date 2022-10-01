@@ -13,6 +13,24 @@ processors:
       action: insert
       value: ${MW_API_KEY}
 
+  attributes/traces:
+    actions:
+      - key: mw.service.name.derived
+        from_attribute: db.system
+        action: insert
+      - key: mw.service.name.derived
+        from_attribute: messaging.system
+        action: insert
+      - key: mw.service.name.derived
+        from_attribute: rpc.system
+        action: insert
+      - key: mw.service.name.derived
+        from_attribute: http.scheme
+        action: insert
+      - key: mw.service.name.derived
+        from_attribute: faas.trigger
+        action: insert
+
 exporters:
   logging:
     loglevel: debug
@@ -27,5 +45,5 @@ service:
   pipelines:
     traces:
       receivers: [ otlp ]
-      processors: [ resource ]
+      processors: [ resource,attributes/traces ]
       exporters: [ logging, otlp/2 ]

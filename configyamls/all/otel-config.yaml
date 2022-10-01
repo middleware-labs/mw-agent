@@ -80,6 +80,24 @@ processors:
       from_attribute: host.name
       action: upsert
 
+  attributes/traces:
+    actions:
+      - key: mw.service.name.derived
+        from_attribute: db.system
+        action: insert
+      - key: mw.service.name.derived
+        from_attribute: messaging.system
+        action: insert
+      - key: mw.service.name.derived
+        from_attribute: rpc.system
+        action: insert
+      - key: mw.service.name.derived
+        from_attribute: http.scheme
+        action: insert
+      - key: mw.service.name.derived
+        from_attribute: faas.trigger
+        action: insert
+
   resourcedetection:
     detectors: [ env, system, docker ]
     timeout: 5s
@@ -99,17 +117,17 @@ exporters:
 service:
   extensions: [health_check]
   pipelines:
-    metrics:
-      receivers: [ hostmetrics, docker_stats, otlp ]
-      processors: [ resourcedetection, resource ]
-      exporters: [ otlp/2 ]
-    logs:
-      receivers: [ fluentforward, otlp ]
-      processors: [ resourcedetection, resource/2 ]
-      exporters: [ otlp/2 ]
+#    metrics:
+#      receivers: [ hostmetrics, docker_stats, otlp ]
+#      processors: [ resourcedetection, resource ]
+#      exporters: [ otlp/2 ]
+#    logs:
+#      receivers: [ fluentforward, otlp ]
+#      processors: [ resourcedetection, resource/2 ]
+#      exporters: [ otlp/2 ]
     traces:
       receivers: [ otlp ]
-      processors: [ resourcedetection, resource/3 ]
+      processors: [ resourcedetection, resource/3, attributes/traces ]
       exporters: [ otlp/2 ]
   telemetry:
     logs:

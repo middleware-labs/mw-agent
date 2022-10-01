@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
@@ -60,6 +61,7 @@ func Components() (component.Factories, error) {
 		memorylimiterprocessor.NewFactory(),
 		resourceprocessor.NewFactory(),
 		resourcedetectionprocessor.NewFactory(),
+		attributesprocessor.NewFactory(),
 	}...)
 	if err != nil {
 		return component.Factories{}, err

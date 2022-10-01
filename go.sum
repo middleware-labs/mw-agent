@@ -174,6 +174,7 @@ github.com/go-openapi/jsonpointer v0.19.5/go.mod h1:Pl9vOtqEWErmShwVjC8pYs9cog34
 github.com/go-openapi/jsonreference v0.20.0 h1:MYlu0sBgChmCfJxxUKZ8g1cPWFOB37YSZqewK7OKeyA=
 github.com/go-openapi/jsonreference v0.20.0/go.mod h1:Ag74Ico3lPc+zR+qjn4XBUmXymS4zJbYVCZmcgkasdo=
 github.com/go-openapi/swag v0.19.5/go.mod h1:POnQmlKehdgb5mhVOsnJFsivZCEZ/vjK9gh66Z9tfKk=
+github.com/go-openapi/swag v0.19.5/go.mod h1:POnQmlKehdgb5mhVOsnJFsivZCEZ/vjK9gh66Z9tfKk=
 github.com/go-openapi/swag v0.21.1 h1:wm0rhTb5z7qpJRHBdPOMuY4QjVUMbF6/kwoYeRAOrKU=
 github.com/go-openapi/swag v0.21.1/go.mod h1:QYRuS/SOXUCsnplDa677K7+DxSOj6IPNl/eQntq43wQ=
 github.com/go-stack/stack v1.8.0/go.mod h1:v0f6uXyyMGvRgIKkXu+yp6POWl0qKG85gN/melR3HDY=
@@ -442,6 +443,7 @@ github.com/observiq/ctimefmt v1.0.0/go.mod h1:mxi62//WbSpG/roCO1c6MqZ7zQTvjVtYhe
 github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc h1:49ewVBwLcy+eYqI4R0ICilCI4dPjddpFXWv3liXzUxM=
 github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQA=
 github.com/onsi/ginkgo v1.16.4 h1:29JGrr5oVBm5ulCWet69zQkzWipVXIol6ygQUe/EzNc=
+github.com/onsi/ginkgo v1.16.4 h1:29JGrr5oVBm5ulCWet69zQkzWipVXIol6ygQUe/EzNc=
 github.com/onsi/ginkgo/v2 v2.1.4 h1:GNapqRSid3zijZ9H77KrgVG4/8KqiyRsxcSxe+7ApXY=
 github.com/onsi/gomega v1.19.0 h1:4ieX6qQjPP/BfC3mpsAtIGGlxTWPeA3Inl/7DtXw1tw=
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.59.0 h1:ZY6dZEzb8EyeAERTrx/Mq51stOw+R7oOEm1D74CtewM=
@@ -462,6 +464,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.59.0 h1:ctZkiE/pLk6F16GtQjuKrzDO4dYY6KIolDMP67FrFHw=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.59.0/go.mod h1:DZnbVTIDiIq3Mqyp1Pa2ycLDvy673R9IeEi3QRj2lr0=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.59.0 h1:/XBLDr44f+jOy0H5pOjxQu0kemccNsZuhC0ZLM85itw=
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.59.0 h1:fYC8zQCaGCTf1hWcJTnb+oyiJ4YtkuG2T/7uiS7GhSw=
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.59.0/go.mod h1:Fpp7pergQCBmUmkLg1kFhCc0+27JFzCnNSpdm681hME=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.59.0 h1:lizRPrjEfc1adMlc77jY6fnquEJQmpZNRGdgq0uxO3Q=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.59.0/go.mod h1:U6f1YRLbyDVAUUWHwUD1Ct5Q4kfAWiUsvYoIV6vazmU=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.59.0 h1:f7ATuUahmHYNPTI1Wt6GLOoz3WI1VE8/ZGtgNdCWAnU=
