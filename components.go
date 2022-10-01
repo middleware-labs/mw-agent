@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
@@ -26,6 +27,7 @@ func Components() (component.Factories, error) {
 	log.Println("TARGET ===> ", os.Getenv("TARGET"))
 	log.Println("MW_API_KEY ===> ", os.Getenv("MW_API_KEY"))
 	factories.Extensions, err = component.MakeExtensionFactoryMap(
+		healthcheckextension.NewFactory(),
 	// frontend.NewAuthFactory(),
 	)
 	if err != nil {

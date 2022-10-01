@@ -43,6 +43,9 @@ receivers:
   fluentforward:
     endpoint: 0.0.0.0:8006
 
+extensions:
+  health_check:
+
 processors:
   # metrics
   resource:
@@ -94,6 +97,7 @@ exporters:
       authorization: ${MW_API_KEY}
 
 service:
+  extensions: [health_check]
   pipelines:
     metrics:
       receivers: [ hostmetrics, docker_stats, otlp ]
