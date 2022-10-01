@@ -1,6 +1,10 @@
 package main
 
 import (
+	"log"
+	"os"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
@@ -15,8 +19,6 @@ import (
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	"log"
-	"os"
 )
 
 func Components() (component.Factories, error) {
@@ -26,6 +28,7 @@ func Components() (component.Factories, error) {
 	log.Println("TARGET ===> ", os.Getenv("TARGET"))
 	log.Println("MW_API_KEY ===> ", os.Getenv("MW_API_KEY"))
 	factories.Extensions, err = component.MakeExtensionFactoryMap(
+		healthcheckextension.NewFactory(),
 	// frontend.NewAuthFactory(),
 	)
 	if err != nil {
