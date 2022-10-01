@@ -6,7 +6,7 @@ require (
 	// github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.53.0
 	github.com/prometheus/common v0.37.0
 	github.com/sirupsen/logrus v1.8.1
-	github.com/stretchr/testify v1.8.0 // indirect
+	github.com/stretchr/testify v1.8.0
 	github.com/urfave/cli/v2 v2.14.0
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/collector v0.59.0
@@ -15,6 +15,7 @@ require (
 )
 
 require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.59.0
