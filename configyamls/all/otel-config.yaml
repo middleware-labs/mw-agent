@@ -36,7 +36,7 @@ receivers:
 
   # Read log files (Infra logs + APM logs)
   filelog:
-    include: [ /var/log/* ]
+    include: [ /var/log/*.log ]
     start_at: beginning
 
   # Read log sent through fluent protocol (APM logs)
@@ -122,7 +122,7 @@ service:
       processors: [ resourcedetection, resource ]
       exporters: [ otlp/2 ]
     logs:
-      receivers: [ fluentforward, otlp ]
+      receivers: [ fluentforward, otlp, filelog ]
       processors: [ resourcedetection, resource/2 ]
       exporters: [ otlp/2 ]
     traces:
