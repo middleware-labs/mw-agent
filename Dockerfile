@@ -22,6 +22,7 @@ RUN go get -d -v ./... && go mod tidy
 RUN CGO_ENABLED=0 go build -o /tmp/api-server ./*.go
 
 FROM busybox:glibc as prod
+RUN mkdir -p /var/log
 WORKDIR /app
 COPY --from=build /etc/ssl/certs /etc/ssl/certs
 COPY --from=build /tmp/api-server /usr/bin/api-server
