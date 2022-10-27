@@ -1,5 +1,14 @@
-const tracker = require('@middlewarelabs-devs/mw-node-apm')
-tracker.track()
+const tracker = require('@middleware.io/node-apm')
+tracker.track({
+    host:"localhost",
+    port: {
+        grpc: 4320,
+        fluent: 8006
+    },
+    apiKey:"o0yj6ca38ihvxtgou2f496g4syj86p37asus",
+    projectName:"tutorial-project",
+    serviceName:"tutorial-service",
+})
 
 const express = require('express');
 const app = express()
@@ -29,11 +38,9 @@ app.listen(port, () => {
 })
 
 require("./app/routes/tutorial.routes.js")(app);
-if (process.env.MW_AUTOGENERATE_TRACING_DATA) {
-    require("./tracingloop")
-}
+require("./tracingloop")
 
-if (!process.env.MW_APM_PAUSE_LOGS) {
+if (!process.env.MELT_APM_PAUSE_LOGS) {
     require("./fluent")
     require("./fluent-winston")
 }

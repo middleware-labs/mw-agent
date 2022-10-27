@@ -11,7 +11,7 @@ on:
 env:
   ARCH: all
   BINARY_SOURCE: release/mw-go-agent-host
-  RELEASE_VERSION: 0.0.7
+  RELEASE_VERSION: 0.0.11
 
 jobs:
   build:
@@ -134,14 +134,7 @@ jobs:
         cat example/repos/$RELEASE_VERSION/apt-repo/dists/stable/Release | gpg --default-key example -abs > example/repos/$RELEASE_VERSION/apt-repo/dists/stable/Release.gpg
         cat example/repos/$RELEASE_VERSION/apt-repo/dists/stable/Release | gpg --default-key example -abs --clearsign > example/repos/$RELEASE_VERSION/apt-repo/dists/stable/InRelease
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-2
-
-    - name: Remove extra files & Upload to APT Repo
+    - name: Remove extra files & Upload to Github Pages (install.middleware.io)
       run: |
         mkdir -p example/scripts
         mkdir -p example/configyamls
@@ -152,4 +145,14 @@ jobs:
         rm -rf example/generate-release.sh
         rm -rf example/mw-agent_$RELEASE_VERSION-1_all
         rm -rf example/mw-agent_$RELEASE_VERSION-1_all.deb
-        aws s3 sync example s3://host.middleware.io
+
+        git clone https://.:${{ secrets.GHCR_TOKEN }}@github.com/middleware-labs/install.middleware.io.git
+        cp -r example/private-keys/* install.middleware.io/private-keys/
+        cp -r example/public-keys/* install.middleware.io/public-keys/
+        cp -r example/repos/* install.middleware.io/repos/
+        cd install.middleware.io
+        git config --global user.email "keval@middleware.io"
+        git config --global user.name "bhogayatakb"
+        git add .
+        git commit -m "install.middleware.io updated"
+        git push origin master

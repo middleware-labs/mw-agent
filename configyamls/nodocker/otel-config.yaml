@@ -8,7 +8,7 @@ receivers:
 
   # Scrapping OS metrics (Infra Metrics)
   hostmetrics:
-    collection_interval: 2s
+    collection_interval: 5s
     scrapers:
       cpu:
         metrics:
@@ -28,23 +28,14 @@ receivers:
       process:
         mute_process_name_error: true
 
-  docker_stats:
-    endpoint: unix:///var/run/docker.sock
-    collection_interval: 2s
-    timeout: 20s
-    api_version: 1.24
-
   # Read log files (Infra logs + APM logs)
   filelog:
-    include: [ /var/log/*.log ]
+    include: [ /var/log/linux.log ]
     start_at: beginning
 
   # Read log sent through fluent protocol (APM logs)
   fluentforward:
     endpoint: 0.0.0.0:8006
-
-# extensions:
-#   health_check:
 
 processors:
   # metrics
@@ -80,24 +71,6 @@ processors:
       from_attribute: host.name
       action: upsert
 
-  attributes/traces:
-    actions:
-      - key: mw.service.name.derived
-        from_attribute: db.system
-        action: insert
-      - key: mw.service.name.derived
-        from_attribute: messaging.system
-        action: insert
-      - key: mw.service.name.derived
-        from_attribute: rpc.system
-        action: insert
-      - key: mw.service.name.derived
-        from_attribute: http.scheme
-        action: insert
-      - key: mw.service.name.derived
-        from_attribute: faas.trigger
-        action: insert
-
   resourcedetection:
     detectors: [ env, system, docker ]
     timeout: 5s
@@ -115,21 +88,19 @@ exporters:
       authorization: ${MW_API_KEY}
 
 service:
-#   extensions: [health_check]
   pipelines:
     metrics:
-      receivers: [ otlp ]
+      receivers: [ hostmetrics, otlp ]
       processors: [ resourcedetection, resource ]
-      exporters: [ otlp/2, logging ]
+      exporters: [ otlp/2 ]
     logs:
-      receivers: [ fluentforward, otlp, filelog ]
+      receivers: [ fluentforward, otlp ]
       processors: [ resourcedetection, resource/2 ]
-      exporters: [ otlp/2, logging ]
+      exporters: [ otlp/2 ]
     traces:
       receivers: [ otlp ]
       processors: [ resourcedetection, resource/3 ]
-      exporters: [ otlp/2, logging ]
+      exporters: [ otlp/2 ]
   telemetry:
     logs:
       level: debug
-

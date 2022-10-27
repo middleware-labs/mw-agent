@@ -1,5 +1,5 @@
 module.exports = {
-  HOST: "mysql",
+  HOST: process.env.MYSQL_HOST,
   USER: "root",
   PASSWORD: "",
   DB: "todo"

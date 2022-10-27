@@ -1,5 +1,5 @@
 #!/bin/bash
-MW_LATEST_VERSION=0.0.7
+MW_LATEST_VERSION=0.0.11
 export MW_LATEST_VERSION
 export MW_AUTO_START=true
 
@@ -22,6 +22,8 @@ sudo mkdir -p /usr/bin/configyamls/traces
 sudo wget -O /usr/bin/configyamls/traces/otel-config.yaml https://host.middleware.io/configyamls/traces/otel-config.yaml
 sudo mkdir -p /usr/bin/configyamls/logs
 sudo wget -O /usr/bin/configyamls/logs/otel-config.yaml https://host.middleware.io/configyamls/logs/otel-config.yaml
+sudo mkdir -p /usr/bin/configyamls/nodocker
+sudo wget -O /usr/bin/configyamls/nodocker/otel-config.yaml https://host.middleware.io/configyamls/nodocker/otel-config.yaml
 
 echo "deb [arch=all signed-by=/usr/local/bin/mw-go-agent/apt/pgp-key-$MW_VERSION.public] https://host.middleware.io/repos/$MW_VERSION/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/mw-go.list
 

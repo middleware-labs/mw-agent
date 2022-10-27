@@ -1,5 +1,5 @@
 Package: mw-go-agent-host
-Version: 0.0.5
+Version: 0.0.11
 Maintainer: example <example@example.com>
 Depends: libc6
 Architecture: all
