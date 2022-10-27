@@ -102,7 +102,7 @@ sudo su << EOSUDO
 
 echo '
 
-  Melt Go Agent Installed Successfully ! Happy MELTing !!
+  MW Go Agent Installed Successfully !
   ----------------------------------------------------
 
   /usr/local/bin 
@@ -111,7 +111,7 @@ echo '
                 └───executable: Contains the script to run agent
                 └───pgp-key-$MW_VERSION.public: Contains copy of public key
                 └───cron:
-                    └───melt.log: Contains copy of public key
+                    └───mw-go.log: Contains copy of public key
 
   /etc 
     ├─── apt
@@ -119,6 +119,6 @@ echo '
     |                └─── mw-go.list: Contains the APT repo entry
     └─── systemd
            └───system
-                └─── mwservice.service: Service Entry for Melt Agent
+                └─── mwservice.service: Service Entry for MW Agent
 '
 EOSUDO
