@@ -2,9 +2,9 @@ receivers:
   otlp:
     protocols:
       grpc:
-        endpoint: 0.0.0.0:4320
+        endpoint: 0.0.0.0:9319
       http:
-        endpoint: 0.0.0.0:4321
+        endpoint: 0.0.0.0:9320
 
   # Read log files (Infra logs + APM logs)
   filelog:

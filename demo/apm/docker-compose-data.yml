@@ -12,8 +12,8 @@ services:
       TARGET: host.docker.internal:4317 
       MW_API_KEY: ox83a2gqhp5d8jm03op38c6byy79xrc4ffmx
     ports:
-      - 4320:4320
-      - 4321:4321
+      - 9319:9319
+      - 9320:9320
       - 8006:8006
     extra_hosts:
     - "host.docker.internal:host-gateway"
@@ -38,7 +38,7 @@ services:
     command: node server.js
     environment:
       MW_AUTOGENERATE_TRACING_DATA: "true"
-      OTEL_EXPORTER_OTLP_ENDPOINT: mw-agent-host-go:4320    # sends data to host agent
+      OTEL_EXPORTER_OTLP_ENDPOINT: mw-agent-host-go:9319    # sends data to host agent
       # MW_APM_PAUSE_METRICS: "true"                      # if you want to PAUSE metrics data
       # MW_APM_PAUSE_TRACES: "true"                       # if you want to PAUSE traces data
     depends_on:

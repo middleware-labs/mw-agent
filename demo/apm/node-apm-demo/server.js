@@ -2,7 +2,7 @@ const tracker = require('@middleware.io/node-apm')
 tracker.track({
     host:"localhost",
     port: {
-        grpc: 4320,
+        grpc: 9319,
         fluent: 8006
     },
     apiKey:"o0yj6ca38ihvxtgou2f496g4syj86p37asus",
