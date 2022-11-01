@@ -113,6 +113,10 @@ exporters:
       insecure_skip_verify: true
     headers:
       authorization: ${MW_API_KEY}
+    sending_queue:
+      enabled: true
+      num_consumers: 100
+      queue_size: 10000
 
 service:
 #   extensions: [health_check]
