@@ -135,4 +135,4 @@ service:
       exporters: [ otlp/2 ]
   telemetry:
     logs:
-      level: debug
+      level: warn
