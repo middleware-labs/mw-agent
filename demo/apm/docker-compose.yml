@@ -19,8 +19,8 @@ services:
       TARGET: capture-v1:4317 
       MW_API_KEY: ox83a2gqhp5d8jm03op38c6byy79xrc4ffmx
     ports:
-      - 4320:4320
-      - 4321:4321
+      - 9319:9319
+      - 9320:9320
       # - 8006:8006
 
   mysql:
@@ -47,7 +47,7 @@ services:
     command: node server.js
     environment:
       MW_AUTOGENERATE_TRACING_DATA: "true"
-      OTEL_EXPORTER_OTLP_ENDPOINT: mw-agent-host-go:4320    # sends data to host agent
+      OTEL_EXPORTER_OTLP_ENDPOINT: mw-agent-host-go:9319    # sends data to host agent
       MW_APM_PAUSE_METRICS: "true"                      # if you want to PAUSE metrics data
       MW_APM_PAUSE_TRACES: "true"                       # if you want to PAUSE traces data
     depends_on:
@@ -62,7 +62,7 @@ services:
   #     dockerfile: Dockerfile
   #   command: node server.js
   #   environment:
-  #     OTEL_EXPORTER_OTLP_ENDPOINT: mw-agent-host-go:4320
+  #     OTEL_EXPORTER_OTLP_ENDPOINT: mw-agent-host-go:9319
   #   ports:
   #     - 3003:3003
 
@@ -72,7 +72,7 @@ services:
   #     dockerfile: Dockerfile
   #   command: node fluent.js
   #   environment:
-  #     OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4320    # sends data to host agent
+  #     OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:9319    # sends data to host agent
   #     # OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4317  # sends data to capture directly
   #   network_mode: host
 
@@ -84,7 +84,7 @@ services:
   #   ports:
   #   - 9099:9099
   #   environment:
-  #     OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4320    # sends data to host agent
+  #     OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:9319    # sends data to host agent
   #     # OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4317  # sends data to capture directly
   #   command: opentelemetry-instrument python3 -m flask run
   #   network_mode: host

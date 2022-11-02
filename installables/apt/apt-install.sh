@@ -1,5 +1,5 @@
 #!/bin/bash
-MW_LATEST_VERSION=0.0.11
+MW_LATEST_VERSION=0.0.13
 export MW_LATEST_VERSION
 export MW_AUTO_START=true
 
@@ -11,21 +11,21 @@ fi
 # Adding APT repo address & public key to system
 sudo mkdir -p /usr/local/bin/mw-go-agent/apt
 sudo touch /usr/local/bin/mw-go-agent/apt/pgp-key-$MW_VERSION.public
-sudo wget -O /usr/local/bin/mw-go-agent/apt/pgp-key-$MW_VERSION.public https://host.middleware.io/public-keys/pgp-key-$MW_VERSION.public
+sudo wget -O /usr/local/bin/mw-go-agent/apt/pgp-key-$MW_VERSION.public https://install.middleware.io/public-keys/pgp-key-$MW_VERSION.public
 sudo touch /etc/apt/sources.list.d/mw-go.list
 
 sudo mkdir -p /usr/bin/configyamls/all
-sudo wget -O /usr/bin/configyamls/all/otel-config.yaml https://host.middleware.io/configyamls/all/otel-config.yaml
+sudo wget -O /usr/bin/configyamls/all/otel-config.yaml https://install.middleware.io/configyamls/all/otel-config.yaml
 sudo mkdir -p /usr/bin/configyamls/metrics
-sudo wget -O /usr/bin/configyamls/metrics/otel-config.yaml https://host.middleware.io/configyamls/metrics/otel-config.yaml
+sudo wget -O /usr/bin/configyamls/metrics/otel-config.yaml https://install.middleware.io/configyamls/metrics/otel-config.yaml
 sudo mkdir -p /usr/bin/configyamls/traces
-sudo wget -O /usr/bin/configyamls/traces/otel-config.yaml https://host.middleware.io/configyamls/traces/otel-config.yaml
+sudo wget -O /usr/bin/configyamls/traces/otel-config.yaml https://install.middleware.io/configyamls/traces/otel-config.yaml
 sudo mkdir -p /usr/bin/configyamls/logs
-sudo wget -O /usr/bin/configyamls/logs/otel-config.yaml https://host.middleware.io/configyamls/logs/otel-config.yaml
+sudo wget -O /usr/bin/configyamls/logs/otel-config.yaml https://install.middleware.io/configyamls/logs/otel-config.yaml
 sudo mkdir -p /usr/bin/configyamls/nodocker
-sudo wget -O /usr/bin/configyamls/nodocker/otel-config.yaml https://host.middleware.io/configyamls/nodocker/otel-config.yaml
+sudo wget -O /usr/bin/configyamls/nodocker/otel-config.yaml https://install.middleware.io/configyamls/nodocker/otel-config.yaml
 
-echo "deb [arch=all signed-by=/usr/local/bin/mw-go-agent/apt/pgp-key-$MW_VERSION.public] https://host.middleware.io/repos/$MW_VERSION/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/mw-go.list
+echo "deb [arch=all signed-by=/usr/local/bin/mw-go-agent/apt/pgp-key-$MW_VERSION.public] https://install.middleware.io/repos/$MW_VERSION/apt-repo stable main" | sudo tee /etc/apt/sources.list.d/mw-go.list
 
 # Updating apt list on system
 sudo apt-get update -o Dir::Etc::sourcelist="sources.list.d/mw-go.list" -o Dir::Etc::sourceparts="-" -o APT::Get::List-Cleanup="0"
@@ -93,7 +93,7 @@ sudo mkdir -p /usr/local/bin/mw-go-agent/apt/cron
 sudo touch /usr/local/bin/mw-go-agent/apt/cron/mw-go.log
 
 sudo crontab -l > cron_bkp
-sudo echo "*/5 * * * * (wget -O /usr/local/bin/mw-go-agent/apt/pgp-key-$MW_VERSION.public https://host.middleware.io/public-keys/pgp-key-$MW_VERSION.public && sudo apt-get update -o Dir::Etc::sourcelist='sources.list.d/mw-go.list' -o Dir::Etc::sourceparts='-' -o APT::Get::List-Cleanup='0' && sudo apt-get install --only-upgrade telemetry-agent-host && sudo systemctl restart mwservice) >> /usr/local/bin/mw-go-agent/apt/cron/melt.log 2>&1 >> /usr/local/bin/mw-go-agent/apt/cron/melt.log" >> cron_bkp
+sudo echo "*/5 * * * * (wget -O /usr/local/bin/mw-go-agent/apt/pgp-key-$MW_VERSION.public https://install.middleware.io/public-keys/pgp-key-$MW_VERSION.public && sudo apt-get update -o Dir::Etc::sourcelist='sources.list.d/mw-go.list' -o Dir::Etc::sourceparts='-' -o APT::Get::List-Cleanup='0' && sudo apt-get install --only-upgrade telemetry-agent-host && sudo systemctl restart mwservice) >> /usr/local/bin/mw-go-agent/apt/cron/melt.log 2>&1 >> /usr/local/bin/mw-go-agent/apt/cron/melt.log" >> cron_bkp
 sudo crontab cron_bkp
 sudo rm cron_bkp
 
@@ -111,7 +111,7 @@ echo '
                 └───executable: Contains the script to run agent
                 └───pgp-key-$MW_VERSION.public: Contains copy of public key
                 └───cron:
-                    └───melt.log: Contains copy of public key
+                    └───mw-go.log: Contains copy of public key
 
   /etc 
     ├─── apt
@@ -119,6 +119,6 @@ echo '
     |                └─── mw-go.list: Contains the APT repo entry
     └─── systemd
            └───system
-                └─── mwservice.service: Service Entry for Melt Agent
+                └─── mwservice.service: Service Entry for MW Agent
 '
 EOSUDO
