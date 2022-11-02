@@ -26,6 +26,7 @@ receivers:
       network: {}
       processes: {}
       process:
+        avoid_selected_errors: true
         mute_process_name_error: true
 
   docker_stats:
