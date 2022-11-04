@@ -37,7 +37,7 @@ receivers:
 
   # Read log files (Infra logs + APM logs)
   filelog:
-    include: [ /var/log/*.log ]
+    include: [ /var/log/*.log, /var/log/*/*.log ]
     start_at: beginning
 
   # Read log sent through fluent protocol (APM logs)
