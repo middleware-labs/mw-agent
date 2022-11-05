@@ -132,11 +132,11 @@ service:
     logs:
       receivers: [ fluentforward, otlp, filelog ]
       processors: [ resourcedetection, resource/2 ]
-      exporters: [ otlp/2 ]
+      exporters: [ otlp/2, logging ]
     traces:
       receivers: [ otlp ]
       processors: [ resourcedetection, resource/3, attributes/traces ]
       exporters: [ otlp/2 ]
   telemetry:
     logs:
-      level: warn
+      level: debug
