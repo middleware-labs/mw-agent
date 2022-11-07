@@ -112,9 +112,6 @@ exporters:
     loglevel: debug
   otlp/2:
     endpoint: ${TARGET}
-    tls:
-      insecure: true
-      insecure_skip_verify: true
     headers:
       authorization: ${MW_API_KEY}
     sending_queue:
