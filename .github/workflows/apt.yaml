@@ -140,6 +140,7 @@ jobs:
         mkdir -p example/configyamls
         cp -r configyamls example
         cp installables/apt/apt-install.sh example/scripts/apt-install.sh
+        cp installables/apt/apt-install-dev.sh example/scripts/apt-install-dev.sh
         cp configyamls/all/otel-config.yaml example/otel-config.yaml
         rm -rf example/pgpkeys-*
         rm -rf example/generate-release.sh
