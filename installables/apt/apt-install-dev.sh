@@ -8,6 +8,21 @@ if [ "${MW_VERSION}" = "" ]; then
   export MW_VERSION
 fi
 
+echo "The host agent will monitor all '.log' files inside your /var/log directory (recursively)"
+while true; do
+    read -p "Do you want to monitor any more directories for logs ? [y|n]" yn
+    case $yn in
+        [Yy]* ) 
+          echo "Ok, you want to add more paths .... cool"
+          break;;
+        [Nn]* ) echo "Ok, you do not want to add more paths" exit;;
+        * ) echo "Please answer y or n.";;
+    esac
+done
+
+
+
+
 # Adding APT repo address & public key to system
 sudo mkdir -p /usr/local/bin/mw-go-agent/apt
 sudo touch /usr/local/bin/mw-go-agent/apt/pgp-key-$MW_VERSION.public
