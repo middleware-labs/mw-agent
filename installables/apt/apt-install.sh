@@ -1,5 +1,5 @@
 #!/bin/bash
-MW_LATEST_VERSION=0.0.13
+MW_LATEST_VERSION=0.0.14
 export MW_LATEST_VERSION
 export MW_AUTO_START=true
 
@@ -37,11 +37,8 @@ MW_USER=$(whoami)
 export MW_USER
 
 sudo su << EOSUDO
-
-
 # Running Agent as a Daemon Service
 touch /etc/systemd/system/mwservice.service
-
 cat << EOF > /etc/systemd/system/mwservice.service
 [Unit]
 Description=Melt daemon!
@@ -58,25 +55,18 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 EOF
-
 if [ ! "${TARGET}" = "" ]; then
-
 cat << EOIF > /usr/local/bin/mw-go-agent/apt/executable
 #!/bin/sh
 cd /usr/bin && MW_API_KEY=$MW_API_KEY TARGET=$TARGET mw-go-agent-host start
 EOIF
-
 else 
-
 cat << EOELSE > /usr/local/bin/mw-go-agent/apt/executable
 #!/bin/sh
 cd /usr/bin && MW_API_KEY=$MW_API_KEY mw-go-agent-host start
 EOELSE
-
 fi
-
 chmod 777 /usr/local/bin/mw-go-agent/apt/executable
-
 EOSUDO
 
 sudo systemctl daemon-reload
@@ -99,12 +89,9 @@ sudo rm cron_bkp
 
 
 sudo su << EOSUDO
-
 echo '
-
-  Melt Go Agent Installed Successfully ! Happy MELTing !!
+  MW Go Agent Installed Successfully !
   ----------------------------------------------------
-
   /usr/local/bin 
     └───mw-go-agent
             └───apt: Contains all the required components to run APT package on the system
@@ -112,7 +99,6 @@ echo '
                 └───pgp-key-$MW_VERSION.public: Contains copy of public key
                 └───cron:
                     └───mw-go.log: Contains copy of public key
-
   /etc 
     ├─── apt
     |      └───sources.list.d

@@ -37,7 +37,7 @@ receivers:
 
   # Read log files (Infra logs + APM logs)
   filelog:
-    include: [ /var/log/*.log, /var/log/*/*.log ]
+    include: [ /var/log/**/*.log, $MW_LOG_PATHS ]
     include_file_path: true
     include_file_name_resolved: true
     include_file_path_resolved: true
@@ -125,18 +125,18 @@ exporters:
 service:
 #   extensions: [health_check]
   pipelines:
-    metrics:
-      receivers: [ hostmetrics, docker_stats, otlp ]
-      processors: [ resourcedetection, resource ]
-      exporters: [ otlp/2 ]
+    # metrics:
+    #   receivers: [ hostmetrics, docker_stats, otlp ]
+    #   processors: [ resourcedetection, resource ]
+    #   exporters: [ otlp/2 ]
     logs:
       receivers: [ fluentforward, otlp, filelog ]
       processors: [ resourcedetection, resource/2 ]
       exporters: [ otlp/2, logging ]
-    traces:
-      receivers: [ otlp ]
-      processors: [ resourcedetection, resource/3, attributes/traces ]
-      exporters: [ otlp/2 ]
+    # traces:
+    #   receivers: [ otlp ]
+    #   processors: [ resourcedetection, resource/3, attributes/traces ]
+    #   exporters: [ otlp/2 ]
   telemetry:
     logs:
       level: debug
