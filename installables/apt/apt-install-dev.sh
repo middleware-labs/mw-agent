@@ -8,20 +8,73 @@ if [ "${MW_VERSION}" = "" ]; then
   export MW_VERSION
 fi
 
-echo "The host agent will monitor all '.log' files inside your /var/log directory (recursively)"
+
+MW_LOG_PATHS="/var/log/**/*.log"
+
+echo -e "\nThe host agent will monitor all '.log' files inside your /var/log directory recursively [/var/log/**/*.log]"
 while true; do
-    read -p "Do you want to monitor any more directories for logs ? [y|n]" yn
+    
+    read -p "Do you want to monitor any more directories for logs ? [Y|n] : " yn
     case $yn in
-        [Yy]* ) 
-          echo "Ok, you want to add more paths .... cool"
+        [Yy]* )
+          MW_LOG_PATH_DIR=""
+          
+          while true; do
+            read -p "    Enter the absolute directory path from where you want to collect logs [/var/logs] : " MW_LOG_PATH_DIR
+            export MW_LOG_PATH_DIR
+            if [[ $MW_LOG_PATH_DIR =~ ^/|(/[\w-]+)+$ ]]
+            then 
+              break
+            else
+              echo "Invalid file path, try again ..."
+            fi
+          done
+
+          while true; do
+            read -p "    Do you want to watch "$MW_LOG_PATH_DIR" directory recursively ? (also watch files in subfolders) [Y|n] : " MW_LOG_PATH_DIR_RECURSIVE
+            case $MW_LOG_PATH_DIR_RECURSIVE in
+                [Yy]* ) 
+                    MW_LOG_PATH_DIR=$MW_LOG_PATH_DIR/**/*
+                    break;;
+                [Nn]* )       
+                    MW_LOG_PATH_DIR=$MW_LOG_PATH_DIR/*
+                    break;;
+                * )
+                  echo "Please answer y or n"
+                  continue;;
+            esac
+          done
+          
+          MW_LOG_PATH_DIR_EXTENSION=".log"
+            while true; do
+            read -p "    By default the agent will monitor '.log' files, do you want to replace the target extension ? [y|N] : " MW_LOG_PATH_DIR_EXTENSION_FLAG
+            case $MW_LOG_PATH_DIR_EXTENSION_FLAG in
+                [Yy]* ) 
+                    read -p "    Enter extension that you want to watch [Ex => .json] : " MW_LOG_PATH_DIR_EXTENSION
+                    break;;
+                [Nn]* )
+                    break;; 
+                * )
+                  echo "Please answer y or n"
+                  continue;;              
+            esac
+          done
+
+          MW_LOG_PATH_DIR=$MW_LOG_PATH_DIR$MW_LOG_PATH_DIR_EXTENSION;
+          if [[ -n $MW_LOG_PATHS ]]
+            then MW_LOG_PATHS=$MW_LOG_PATHS", "
+          fi
+          MW_LOG_PATHS=$MW_LOG_PATHS$MW_LOG_PATH_DIR
+          echo -e "\nOur agent will now be monitoring these files : "$MW_LOG_PATHS
+          continue;;
+        [Nn]* ) 
+          echo -e "\n----------------------------------------------------------\n\nOkay, Continuing installation ....\n\n----------------------------------------------------------\n"
           break;;
-        [Nn]* ) echo "Ok, you do not want to add more paths" exit;;
-        * ) echo "Please answer y or n.";;
+        * ) 
+          echo -e "\nPlease answer y or n."
+          continue;;
     esac
 done
-
-
-
 
 # Adding APT repo address & public key to system
 sudo mkdir -p /usr/local/bin/mw-go-agent/apt
@@ -73,12 +126,12 @@ EOF
 if [ ! "${TARGET}" = "" ]; then
 cat << EOIF > /usr/local/bin/mw-go-agent/apt/executable
 #!/bin/sh
-cd /usr/bin && MW_API_KEY=$MW_API_KEY TARGET=$TARGET mw-go-agent-host start
+cd /usr/bin && MW_API_KEY=$MW_API_KEY TARGET=$TARGET MW_LOG_PATHS=$MW_LOG_PATHS mw-go-agent-host start
 EOIF
 else 
 cat << EOELSE > /usr/local/bin/mw-go-agent/apt/executable
 #!/bin/sh
-cd /usr/bin && MW_API_KEY=$MW_API_KEY mw-go-agent-host start
+cd /usr/bin && MW_API_KEY=$MW_API_KEY MW_LOG_PATHS=$MW_LOG_PATHS mw-go-agent-host start
 EOELSE
 fi
 chmod 777 /usr/local/bin/mw-go-agent/apt/executable
