@@ -22,7 +22,10 @@ receivers:
             enabled: true
       paging: {}
       disk: {}
-      filesystem: {}
+      filesystem:
+        metrics:
+          system.filesystem.utilization:
+            enabled: true
       network: {}
       processes: {}
       process:
