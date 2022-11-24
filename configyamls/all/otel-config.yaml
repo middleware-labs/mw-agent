@@ -26,7 +26,10 @@ receivers:
         metrics:
           system.filesystem.utilization:
             enabled: true
-      network: {}
+      network:
+        metrics:
+          system.network.io.bandwidth:
+            enabled: true
       processes: {}
       process:
         avoid_selected_errors: true
