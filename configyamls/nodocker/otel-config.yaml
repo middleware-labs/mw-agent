@@ -23,7 +23,10 @@ receivers:
       paging: {}
       disk: {}
       filesystem: {}
-      network: {}
+      network:
+        metrics:
+          system.network.io.bandwidth:
+            enabled: true
       processes: {}
       process:
         mute_process_name_error: true
