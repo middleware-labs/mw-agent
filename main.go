@@ -40,6 +40,11 @@ func app() *cli.App {
 		os.Setenv("MW_DOCKER_ENDPOINT", "unix:///var/run/docker.sock")
 	}
 
+	_, haveMwLogPaths := os.LookupEnv("MW_LOG_PATHS")
+	if !haveMwLogPaths {
+		os.Setenv("MW_LOG_PATHS", "")
+	}
+
 	collectionType := "all"
 	_, err := os.Stat("/var/run/docker.sock")
 	if err != nil {

@@ -54,7 +54,7 @@ receivers:
 
   # Read log files (Infra logs + APM logs)
   filelog:
-    include: [ /var/log/**/*.log ]
+    include: [ /var/log/**/*.log*, ${MW_LOG_PATHS} ]
     include_file_path: true
     include_file_name_resolved: true
     include_file_path_resolved: true
