@@ -13,11 +13,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
@@ -27,7 +30,7 @@ func Components() (component.Factories, error) {
 	log.Println("factories.Extensions XXXXXXXX233 setup......")
 	log.Println("TARGET ===> ", os.Getenv("TARGET"))
 	log.Println("MW_API_KEY ===> ", os.Getenv("MW_API_KEY"))
-	factories.Extensions, err = component.MakeExtensionFactoryMap(
+	factories.Extensions, err = extension.MakeFactoryMap(
 		healthcheckextension.NewFactory(),
 	// frontend.NewAuthFactory(),
 	)
@@ -35,7 +38,7 @@ func Components() (component.Factories, error) {
 		return component.Factories{}, err
 	}
 
-	factories.Receivers, err = component.MakeReceiverFactoryMap([]component.ReceiverFactory{
+	factories.Receivers, err = receiver.MakeFactoryMap([]component.ReceiverFactory{
 		otlpreceiver.NewFactory(),
 		filelogreceiver.NewFactory(),
 		fluentforwardreceiver.NewFactory(),
@@ -46,7 +49,7 @@ func Components() (component.Factories, error) {
 		return component.Factories{}, err
 	}
 
-	factories.Exporters, err = component.MakeExporterFactoryMap([]component.ExporterFactory{
+	factories.Exporters, err = exporter.MakeFactoryMap([]component.ExporterFactory{
 		loggingexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),

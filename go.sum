@@ -328,6 +328,7 @@ github.com/hjson/hjson-go/v4 v4.0.0 h1:wlm6IYYqHjOdXH1gHev4VoXCaW20HdQAGCxdOEEg2
 github.com/hjson/hjson-go/v4 v4.0.0/go.mod h1:KaYt3bTw3zhBjYqnXkYywcYctk0A2nxeEFTse3rH13E=
 github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/inconshreveable/mousetrap v1.0.1 h1:U3uMjPSQEBMNp1lFxmllqCPM6P5u/Xq7Pgzkat/bFNc=
+github.com/inconshreveable/mousetrap v1.0.1/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
 github.com/jaegertracing/jaeger v1.39.1-0.20221110195127-14c11365a856 h1:YLZ10whw2OQWjHnjqklvXSpS6QY+xhPsUTUya8yQQvc=
 github.com/jaegertracing/jaeger v1.39.1-0.20221110195127-14c11365a856/go.mod h1:4UMLDc2yEm0f2Djlej2F7B/BMXRpSyVQX8CkuvtQ4nk=
 github.com/jmespath/go-jmespath v0.4.0 h1:BEgLn5cpjn8UN1mAw4NjwDrS35OdebyEtFe+9YPoQUg=
@@ -397,12 +398,12 @@ github.com/mattn/go-runewidth v0.0.8/go.mod h1:H031xJmbD/WCDINGzjvQ9THkh0rPKHF+m
 github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
 github.com/matttproud/golang_protobuf_extensions v1.0.4 h1:mmDVorXM7PCGKw94cs5zkfA9PSy5pEvNWRP0ET0TIVo=
 github.com/matttproud/golang_protobuf_extensions v1.0.4/go.mod h1:BSXmuO+STAnVfrANrmjBb36TMTDstsz7MSK+HVaYKv4=
-github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.0.0-20221221104511-9f8106ccab84 h1:iYmL6+jrXihuOXCHk4T5zNRazyE2gxIhbyZrtxipaA4=
-github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.0.0-20221221104511-9f8106ccab84/go.mod h1:QNWYkVtJ1MEKS3GvQ22lfEUAJWlShRrfBjGxMb3K+3E=
-github.com/middleware-labs/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.0.0-20221221104511-9f8106ccab84 h1:V1jf+SwTnEr5E/u3rtth4WmkOH6wQaAGnE3ncouAcYo=
-github.com/middleware-labs/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.0.0-20221221104511-9f8106ccab84/go.mod h1:2+ad1SJoYn1WXEYE2bKCT4iAxgkz/E8AMCdBVTJaVwY=
-github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.0.0-20221221104511-9f8106ccab84 h1:eimfhFeUdwltSuMc6y5BAOdyYoHFMglSzSPgpKU1tWU=
-github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.0.0-20221221104511-9f8106ccab84/go.mod h1:2hbs3BKSghDVn5t4UEvPQJXqDCtXUyVDtw75gdYt6ZA=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.0.0-20221222042231-e30034a7b9ca h1:SpgaCvxi38wURTbQT45UW4K16KDiIJAl/PF5Mn75vNs=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.0.0-20221222042231-e30034a7b9ca/go.mod h1:QNWYkVtJ1MEKS3GvQ22lfEUAJWlShRrfBjGxMb3K+3E=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.0.0-20221222042231-e30034a7b9ca h1:IqHZx4+l0XGpdT5PkGU/7+bvYITlx5ePFhdb+/8PTKQ=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.0.0-20221222042231-e30034a7b9ca/go.mod h1:2+ad1SJoYn1WXEYE2bKCT4iAxgkz/E8AMCdBVTJaVwY=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.0.0-20221222042231-e30034a7b9ca h1:vgUS+uPLqRl/K4YLDiKcm+/Wg+sUjWxXmW1wRY+uBmo=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.0.0-20221222042231-e30034a7b9ca/go.mod h1:2hbs3BKSghDVn5t4UEvPQJXqDCtXUyVDtw75gdYt6ZA=
 github.com/miekg/dns v1.1.26/go.mod h1:bPDLeHnStXmXAq1m/Ch/hvfNHr14JKNPMBo3VZKjuso=
 github.com/miekg/dns v1.1.41 h1:WMszZWJG0XmzbK9FEmzH2TVcqYzFesusSIB41b8KHxY=
 github.com/miekg/dns v1.1.41/go.mod h1:p6aan82bvRIyn+zDIv9xYNUpwa73JcSh9BKwknJysuI=
@@ -566,6 +567,7 @@ github.com/sirupsen/logrus v1.7.0/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic
 github.com/sirupsen/logrus v1.8.1 h1:dJKuHgqk1NNQlqoA6BTlM1Wf9DOH3NBjQyu0h9+AZZE=
 github.com/sirupsen/logrus v1.8.1/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
 github.com/spf13/cobra v1.6.1 h1:o94oiPyS4KD1mPy2fmcYYHHfCxLqYjJOhGsCHFZtEzA=
+github.com/spf13/cobra v1.6.1/go.mod h1:IOw/AERYS7UzyrGinqmz6HLUo219MORXGxhbaJUqzrY=
 github.com/spf13/pflag v1.0.5 h1:iy+VFUOCP1a+8yFto/drg2CJ5u0yRoB7fZw3DKv/JXA=
 github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
 github.com/stoewer/go-strcase v1.2.0/go.mod h1:IBiWB2sKIp3wVVQ3Y035++gc+knqhUQag1KpM8ahLw8=
