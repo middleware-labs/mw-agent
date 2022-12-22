@@ -36,6 +36,16 @@ func Try[T any](item T, err error) T {
 // air --build.cmd "go build -o /tmp/api-server /app/*.go" --build.bin "/tmp/api-server $*"
 func app() *cli.App {
 
+	_, hasMwDockerEndpoint := os.LookupEnv("MW_DOCKER_ENDPOINT")
+	if !hasMwDockerEndpoint {
+		os.Setenv("MW_DOCKER_ENDPOINT", "unix:///var/run/docker.sock")
+	}
+
+	_, haveMwLogPaths := os.LookupEnv("MW_LOG_PATHS")
+	if !haveMwLogPaths {
+		os.Setenv("MW_LOG_PATHS", "")
+	}
+
 	collectionType := "all"
 	_, err := os.Stat("/var/run/docker.sock")
 	if err != nil {
