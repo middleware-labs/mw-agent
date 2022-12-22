@@ -21,9 +21,18 @@ receivers:
           system.memory.utilization:
             enabled: true
       paging: {}
-      disk: {}
-      filesystem: {}
-      network: {}
+      disk:
+        metrics:
+          system.disk.io.speed:
+            enabled: true
+      filesystem:
+        metrics:
+          system.filesystem.utilization:
+            enabled: true
+      network:
+        metrics:
+          system.network.io.bandwidth:
+            enabled: true
       processes: {}
       process:
         avoid_selected_errors: true
@@ -35,13 +44,20 @@ receivers:
     timeout: 20s
     api_version: 1.24
 
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: "otel-collector"
+          scrape_interval: 5s
+          static_configs:
+            - targets: ["0.0.0.0:8888"]
+
   # Read log files (Infra logs + APM logs)
   filelog:
-    include: [ /var/log/**/*.log ]
+    include: [ /var/log/**/*.log*, $MW_LOG_PATHS ]
     include_file_path: true
     include_file_name_resolved: true
     include_file_path_resolved: true
-    start_at: beginning
 
   # Read log sent through fluent protocol (APM logs)
   fluentforward:
@@ -112,9 +128,6 @@ exporters:
     loglevel: debug
   otlp/2:
     endpoint: ${TARGET}
-    tls:
-      insecure: true
-      insecure_skip_verify: true
     headers:
       authorization: ${MW_API_KEY}
     sending_queue:
@@ -126,7 +139,7 @@ service:
 #   extensions: [health_check]
   pipelines:
     metrics:
-      receivers: [ hostmetrics, docker_stats, otlp ]
+      receivers: [ hostmetrics, docker_stats, otlp, prometheus ]
       processors: [ resourcedetection, resource ]
       exporters: [ otlp/2 ]
     logs:
@@ -136,7 +149,7 @@ service:
     traces:
       receivers: [ otlp ]
       processors: [ resourcedetection, resource/3, attributes/traces ]
-      exporters: [ otlp/2, logging ]
+      exporters: [ otlp/2 ]
   telemetry:
     logs:
-      level: debug
+      level: warn
