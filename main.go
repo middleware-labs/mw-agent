@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	// "time"
 
 	"github.com/prometheus/common/version"
 	"github.com/sirupsen/logrus"
@@ -15,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
-	"go.opentelemetry.io/collector/service"
+	"go.opentelemetry.io/collector/otelcol"
 	"go.uber.org/zap"
 )
 
@@ -68,7 +69,7 @@ func app() *cli.App {
 				Flags: []cli.Flag{},
 				Action: func(c *cli.Context) error {
 
-					configProvider, err := service.NewConfigProvider(service.ConfigProviderSettings{
+					configProvider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{
 						ResolverSettings: confmap.ResolverSettings{
 							Providers: map[string]confmap.Provider{
 								"file": fileprovider.New(),
@@ -85,7 +86,7 @@ func app() *cli.App {
 					if err != nil {
 						log.Fatalf("config provider error thrown %v", err.Error())
 					}
-					p := service.CollectorSettings{
+					settings := otelcol.CollectorSettings{
 						DisableGracefulShutdown: true,
 						LoggingOptions:          []zap.Option{
 							// zap.Development(),
@@ -99,8 +100,8 @@ func app() *cli.App {
 						Factories:      Try(Components()),
 						ConfigProvider: configProvider,
 					}
-					cmdc, _ := service.New(p)
-					if err := cmdc.Run(context.TODO()); err != nil {
+					collector, _ := otelcol.NewCollector(settings)
+					if err := collector.Run(context.Background()); err != nil {
 						return fmt.Errorf("collector server run finished with error: %w", err)
 					}
 
