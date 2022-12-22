@@ -45,7 +45,7 @@ func Components() (component.Factories, error) {
 		fluentforwardreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
 		dockerstatsreceiver.NewFactory(),
-		prometheusreceiver.NewAuthFactory(),
+		prometheusreceiver.NewFactory(),
 	}...)
 	if err != nil {
 		return component.Factories{}, err
