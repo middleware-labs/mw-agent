@@ -58,6 +58,17 @@ receivers:
     include_file_path: true
     include_file_name_resolved: true
     include_file_path_resolved: true
+    operators:
+      - type: regex_parser
+        if: 'body matches "^(ts=.+ caller=.+ level=.+ msg=.+ name=systemd duration_seconds=.+ err=.+)$"'
+        id: systemd_err
+        regex:  '^ts=(?P<systemd_err_ts>.+) caller=(?P<systemd_err_caller>.+) level=(?P<level>.+) msg=(?P<systemd_err_msg>.+) name=(?P<name>.+) duration_seconds=(?P<systemd_err_duration_seconds>.+) err="(?P<systemd_err_body>.+)"$'
+        parse_from: body
+      - type: move
+        id: systemd_err_move
+        if: "attributes.systemd_err_body != nil"
+        from: attributes.systemd_err_body
+        to: body
 
   # Read log sent through fluent protocol (APM logs)
   fluentforward:
