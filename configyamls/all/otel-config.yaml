@@ -64,6 +64,7 @@ receivers:
         id: systemd_err
         regex:  '^ts=(?P<systemd_err_ts>.+) caller=(?P<systemd_err_caller>.+) level=(?P<level>.+) msg=(?P<systemd_err_msg>.+) name=(?P<name>.+) duration_seconds=(?P<systemd_err_duration_seconds>.+) err="(?P<systemd_err_body>.+)"$'
         parse_from: body
+        output: systemd_err_move
       - type: move
         id: systemd_err_move
         if: "attributes.systemd_err_body != nil"
