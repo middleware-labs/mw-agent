@@ -60,9 +60,9 @@ receivers:
     include_file_path_resolved: true
     operators:
       - type: regex_parser
-        if: 'body matches "^(ts=.+ caller=.+ level=.+ msg=.+ name=systemd duration_seconds=.+ err=.+)$"'
+        if: 'body matches "ts=.+ caller=.+ level=.+ msg=.+ name=systemd duration_seconds=.+ err=.+"'
         id: systemd_err
-        regex:  '^ts=(?P<systemd_err_ts>.+) caller=(?P<systemd_err_caller>.+) level=(?P<level>.+) msg=(?P<systemd_err_msg>.+) name=(?P<name>.+) duration_seconds=(?P<systemd_err_duration_seconds>.+) err="(?P<systemd_err_body>.+)"$'
+        regex:  'ts=(?P<systemd_err_ts>.+) caller=(?P<systemd_err_caller>.+) level=(?P<level>.+) msg=(?P<systemd_err_msg>.+) name=(?P<name>.+) duration_seconds=(?P<systemd_err_duration_seconds>.+) err="(?P<systemd_err_body>.+)"'
         parse_from: body
         output: systemd_err_move
       - type: move
