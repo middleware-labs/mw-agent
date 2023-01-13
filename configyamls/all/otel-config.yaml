@@ -59,16 +59,32 @@ receivers:
     include_file_name_resolved: true
     include_file_path_resolved: true
     operators:
+      # If systemd pattern matches -- add systemd regex to attributes
+      - type: add
+        if: 'body matches "ts=.+ caller=.+ level=.+ msg=.+ name=systemd duration_seconds=.+ err=.+"'
+        id: adding_regex_to_attributes
+        field: attributes.regex_identified
+        value: ts=.+ caller=.+ level=.+ msg=.+ name=systemd duration_seconds=.+ err=.+
+        output: systemd_err
+      # If systemd pattern matches parsing details from body to attributes
       - type: regex_parser
         if: 'body matches "ts=.+ caller=.+ level=.+ msg=.+ name=systemd duration_seconds=.+ err=.+"'
         id: systemd_err
-        regex:  'ts=(?P<systemd_err_ts>.+) caller=(?P<systemd_err_caller>.+) level=(?P<level>.+) msg=(?P<systemd_err_msg>.+) name=(?P<name>.+) duration_seconds=(?P<systemd_err_duration_seconds>.+) err="(?P<systemd_err_body>.+)"'
+        regex:  'ts=(?P<systemd_err_ts>.+) caller=(?P<systemd_err_caller>.+) level=(?P<level>.+) msg=(?P<systemd_err_msg>.+) name=(?P<name>.+) duration_seconds=(?P<systemd_err_duration_seconds>.+) err="(?P<regex_resolved_body>.+)"'
         parse_from: body
+        output: backup_unresolved_body
+      # Copying unresolved regex body to attributes
+      - type: copy
+        id: backup_unresolved_body
+        if: "attributes.regex_resolved_body != nil"
+        from: body
+        to: attributes.regex_unresolved_body
         output: systemd_err_move
+      #  Moving systemd error content from attributes to body
       - type: move
         id: systemd_err_move
-        if: "attributes.systemd_err_body != nil"
-        from: attributes.systemd_err_body
+        if: "attributes.regex_resolved_body != nil"
+        from: attributes.regex_resolved_body
         to: body
 
   # Read log sent through fluent protocol (APM logs)
