@@ -17,9 +17,15 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.uber.org/zap"
+	"strconv"
+	"time"
 )
 
 func main() {
+
+	os.Setenv("MW_AGENT_INSTALLATION_TIME", strconv.FormatInt(time.Now().Unix(), 10))
+	agent_installation_log()
+
 	if err := app().Run(os.Args); err != nil {
 		logrus.WithError(err).Fatal("could not run application")
 	}
