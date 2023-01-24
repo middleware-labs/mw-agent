@@ -55,7 +55,7 @@ receivers:
   # Read log files (Infra logs + APM logs)
   filelog:
     include: [ /var/log/**/*.log*, $MW_LOG_PATHS ]
-    exclude: [ /tmp/mwagent/install_success.log ]
+    exclude: [ /tmp/mwagent/record_time.log ]
     include_file_path: true
     include_file_name_resolved: true
     include_file_path_resolved: true
@@ -88,9 +88,9 @@ receivers:
         from: attributes.regex_resolved_body
         to: body
 
-  filelog/install_success: 
-     include: [ /tmp/mwagent/install_success.log ]
-     start_at: beginning
+  # filelog/record_time: 
+  #    include: [ /tmp/mwagent/record_time.log ]
+  #    start_at: beginning
   # Read log sent through fluent protocol (APM logs)
   fluentforward:
     endpoint: 0.0.0.0:8006
@@ -132,17 +132,17 @@ processors:
       from_attribute: host.name
       action: upsert
 
-  resource/install_success:
-    attributes:
-    - key: mw.account_key
-      action: upsert
-      value: ${MW_API_KEY}
-    - key: host.id
-      from_attribute: host.name
-      action: upsert
-    - key: agent.installation.time
-      action: insert
-      value: ${MW_AGENT_INSTALLATION_TIME}
+  # resource/record_time:
+  #   attributes:
+  #   - key: mw.account_key
+  #     action: upsert
+  #     value: ${MW_API_KEY}
+  #   - key: host.id
+  #     from_attribute: host.name
+  #     action: upsert
+  #   - key: agent.installation.time
+  #     action: insert
+  #     value: ${MW_AGENT_INSTALLATION_TIME}
 
   attributes/traces:
     actions:
@@ -190,10 +190,10 @@ service:
       receivers: [ fluentforward, otlp, filelog ]
       processors: [ resourcedetection, resource/2 ]
       exporters: [ otlp/2 ]
-    logs/manual:
-      receivers: [ filelog/install_success ]
-      processors: [ resourcedetection, resource/install_success ]
-      exporters: [ otlp/2 ]
+    # logs/manual:
+    #   receivers: [ filelog/record_time ]
+    #   processors: [ resourcedetection, resource/record_time ]
+    #   exporters: [ otlp/2 ]
     traces:
       receivers: [ otlp ]
       processors: [ resourcedetection, resource/3, attributes/traces ]

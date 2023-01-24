@@ -4,6 +4,8 @@ import (
 	// "context"
 
 	"os"
+	"strconv"
+	"time"
 	// "go.opentelemetry.io/collector/pdata/plog"
 	// "go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	// "time"
@@ -15,11 +17,13 @@ func agent_installation_log() {
 		// log.Fatal(err)
 	}
 
-	f, _ := os.OpenFile("/tmp/mwagent/install_success.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
+	// f, _ := os.OpenFile("/tmp/mwagent/record_time.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
+	f, _ := os.OpenFile("/tmp/mwagent/record_time.log", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0777)
 
 	defer f.Close()
 
-	f.WriteString("Middleware Agent Installed Successfully !\n")
+	currentTime := strconv.FormatInt(time.Now().UnixMilli(), 10)
+	f.WriteString(currentTime)
 
 	// ld := plog.NewLogs()
 	// rl := ld.ResourceLogs().AppendEmpty()
