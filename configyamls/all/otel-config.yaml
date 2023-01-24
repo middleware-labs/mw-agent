@@ -108,6 +108,12 @@ processors:
     - key: host.id
       from_attribute: host.name
       action: upsert
+    - key: agent.installation.time
+      from_attribute: host.name
+      action: insert
+    - key: agent.installation.time
+      value: ${MW_AGENT_INSTALLATION_TIME}
+      action: update
 
   # logs
   resource/2:
