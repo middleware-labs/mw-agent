@@ -6,6 +6,9 @@ import (
 	"log"
 	"os"
 
+	"strconv"
+	"time"
+
 	"github.com/prometheus/common/version"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -17,13 +20,11 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.uber.org/zap"
-	"strconv"
-	"time"
 )
 
 func main() {
 
-	os.Setenv("MW_AGENT_INSTALLATION_TIME", strconv.FormatInt(time.Now().Unix(), 10))
+	os.Setenv("MW_AGENT_INSTALLATION_TIME", strconv.FormatInt(time.Now().UnixMilli(), 10))
 	agent_installation_log()
 
 	if err := app().Run(os.Args); err != nil {
