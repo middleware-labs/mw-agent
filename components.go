@@ -31,6 +31,7 @@ func Components() (component.Factories, error) {
 	log.Println("factories.Extensions XXXXXXXX233 setup......")
 	log.Println("TARGET ===> ", os.Getenv("TARGET"))
 	log.Println("MW_API_KEY ===> ", os.Getenv("MW_API_KEY"))
+	log.Println("Agent Installed At ===> ", os.Getenv("MW_AGENT_INSTALLATION_TIME"))
 	factories.Extensions, err = extension.MakeFactoryMap(
 		healthcheckextension.NewFactory(),
 	// frontend.NewAuthFactory(),
