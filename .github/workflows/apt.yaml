@@ -150,6 +150,8 @@ jobs:
         cp -r example/private-keys/* install.middleware.io/private-keys/
         cp -r example/public-keys/* install.middleware.io/public-keys/
         cp -r example/repos/* install.middleware.io/repos/
+        cp configyamls/all/otel-config.yaml configyamls/all/otel-config.yaml 
+        cp configyamls/nodocker/otel-config.yaml configyamls/all/otel-config.yaml 
         cd install.middleware.io
         git config --global user.email "keval@middleware.io"
         git config --global user.name "bhogayatakb"
