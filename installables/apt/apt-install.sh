@@ -1,5 +1,5 @@
 #!/bin/bash
-MW_LATEST_VERSION=0.0.14
+MW_LATEST_VERSION=0.0.15
 export MW_LATEST_VERSION
 export MW_AUTO_START=true
 
