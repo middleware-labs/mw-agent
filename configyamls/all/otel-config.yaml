@@ -175,27 +175,27 @@ processors:
 
 exporters:
   logging:
-    loglevel: debug
-  otlp/2:
-    endpoint: ${TARGET}
-    headers:
-      authorization: ${MW_API_KEY}
-    sending_queue:
-      enabled: true
-      num_consumers: 100
-      queue_size: 10000
+  #   loglevel: debug
+  # otlp/2:
+  #   endpoint: ${TARGET}
+  #   headers:
+  #     authorization: ${MW_API_KEY}
+  #   sending_queue:
+  #     enabled: true
+  #     num_consumers: 100
+  #     queue_size: 10000
 
 service:
 #   extensions: [health_check]
   pipelines:
-    metrics:
-      receivers: [ hostmetrics, docker_stats, otlp, prometheus ]
-      processors: [ resourcedetection, resource ]
-      exporters: [ otlp/2 ]
+    # metrics:
+    #   receivers: [ hostmetrics, docker_stats, otlp, prometheus ]
+    #   processors: [ resourcedetection, resource ]
+    #   exporters: [ otlp/2 ]
     logs:
-      receivers: [ fluentforward, otlp, filelog ]
+      receivers: [ otlp ]
       processors: [ resourcedetection, resource/2 ]
-      exporters: [ otlp/2 ]
+      exporters: [ logging ]
     # logs/manual:
     #   receivers: [ filelog/record_time ]
     #   processors: [ resourcedetection, resource/record_time ]
@@ -203,7 +203,7 @@ service:
     traces:
       receivers: [ otlp ]
       processors: [ resourcedetection, resource/3, attributes/traces ]
-      exporters: [ otlp/2 ]
+      exporters: [ logging ]
   telemetry:
     logs:
-      level: warn
+      level: debug
