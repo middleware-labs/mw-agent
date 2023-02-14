@@ -188,12 +188,12 @@ exporters:
 service:
 #   extensions: [health_check]
   pipelines:
-    # metrics:
-    #   receivers: [ hostmetrics, docker_stats, otlp, prometheus ]
-    #   processors: [ resourcedetection, resource ]
-    #   exporters: [ otlp/2 ]
+    metrics:
+      receivers: [ hostmetrics, docker_stats, otlp, prometheus ]
+      processors: [ resourcedetection, resource ]
+      exporters: [ otlp/2 ]
     logs:
-      receivers: [ otlp ]
+      receivers: [ otlp, filelog, fluentforward ]
       processors: [ resourcedetection, resource/2 ]
       exporters: [ logging ]
     # logs/manual:
