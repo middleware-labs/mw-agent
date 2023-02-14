@@ -175,15 +175,15 @@ processors:
 
 exporters:
   logging:
-  #   loglevel: debug
-  # otlp/2:
-  #   endpoint: ${TARGET}
-  #   headers:
-  #     authorization: ${MW_API_KEY}
-  #   sending_queue:
-  #     enabled: true
-  #     num_consumers: 100
-  #     queue_size: 10000
+    loglevel: debug
+  otlp/2:
+    endpoint: ${TARGET}
+    headers:
+      authorization: ${MW_API_KEY}
+    sending_queue:
+      enabled: true
+      num_consumers: 100
+      queue_size: 10000
 
 service:
 #   extensions: [health_check]
@@ -206,4 +206,4 @@ service:
       exporters: [ otlp/2 ]
   telemetry:
     logs:
-      level: debug
+      level: warn
