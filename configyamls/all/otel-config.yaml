@@ -195,7 +195,7 @@ service:
     logs:
       receivers: [ otlp, filelog, fluentforward ]
       processors: [ resourcedetection, resource/2 ]
-      exporters: [ logging ]
+      exporters: [ otlp/2 ]
     # logs/manual:
     #   receivers: [ filelog/record_time ]
     #   processors: [ resourcedetection, resource/record_time ]
@@ -203,7 +203,7 @@ service:
     traces:
       receivers: [ otlp ]
       processors: [ resourcedetection, resource/3, attributes/traces ]
-      exporters: [ logging ]
+      exporters: [ otlp/2 ]
   telemetry:
     logs:
       level: debug
