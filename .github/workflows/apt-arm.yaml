@@ -6,7 +6,7 @@ on:
     #   - 'dev'
 
     tags:
-      - 'apt-arm*'
+      - 'arm*'
 
 env:
   ARCH: arm64
@@ -48,7 +48,7 @@ jobs:
 
     - name: Creating Control File
       run: |
-          cp installables/apt/deb/control example/mw-agent_$RELEASE_VERSION-1_all/DEBIAN/control
+          cp installables/apt/deb/control-arm example/mw-agent_$RELEASE_VERSION-1_all/DEBIAN/control
 
     - name: Creating DEB package
       run: |

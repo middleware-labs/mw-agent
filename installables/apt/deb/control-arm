@@ -1,0 +1,7 @@
+Package: mw-go-agent-host-arm
+Version: 0.0.15arm64
+Maintainer: example <example@example.com>
+Depends: libc6
+Architecture: all
+Homepage: http://example.com
+Description: Telemetry Collector Tool
