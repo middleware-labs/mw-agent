@@ -1,195 +1,183 @@
 receivers:
-  otlp:
-    protocols:
-      grpc:
-        endpoint: 0.0.0.0:9319
-      http:
-        endpoint: 0.0.0.0:9320
-
-  # Scrapping OS metrics (Infra Metrics)
-  hostmetrics:
-    collection_interval: 5s
-    scrapers:
-      cpu:
-        metrics:
-          system.cpu.utilization:
-            enabled: true
-      load:
-        cpu_average: true
-      memory:
-        metrics:
-          system.memory.utilization:
-            enabled: true
-      paging: {}
-      disk:
-        metrics:
-          system.disk.io.speed:
-            enabled: true
-      filesystem:
-        metrics:
-          system.filesystem.utilization:
-            enabled: true
-      network:
-        metrics:
-          system.network.io.bandwidth:
-            enabled: true
-      processes: {}
-      process:
-        avoid_selected_errors: true
-        mute_process_name_error: true
-
-  # Read log files (Infra logs + APM logs)
-  filelog:
-    include: [ /var/log/**/*.log*, $MW_LOG_PATHS ]
-    exclude: [ /tmp/mwagent/record_time.log ]
-    include_file_path: true
-    include_file_name_resolved: true
-    include_file_path_resolved: true
-    operators:
-      # If systemd pattern matches -- add systemd regex to attributes
-      - type: add
-        if: 'body matches "ts=.+ caller=.+ level=.+ msg=.+ name=systemd duration_seconds=.+ err=.+"'
-        id: adding_regex_to_attributes
-        field: attributes.regex_identified
-        value: ts=.+ caller=.+ level=.+ msg=.+ name=systemd duration_seconds=.+ err=.+
-        output: systemd_err
-      # If systemd pattern matches parsing details from body to attributes
-      - type: regex_parser
-        if: 'body matches "ts=.+ caller=.+ level=.+ msg=.+ name=systemd duration_seconds=.+ err=.+"'
-        id: systemd_err
-        regex:  'ts=(?P<systemd_err_ts>.+) caller=(?P<systemd_err_caller>.+) level=(?P<level>.+) msg=(?P<systemd_err_msg>.+) name=(?P<name>.+) duration_seconds=(?P<systemd_err_duration_seconds>.+) err="(?P<regex_resolved_body>.+)"'
-        parse_from: body
-        output: backup_unresolved_body
-      # Copying unresolved regex body to attributes
-      - type: copy
-        id: backup_unresolved_body
-        if: "attributes.regex_resolved_body != nil"
-        from: body
-        to: attributes.regex_unresolved_body
-        output: systemd_err_move
-      #  Moving systemd error content from attributes to body
-      - type: move
-        id: systemd_err_move
-        if: "attributes.regex_resolved_body != nil"
-        from: attributes.regex_resolved_body
-        to: body
-
-  # filelog/record_time: 
-  #    include: [ /tmp/mwagent/record_time.log ]
-  #    start_at: beginning
-  # Read log sent through fluent protocol (APM logs)
-  fluentforward:
-    endpoint: 0.0.0.0:8006
-
-# extensions:
-#   health_check:
-
+    otlp:
+        protocols:
+            grpc:
+                endpoint: 0.0.0.0:9319
+            http:
+                endpoint: 0.0.0.0:9320
+    hostmetrics:
+        collection_interval: 5s
+        scrapers:
+            cpu:
+                metrics:
+                    system.cpu.utilization:
+                        enabled: true
+            load:
+                cpu_average: true
+            memory:
+                metrics:
+                    system.memory.utilization:
+                        enabled: true
+            paging: {}
+            disk:
+                metrics:
+                    system.disk.io.speed:
+                        enabled: true
+            filesystem:
+                metrics:
+                    system.filesystem.utilization:
+                        enabled: true
+            network:
+                metrics:
+                    system.network.io.bandwidth:
+                        enabled: true
+            processes: {}
+            process:
+                avoid_selected_errors: true
+                mute_process_name_error: true
+    prometheus:
+        config:
+            scrape_configs:
+                - job_name: otel-collector
+                  scrape_interval: 5s
+                  static_configs:
+                    - targets:
+                        - 0.0.0.0:8888
+    filelog:
+        include:
+            - /var/log/**/*.log*
+            - $MW_LOG_PATHS
+        exclude:
+            - /tmp/mwagent/record_time.log
+        include_file_path: true
+        include_file_name_resolved: true
+        include_file_path_resolved: true
+        operators:
+            - type: add
+              if: body matches "ts=.+ caller=.+ level=.+ msg=.+ name=systemd duration_seconds=.+ err=.+"
+              id: adding_regex_to_attributes
+              field: attributes.regex_identified
+              value: ts=.+ caller=.+ level=.+ msg=.+ name=systemd duration_seconds=.+ err=.+
+              output: systemd_err
+            - type: regex_parser
+              if: body matches "ts=.+ caller=.+ level=.+ msg=.+ name=systemd duration_seconds=.+ err=.+"
+              id: systemd_err
+              output: backup_unresolved_body
+              regex: ts=(?P<systemd_err_ts>.+) caller=(?P<systemd_err_caller>.+) level=(?P<level>.+) msg=(?P<systemd_err_msg>.+) name=(?P<name>.+) duration_seconds=(?P<systemd_err_duration_seconds>.+) err="(?P<regex_resolved_body>.+)"
+              parse_from: body
+            - type: copy
+              if: attributes.regex_resolved_body != nil
+              id: backup_unresolved_body
+              output: systemd_err_move
+              from: body
+              to: attributes.regex_unresolved_body
+            - type: move
+              if: attributes.regex_resolved_body != nil
+              id: systemd_err_move
+              from: attributes.regex_resolved_body
+              to: body
+    fluentforward:
+        endpoint: 0.0.0.0:8006
 processors:
-  # metrics
-  resource:
-    attributes:
-    - key: mw.account_key
-      action: upsert
-      value: ${MW_API_KEY}
-    - key: host.id
-      from_attribute: host.name
-      action: upsert
-    - key: agent.installation.time
-      from_attribute: host.name
-      action: insert
-    - key: agent.installation.time
-      value: ${MW_AGENT_INSTALLATION_TIME}
-      action: update
-
-  # logs
-  resource/2:
-    attributes:
-    - key: mw.account_key
-      action: upsert
-      value: ${MW_API_KEY}
-    - key: service.name
-      action: insert
-      value: middleware-logs
-    - key: host.id
-      from_attribute: host.name
-      action: upsert
-
-  # traces
-  resource/3:
-    attributes:
-    - key: mw.account_key
-      action: upsert
-      value: ${MW_API_KEY}
-    - key: host.id
-      from_attribute: host.name
-      action: upsert
-
-  # resource/record_time:
-  #   attributes:
-  #   - key: mw.account_key
-  #     action: upsert
-  #     value: ${MW_API_KEY}
-  #   - key: host.id
-  #     from_attribute: host.name
-  #     action: upsert
-  #   - key: agent.installation.time
-  #     action: insert
-  #     value: ${MW_AGENT_INSTALLATION_TIME}
-
-  attributes/traces:
-    actions:
-      - key: mw.service.name.derived
-        from_attribute: db.system
-        action: insert
-      - key: mw.service.name.derived
-        from_attribute: messaging.system
-        action: insert
-      - key: mw.service.name.derived
-        from_attribute: rpc.system
-        action: insert
-      - key: mw.service.name.derived
-        from_attribute: http.scheme
-        action: insert
-      - key: mw.service.name.derived
-        from_attribute: faas.trigger
-        action: insert
-
-  resourcedetection:
-    detectors: [ env, system, docker ]
-    timeout: 5s
-    override: false
-
+    resource:
+        attributes:
+            - key: mw.account_key
+              action: upsert
+              value: ${MW_API_KEY}
+            - key: host.id
+              action: upsert
+              from_attribute: host.name
+            - key: agent.installation.time
+              action: insert
+              from_attribute: host.name
+            - key: agent.installation.time
+              action: update
+              value: ${MW_AGENT_INSTALLATION_TIME}
+    resource/2:
+        attributes:
+            - key: mw.account_key
+              action: upsert
+              value: ${MW_API_KEY}
+            - key: service.name
+              action: insert
+              value: middleware-logs
+            - key: host.id
+              action: upsert
+              from_attribute: host.name
+    resource/3:
+        attributes:
+            - key: mw.account_key
+              action: upsert
+              value: ${MW_API_KEY}
+            - key: host.id
+              action: upsert
+              from_attribute: host.name
+    attributes/traces:
+        actions:
+            - key: mw.service.name.derived
+              from_attribute: db.system
+              action: insert
+            - key: mw.service.name.derived
+              from_attribute: messaging.system
+              action: insert
+            - key: mw.service.name.derived
+              from_attribute: rpc.system
+              action: insert
+            - key: mw.service.name.derived
+              from_attribute: http.scheme
+              action: insert
+            - key: mw.service.name.derived
+              from_attribute: faas.trigger
+              action: insert
+    resourcedetection:
+        detectors:
+            - env
+            - system
+            - docker
+        timeout: 5s
+        override: false
 exporters:
-  logging:
-    loglevel: debug
-  otlp/2:
-    endpoint: ${TARGET}
-    headers:
-      authorization: ${MW_API_KEY}
-    sending_queue:
-      enabled: true
-      num_consumers: 100
-      queue_size: 10000
-
+    logging:
+        loglevel: debug
+    otlp/2:
+        endpoint: ${TARGET}
+        headers:
+            authorization: ${MW_API_KEY}
+        sending_queue:
+            enabled: true
+            num_consumers: 100
+            queue_size: 10000
 service:
-#   extensions: [health_check]
-  pipelines:
-    metrics:
-      receivers: [ hostmetrics, otlp ]
-      processors: [ resourcedetection, resource ]
-      exporters: [ otlp/2 ]
-    logs:
-      receivers: [ fluentforward, otlp, filelog ]
-      processors: [ resourcedetection, resource/2 ]
-      exporters: [ otlp/2 ]
-    # logs/manual:
-    #   receivers: [ filelog/record_time ]
-    #   processors: [ resourcedetection, resource/record_time ]
-    #   exporters: [ otlp/2 ]
-    traces:
-      receivers: [ otlp ]
-      processors: [ resourcedetection, resource/3, attributes/traces ]
-      exporters: [ otlp/2 ]
-  telemetry:
-    logs:
-      level: debug
+    pipelines:
+        metrics:
+            receivers:
+                - hostmetrics
+                - otlp
+                - prometheus
+            processors:
+                - resourcedetection
+                - resource
+            exporters:
+                - otlp/2
+        logs:
+            receivers:
+                - otlp
+                - fluentforward
+                - filelog
+            processors:
+                - resourcedetection
+                - resource/2
+            exporters:
+                - otlp/2
+        traces:
+            receivers:
+                - otlp
+            processors:
+                - resourcedetection
+                - resource/3
+                - attributes/traces
+            exporters:
+                - otlp/2
+    telemetry:
+        logs:
+            level: warn
