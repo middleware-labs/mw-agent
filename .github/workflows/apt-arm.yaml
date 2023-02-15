@@ -1,4 +1,4 @@
-name: Build & Push Go APT Package
+name: Build & Push Go APT Package - ARM
 
 on:
   push:
