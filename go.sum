@@ -415,6 +415,7 @@ github.com/hetznercloud/hcloud-go v1.35.3/go.mod h1:mepQwR6va27S3UQthaEPGS86jtzS
 github.com/hexops/gotextdiff v1.0.3 h1:gitA9+qJrrTCsiCl7+kh75nPqQt1cx4ZkudSTLoUqJM=
 github.com/hjson/hjson-go/v4 v4.0.0 h1:wlm6IYYqHjOdXH1gHev4VoXCaW20HdQAGCxdOEEg2cs=
 github.com/hjson/hjson-go/v4 v4.0.0/go.mod h1:KaYt3bTw3zhBjYqnXkYywcYctk0A2nxeEFTse3rH13E=
+github.com/iancoleman/strcase v0.2.0 h1:05I4QRnGpI0m37iZQRuskXh+w77mr6Z41lwQzuHLwW0=
 github.com/iancoleman/strcase v0.2.0/go.mod h1:iwCmte+B7n89clKwxIoIXy/HfoL7AsD47ZCWhYzw7ho=
 github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/ianlancetaylor/demangle v0.0.0-20200824232613-28f6c0f3b639/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
@@ -587,6 +588,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometh
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.68.0 h1:mbRIu00uZN490DkHLmJl2IVw7WpJU3tUAIDtkKngKXM=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.68.0 h1:29vsvQoCb4VrNJRszAudDkDna+K+721Cd/61M/EGg3o=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.68.0/go.mod h1:vjNc8k2MmqAzc8pqVdiT+5/S1MCVldEt/a3CgQRPUrA=
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.68.0 h1:wCH4ZzX3ZBdB/Ke3uAkCGpJOPqiBATP+zERpluyDYAw=
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.68.0/go.mod h1:nQ7VbndmPc6DSRVTgyzRETI0NT86hg/lZflBlsRS56k=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.68.0 h1:2ModcEqAdCz3jAHPPWhPQCx9JIlhlJaj53tBNR9s24Q=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.68.0/go.mod h1:MKP7lVjzXEPliQYs6dq/w9dSQaL3zpJO/4SZvuCmwOU=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.68.0 h1:+1nYF1cS4564l9VkGv/+p+hYjbDb8dP3bUJtelrsVDQ=

@@ -17,6 +17,7 @@ require (
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.68.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.68.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.68.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.68.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.68.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.68.0
@@ -148,6 +149,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.1 // indirect
 	github.com/hashicorp/nomad/api v0.0.0-20221102143410-8a95f1239005 // indirect
 	github.com/hetznercloud/hcloud-go v1.35.3 // indirect
+	github.com/iancoleman/strcase v0.2.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.1.3 // indirect

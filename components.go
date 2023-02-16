@@ -6,6 +6,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
@@ -64,6 +65,7 @@ func Components() (component.Factories, error) {
 	factories.Processors, err = component.MakeProcessorFactoryMap([]component.ProcessorFactory{
 		// frontend.NewProcessorFactory(),
 		batchprocessor.NewFactory(),
+		filterprocessor.NewFactory(),
 		memorylimiterprocessor.NewFactory(),
 		resourceprocessor.NewFactory(),
 		resourcedetectionprocessor.NewFactory(),
