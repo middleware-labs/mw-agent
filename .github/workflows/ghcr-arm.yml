@@ -2,8 +2,8 @@ name: Build & Push Docker Image for ARM Machines
 on:
   push:
     branches:
-     - 'master'
-     - 'dev'
+     - 'master1'
+    #  - 'dev'
 
 jobs:
   push_to_docker_registry:

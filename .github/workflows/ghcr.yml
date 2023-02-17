@@ -4,8 +4,8 @@ on:
     branches:
     #  - 'main'
     #  - 'releases/**'
-     - 'master'
-     - 'dev'
+     - 'master1'
+    #  - 'dev'
 
 jobs:
   push_to_docker_registry:
