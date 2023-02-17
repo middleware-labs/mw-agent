@@ -79,13 +79,13 @@ receivers:
     fluentforward:
         endpoint: 0.0.0.0:8006
 processors:
-    filter/blanklog:
-        logs: 
-            exclude:
-                match_type: strict
-                bodies:
-                - \n
-                - {}\n
+    # filter/blanklog:
+    #     logs: 
+    #         exclude:
+    #             match_type: strict
+    #             bodies:
+    #             - \n
+    #             - {}\n
     resource:
         attributes:
             - key: mw.account_key
@@ -172,7 +172,7 @@ service:
                 - fluentforward
                 - filelog
             processors:
-                - filter/blanklog
+                # - filter/blanklog
                 - resourcedetection
                 - resource/2
             exporters:
