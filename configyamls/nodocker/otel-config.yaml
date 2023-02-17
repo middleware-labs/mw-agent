@@ -80,11 +80,12 @@ receivers:
         endpoint: 0.0.0.0:8006
 processors:
     filter/blanklog:
-        exclude:
-            match_type: strict
-            bodies:
-            - \n
-            - {}\n
+        logs: 
+            exclude:
+                match_type: strict
+                bodies:
+                - \n
+                - {}\n
     resource:
         attributes:
             - key: mw.account_key
