@@ -42,12 +42,12 @@ jobs:
 
     - name: Go Build
       run: |
-        go build -o $BINARY_NAME
+        go build -v -o $BINARY_NAME
 
     - name: Create RPM package
       run: |
         rpmbuild -bb \
-        --define "_topdir $PWD/rpmbuild" \
+        # --define "_topdir $PWD/rpmbuild" \
         --define "name $BINARY_NAME" \
         --define "version 1.0.0" \
         --define "release 1" \
