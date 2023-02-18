@@ -44,15 +44,15 @@ jobs:
         go build -o $BINARY_NAME .
 
     - name: Create RPM package
-        run: |
-          rpmbuild -bb \
-          --define "_topdir $PWD/rpmbuild" \
-          --define "name $BINARY_NAME" \
-          --define "version 1.0.0" \
-          --define "release 1" \
-          rpm/$BINARY_NAME.spec
-      - name: Upload artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: $BINARY_NAME.rpm
-          path: rpmbuild/RPMS/x86_64/$BINARY_NAME-1.0.0-1.x86_64.rpm
+      run: |
+        rpmbuild -bb \
+        --define "_topdir $PWD/rpmbuild" \
+        --define "name $BINARY_NAME" \
+        --define "version 1.0.0" \
+        --define "release 1" \
+        rpm/$BINARY_NAME.spec
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: $BINARY_NAME.rpm
+        path: rpmbuild/RPMS/x86_64/$BINARY_NAME-1.0.0-1.x86_64.rpm
