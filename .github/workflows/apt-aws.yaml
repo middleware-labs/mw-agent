@@ -42,125 +42,16 @@ jobs:
       run: |
         go build -o $BINARY_SOURCE
 
-    - name: Copying Code Binary into target location
+    - name: Create RPM package
       run: |
-          cp $BINARY_SOURCE example/mw-agent_$RELEASE_VERSION-1_all/usr/bin/.
-
-    - name: Creating Control File
-      run: |
-          cp installables/apt/deb/control-aws example/mw-agent_$RELEASE_VERSION-1_all/DEBIAN/control
-
-    - name: Creating YUM package
-      run: |
-          rpm --define '_topdir `pwd`/rpmbuild' \
-            --define '_tmppath `pwd`/rpmbuild/tmp' \
-            -bb installables/rpm/mw-agent.spec \
-            --buildroot=`pwd`/example/mw-agent_$RELEASE_VERSION-1_all
-          rpm --query --queryformat '%{VERSION}' --specfile installables/rpm/mw-agent.spec > version.txt
-          mv `pwd`/rpmbuild/RPMS/noarch/*.rpm example/mw-agent_$RELEASE_VERSION-1_all.rpm
-          rpm2cpio example/mw-agent_$RELEASE_VERSION-1_all.rpm | cpio -idmv
-          rm -rf ./example/mw-agent_$RELEASE_VERSION-1_all.rpm
-          find . -type f -exec md5sum {} \; > example/mw-agent_$RELEASE_VERSION-1_all.md5
-
-    - name: Creating APT Repo structure & Adding RPM into it
-      run: |
-          cp example/mw-agent_$RELEASE_VERSION-1_all.rpm example/repos/$RELEASE_VERSION/apt-repo/pool/main/.
-
-    - name: Building Packages along with compressed version
-      run: |  
-        cd example/repos/$RELEASE_VERSION/yum-repo
-        createrepo --database --unique-md-filenames .
-        gzip -9 -c repodata/repomd.xml > repodata/repomd.xml.gz
-
-    - name: Generating Release
-      run: |
-        echo '#!/bin/sh
-        set -e
-
-        do_hash() {
-          HASH_NAME=$1
-          HASH_CMD=$2
-          echo "${HASH_NAME}:"
-          for f in $(find -type f); do
-            f=$(echo $f | cut -c3-) # remove ./ prefix
-            if [ "$f" = "repomd.xml" ]; then
-              continue
-            fi
-            echo " $(${HASH_CMD} ${f}  | cut -d" " -f1) $(wc -c $f)"
-          done
-        }
-
-        cat << EOF
-        [example]
-        name=Example Repository
-        baseurl=file:///var/www/html/example/repos/$RELEASE_VERSION/yum-repo/
-        enabled=1
-        gpgcheck=1
-        gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-example-$RELEASE_VERSION
-        EOF
-        do_hash "MD5Sum" "md5sum"
-        do_hash "SHA1" "sha1sum"
-        do_hash "SHA256" "sha256sum"
-        ' > example/generate-release.sh && chmod +x example/generate-release.sh
-
-    - name: Run bash script
-      run: |
-        cd example/repos/$RELEASE_VERSION/yum-repo
-        ../../../../generate-release.sh > example.repo
-        cd ../../../../
-        ls
-
-    - name: Creating PGP Key Pairs
-      run: |
-        echo "%echo Generating an example PGP key
-          Key-Type: RSA
-          Key-Length: 4096
-          Name-Real: example
-          Name-Email: example@example.com
-          Expire-Date: 0
-          %no-ask-passphrase
-          %no-protection
-          %commit" > /tmp/example-pgp-key.batch
-
-        export GNUPGHOME="$(mktemp -d example/pgpkeys-XXXXXX)"
-        gpg --no-tty --batch --gen-key /tmp/example-pgp-key.batch
-        mkdir -p example/public-keys
-        mkdir -p example/private-keys
-        gpg --armor --export example > example/public-keys/pgp-key-$RELEASE_VERSION.public
-        gpg --armor --export-secret-keys example > example/private-keys/pgp-key-$RELEASE_VERSION.private
-
-    - name: Generating GPG for Release - Creating InRelease
-      run: |
-        export GNUPGHOME="$(mktemp -d example/pgpkeys-XXXXXX)"
-        cat example/private-keys/pgp-key-$RELEASE_VERSION.private | gpg --import
-        gpg --detach-sign --armor --local-user example --output example/repos/$RELEASE_VERSION/yum-repo/repodata/repomd.xml.asc example/repos/$RELEASE_VERSION/yum-repo/repodata/repomd.xml
-        cp example/repos/$RELEASE_VERSION/yum-repo/repodata/repomd.xml.asc example/repos/$RELEASE_VERSION/yum-repo/repodata/repomd.xml.gpg
-
-    - name: Remove extra files & Upload to Github Pages (install.middleware.io)
-      run: |
-        mkdir -p example/scripts
-        mkdir -p example/configyamls
-        cp -r configyamls example
-        cp installables/yum/yum-install.sh example/scripts/yum-install.sh
-        cp configyamls/all/otel-config.yaml example/otel-config.yaml
-        rm -rf example/pgpkeys-*
-        rm -rf example/generate-release.sh
-        rm -rf example/mw-agent_$RELEASE_VERSION-1_all
-        rm -rf example/mw-agent_$RELEASE_VERSION-1_all.rpm
-
-        git clone https://.:${{ secrets.GHCR_TOKEN }}@github.com/middleware-labs/install.middleware.io.git
-        cp -r example/private-keys/* install.middleware.io/private-keys/
-        cp -r example/public-keys/* install.middleware.io/public-keys/
-        cp -r example/repos/* install.middleware.io/repos/
-        cp configyamls/all/otel-config.yaml install.middleware.io/configyamls/all/otel-config.yaml 
-        cp configyamls/nodocker/otel-config.yaml install.middleware.io/configyamls/nodocker/otel-config.yaml 
-        cd install.middleware.io
-        git config --global user.email "keval@middleware.io"
-        git config --global user.name "bhogayatakb"
-        git add .
-        git commit -m "install.middleware.io updated"
-        git push origin master
-
-
-
-
+        rpmbuild -bb \
+        --define "_topdir $PWD/rpmbuild" \
+        --define "name $BINARY_SOURCE" \
+        --define "version 1.0.0" \
+        --define "release 1" \
+        rpm/$BINARY_SOURCE.spec
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: $BINARY_SOURCE.rpm
+        path: rpmbuild/RPMS/x86_64/$BINARY_SOURCE-1.0.0-1.x86_64.rpm
