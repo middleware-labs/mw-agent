@@ -47,7 +47,6 @@ jobs:
     - name: Create RPM package
       run: |
         rpmbuild -bb \
-        # --define "_topdir $PWD/rpmbuild" \
         --define "name $BINARY_NAME" \
         --define "version 1.0.0" \
         --define "release 1" \
