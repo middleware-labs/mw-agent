@@ -42,7 +42,7 @@ jobs:
 
     - name: Go Build
       run: |
-        go build -o $BINARY_NAME .
+        go build -o $BINARY_NAME
 
     - name: Create RPM package
       run: |
@@ -52,6 +52,7 @@ jobs:
         --define "version 1.0.0" \
         --define "release 1" \
         rpm/$BINARY_NAME.spec
+
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
