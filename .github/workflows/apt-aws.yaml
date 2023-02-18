@@ -12,7 +12,6 @@ env:
   ARCH: all
   BINARY_SOURCE: release/mw-go-agent-host-aws
   BINARY_NAME: mw-go-agent-host-aws
-  BINARY_TEST: update
   RELEASE_VERSION: 0.0.15
 
 jobs:
@@ -56,4 +55,5 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: $BINARY_NAME.rpm
+          path: rpmbuild/RPMS/x86_64/$BINARY_NAME-1.0.0-1.x86_64.rpm
           path: rpmbuild/RPMS/x86_64/$BINARY_NAME-1.0.0-1.x86_64.rpm
