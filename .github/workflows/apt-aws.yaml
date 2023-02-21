@@ -30,10 +30,16 @@ jobs:
 
     - name: Creating Required Folder Structure
       run: |
-        mkdir -p example/mw-agent_$RELEASE_VERSION-1_all/usr/bin
-        mkdir -p example/mw-agent_$RELEASE_VERSION-1_all/DEBIAN
-        mkdir -p example/repos/$RELEASE_VERSION/apt-repo/pool/main/
-        mkdir -p example/repos/$RELEASE_VERSION/apt-repo/dists/stable/main/binary-$ARCH
+        mkdir -p ~/rpmbuild/BUILD
+        mkdir -p ~/rpmbuild/BUILDROOT
+        mkdir -p ~/rpmbuild/RPMS
+        mkdir -p ~/rpmbuild/SOURCES
+        mkdir -p ~/rpmbuild/SPECS
+        mkdir -p ~/rpmbuild/SRPMS
+        mkdir -p ~/rpmbuild/SOURCES/mw-go-agent-host-aws-0.0.1
+        echo '%_topdir %(echo $HOME)/rpmbuild' > ~/.rpmmacros
+        touch ~/rpmbuild/SPECS/test.spec
+        cp installables/rpmessentials/test.spec ~/rpmbuild/SPECS/test.spec
 
     - name: Set up Go
       uses: actions/setup-go@v3
@@ -42,18 +48,24 @@ jobs:
 
     - name: Go Build
       run: |
-        go build -v -o $BINARY_NAME
+        go build -v -o ~/rpmbuild/SOURCES/mw-go-agent-host-aws-0.0.1/mw-go-agent-host-aws
+        cd ~/rpmbuild/SOURCES
+        tar -czvf mw-go-agent-host-aws_0.0.1-1_all.tar.gz mw-go-agent-host-aws-0.0.1/
+        ls -l ~/rpmbuild/SOURCES/
 
     - name: Create RPM package
       run: |
-        rpmbuild -bb \
-        --define "name $BINARY_NAME" \
-        --define "version 1.0.0" \
-        --define "release 1" \
-        rpm/$BINARY_NAME.spec
+        rpmbuild -ba ~/rpmbuild/SPECS/test.spec
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: $BINARY_NAME.rpm
-        path: rpmbuild/RPMS/x86_64/$BINARY_NAME-1.0.0-1.x86_64.rpm
+    - name: Upload artifacts to Github Pages (install.middleware.io)
+      run: |
+
+        git clone https://.:${{ secrets.GHCR_TOKEN }}@github.com/middleware-labs/install.middleware.io.git
+        mkdir -p install.middleware.io/rpms
+        cp -r ~/rpmbuild/RPMS/x86_64/mw-go-agent-host-aws-0.0.1-1.x86_64.rpm install.middleware.io/rpms/
+        cd install.middleware.io
+        git config --global user.email "keval@middleware.io"
+        git config --global user.name "bhogayatakb"
+        git add .
+        git commit -m "RPM added to install.middleware.io"
+        git push origin master
