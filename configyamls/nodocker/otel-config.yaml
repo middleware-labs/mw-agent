@@ -45,9 +45,7 @@ receivers:
                     - targets:
                         - 0.0.0.0:8888
     filelog:
-        include:
-            - /var/log/**/*.log*
-            - $MW_LOG_PATHS
+        include: [ /var/log/**/*.log*, $MW_LOG_PATHS ]
         exclude:
             - /tmp/mwagent/record_time.log
         include_file_path: true

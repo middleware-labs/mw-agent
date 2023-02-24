@@ -11,7 +11,7 @@ on:
 env:
   ARCH: arm64
   BINARY_SOURCE: release/mw-go-agent-host-aws-arm
-  BINARY_NAME: mw-go-agent-host-aws
+  BINARY_NAME: mw-go-agent-host-aws-arm
   BINARY_TEST: update
   RELEASE_VERSION: 0.0.15-aws-arm64
 
@@ -36,7 +36,7 @@ jobs:
         mkdir -p ~/rpmbuild/SOURCES
         mkdir -p ~/rpmbuild/SPECS
         mkdir -p ~/rpmbuild/SRPMS
-        mkdir -p ~/rpmbuild/SOURCES/mw-go-agent-host-aws-0.0.1
+        mkdir -p ~/rpmbuild/SOURCES/$BINARY_SOURCE-0.0.1
         echo '%_topdir %(echo $HOME)/rpmbuild' > ~/.rpmmacros
         touch ~/rpmbuild/SPECS/test.spec
         cp installables/rpmessentials/test.spec ~/rpmbuild/SPECS/test.spec
@@ -48,9 +48,9 @@ jobs:
 
     - name: Go Build
       run: |
-        go build -v -o ~/rpmbuild/SOURCES/mw-go-agent-host-aws-0.0.1/mw-go-agent-host-aws
+        GOOS=linux GOARCH=${{ env.ARCH }}  go build -v -a -o ~/rpmbuild/SOURCES/$BINARY_SOURCE-0.0.1/$BINARY_SOURCE
         cd ~/rpmbuild/SOURCES
-        tar -czvf mw-go-agent-host-aws_0.0.1-1_all.tar.gz mw-go-agent-host-aws-0.0.1/
+        tar -czvf $BINARY_SOURCE_0.0.1-1_all.tar.gz $BINARY_SOURCE-0.0.1/
         ls -l ~/rpmbuild/SOURCES/
 
     - name: Create RPM package
@@ -62,7 +62,7 @@ jobs:
 
         git clone https://.:${{ secrets.GHCR_TOKEN }}@github.com/middleware-labs/install.middleware.io.git
         mkdir -p install.middleware.io/rpms
-        cp -r ~/rpmbuild/RPMS/x86_64/mw-go-agent-host-aws-0.0.1-1.x86_64.rpm install.middleware.io/rpms/
+        cp -r ~/rpmbuild/RPMS/x86_64/$BINARY_SOURCE-0.0.1-1.x86_64.rpm install.middleware.io/rpms/
         cd install.middleware.io
         git config --global user.email "keval@middleware.io"
         git config --global user.name "bhogayatakb"
