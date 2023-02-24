@@ -1,4 +1,4 @@
-name: Build & Push Go APT Package
+name: Build & Push Go APT Package - AWS Linux - ARM
 
 on:
   push:
@@ -6,14 +6,14 @@ on:
     #   - 'dev'
 
     tags:
-      - 'aws*'
+      - 'a-arm*'
 
 env:
-  ARCH: all
-  BINARY_SOURCE: release/mw-go-agent-host-aws
+  ARCH: arm64
+  BINARY_SOURCE: release/mw-go-agent-host-aws-arm
   BINARY_NAME: mw-go-agent-host-aws
   BINARY_TEST: update
-  RELEASE_VERSION: 0.0.15aws
+  RELEASE_VERSION: 0.0.15-aws-arm64
 
 jobs:
   build:
