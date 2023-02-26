@@ -182,6 +182,7 @@ service:
                 - resource/2
             exporters:
                 - logging
+                - otlp/2
         traces:
             receivers:
                 - otlp
