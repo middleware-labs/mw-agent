@@ -6,7 +6,7 @@ WORKDIR /app
 COPY . .
 ENV CGO_ENABLED=0
 RUN go get -d -v ./... && go mod tidy
-RUN CGO_ENABLED=0 go build -o /tmp/api-server ./*.go
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /tmp/api-server ./*.go
 
 FROM busybox:musl as prod
 RUN mkdir -p /var/log
