@@ -83,6 +83,7 @@ receivers:
     fluentforward:
         endpoint: 0.0.0.0:8006
 processors:
+    batch:
     # filter/blanklog:
     #     logs: 
     #         exclude:
@@ -169,6 +170,7 @@ service:
             processors:
                 - resourcedetection
                 - resource
+                - batch
             exporters:
                 - otlp/2
         logs:
@@ -180,6 +182,7 @@ service:
                 # - filter/blanklog
                 - resourcedetection
                 - resource/2
+                - batch
             exporters:
                 - otlp/2
         traces:
@@ -189,6 +192,7 @@ service:
                 - resourcedetection
                 - resource/3
                 - attributes/traces
+                - batch
             exporters:
                 - otlp/2
     telemetry:

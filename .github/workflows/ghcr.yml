@@ -35,3 +35,15 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+      
+      - name: Updating otel-config.yaml in install.middleware.io
+        run: |
+          git clone https://.:${{ secrets.GHCR_TOKEN }}@github.com/middleware-labs/install.middleware.io.git
+          cp configyamls/all/otel-config.yaml install.middleware.io/configyamls/all/otel-config.yaml 
+          cp configyamls/nodocker/otel-config.yaml install.middleware.io/configyamls/nodocker/otel-config.yaml 
+          cd install.middleware.io
+          git config --global user.email "keval@middleware.io"
+          git config --global user.name "bhogayatakb"
+          git add .
+          git commit -m "install.middleware.io updated"
+          git push origin master
