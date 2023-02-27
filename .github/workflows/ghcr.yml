@@ -5,6 +5,7 @@ on:
     #  - 'main'
     #  - 'releases/**'
      - 'master'
+     - 'musl'
     #  - 'dev'
 
 jobs:
