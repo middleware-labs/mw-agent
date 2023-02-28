@@ -594,6 +594,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedete
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.68.0/go.mod h1:MKP7lVjzXEPliQYs6dq/w9dSQaL3zpJO/4SZvuCmwOU=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.68.0 h1:+1nYF1cS4564l9VkGv/+p+hYjbDb8dP3bUJtelrsVDQ=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.68.0/go.mod h1:hzitK+rGsmZs2F4lBSWd51JQ55fefJ2DbshCTceLbtQ=
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor v0.68.0 h1:JxSzHuW0a1fr/qRPz8kU2tlgo6qgQDcjYFH58KZjlYY=
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor v0.68.0/go.mod h1:4NDbL/let4fVMNrrb2SYAe2X+NGvw2n8UdfMMj3MNe8=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.68.0 h1:iOK+eoE2oEPEWYBURMdsn1MXMN81nhY4buNU4+F4lH4=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.68.0/go.mod h1:3mmlqHqKHC1PtbGC8bzuKEgBrO17T5MmRaL9mdyRE6U=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.68.0 h1:E+cMXZVebOxCRlhCAX8O2kwna6qSyD5DvZi2jaDJLV4=

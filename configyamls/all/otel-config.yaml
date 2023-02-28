@@ -148,43 +148,54 @@ processors:
             - docker
         timeout: 5s
         override: false
+    servicegraph:
+        metrics_exporter: prometheus # Exporter to send metrics to
+        latency_histogram_buckets: [100us, 1ms, 2ms, 6ms, 10ms, 100ms, 250ms] # Buckets for latency histogram
+        # dimensions: [cluster, namespace] # Additional dimensions (labels) to be added to the metrics extracted from the resource and span attributes
+        # store: # Configuration for the in-memory store
+        # ttl: 2s # Value to wait for an edge to be completed
+        # max_items: 200 # Amount of edges that will be stored in the storeMap      
 exporters:
     logging:
         loglevel: debug
-    otlp/2:
-        endpoint: ${TARGET}
-        headers:
-            authorization: ${MW_API_KEY}
-        sending_queue:
-            enabled: true
-            num_consumers: 100
-            queue_size: 10000
+    prometheus:
+        endpoint: localhost:9090
+        namespace: servicegraph
+    # otlp/2:
+    #     endpoint: ${TARGET}
+    #     headers:
+    #         authorization: ${MW_API_KEY}
+    #     sending_queue:
+    #         enabled: true
+    #         num_consumers: 100
+    #         queue_size: 10000
 service:
     pipelines:
         metrics:
             receivers:
-                - hostmetrics
-                - docker_stats
+                # - hostmetrics
+                # - docker_stats
                 - otlp
-                - prometheus
+                # - prometheus
             processors:
                 - resourcedetection
                 - resource
                 - batch
             exporters:
-                - otlp/2
-        logs:
-            receivers:
-                - otlp
-                - fluentforward
-                - filelog
-            processors:
-                # - filter/blanklog
-                - resourcedetection
-                - resource/2
-                - batch
-            exporters:
-                - otlp/2
+                # - otlp/2
+                - prometheus
+        # logs:
+        #     receivers:
+        #         - otlp
+        #         - fluentforward
+        #         - filelog
+        #     processors:
+        #         # - filter/blanklog
+        #         - resourcedetection
+        #         - resource/2
+        #         - batch
+        #     exporters:
+        #         - otlp/2
         traces:
             receivers:
                 - otlp
@@ -193,8 +204,9 @@ service:
                 - resource/3
                 - attributes/traces
                 - batch
+                - servicegraph
             exporters:
-                - otlp/2
+                - logging
     telemetry:
         logs:
-            level: warn
+            level: debug

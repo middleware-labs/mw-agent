@@ -4,11 +4,13 @@ import (
 	"log"
 	"os"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
@@ -57,6 +59,7 @@ func Components() (component.Factories, error) {
 		loggingexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
+		prometheusexporter.NewFactory(),
 	}...)
 	if err != nil {
 		return component.Factories{}, err
@@ -65,6 +68,7 @@ func Components() (component.Factories, error) {
 	factories.Processors, err = component.MakeProcessorFactoryMap([]component.ProcessorFactory{
 		// frontend.NewProcessorFactory(),
 		batchprocessor.NewFactory(),
+		servicegraphprocessor.NewFactory(),
 		filterprocessor.NewFactory(),
 		memorylimiterprocessor.NewFactory(),
 		resourceprocessor.NewFactory(),
