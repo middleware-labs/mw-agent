@@ -2,40 +2,46 @@ name: Build & Push Docker Image for Host Agent
 on:
   push:
     branches:
-    #  - 'main'
-    #  - 'releases/**'
      - 'master'
-    #  - 'dev'
+     - 'dev'
+
+env:
+  IMAGE_NAME: ghcr.io/middleware-labs/agent-host-go
 
 jobs:
-  push_to_docker_registry:
-    name: Build & Push Docker Image for Host Agent
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v2
+  build-amd64:
 
+    name: Build Docker Image for amd64
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Checking out repository code
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      # Login to ghcr.io
       - name: Login to Registry
-        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+        uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ secrets.GHCR_USER }}
           password: ${{ secrets.GHCR_TOKEN }} # Consists Github Personal Access Token
 
-      - name: Extract Metadata
-        id: meta
-        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
-        with:
-          images: ghcr.io/middleware-labs/agent-host-go
-
       - name: Build and Push
-        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+        uses: docker/build-push-action@v4
         with:
-          context: ./
+          context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: |
+            ${{ env.IMAGE_NAME }}:amd64-${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:amd64-latest
       
+  update-configyaml:
+
+    name: Updating otel-config.yaml files in install.middleware.io
+    runs-on: ubuntu-latest
+
+    steps:
       - name: Updating otel-config.yaml in install.middleware.io
         run: |
           git clone https://.:${{ secrets.GHCR_TOKEN }}@github.com/middleware-labs/install.middleware.io.git
@@ -46,4 +52,4 @@ jobs:
           git config --global user.name "bhogayatakb"
           git add .
           git commit -m "install.middleware.io updated"
-          git push origin master
+          git push origin master    
