@@ -141,6 +141,41 @@ processors:
             - key: mw.service.name.derived
               from_attribute: faas.trigger
               action: insert
+    attributes/logs:
+        actions:
+            - key: source
+              from_attribute: name
+              action: upsert
+            - key: source
+              from_attribute: operator_type
+              action: upsert
+            - key: source
+              from_attribute: log.file.name
+              action: upsert
+            - key: source
+              from_attribute: fluent.tag
+              action: upsert
+            - key: source
+              from_attribute: service.name
+              action: upsert
+            - key: source
+              from_attribute: project.name
+              action: upsert
+            - key: source
+              from_attribute: serviceName
+              action: upsert
+            - key: source
+              from_attribute: projectName
+              action: upsert
+            - key: source
+              from_attribute: pod_name
+              action: upsert
+            - key: source
+              from_attribute: container_name
+              action: upsert
+            - key: source
+              from_attribute: namespace
+              action: upsert 
     resourcedetection:
         detectors:
             - env
@@ -182,6 +217,7 @@ service:
                 # - filter/blanklog
                 - resourcedetection
                 - resource/2
+                - attributes/logs
                 - batch
             exporters:
                 - otlp/2

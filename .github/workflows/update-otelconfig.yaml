@@ -1,0 +1,28 @@
+name: Build & Push Docker Image for Host Agent
+on:
+  push:
+    branches:
+     - 'master'
+
+jobs: 
+  update-configyaml:
+
+    name: Updating otel-config.yaml files in install.middleware.io
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checking out repository code
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Updating otel-config.yaml in install.middleware.io
+        run: |
+          git clone https://.:${{ secrets.GHCR_TOKEN }}@github.com/middleware-labs/install.middleware.io.git
+          cp configyamls/all/otel-config.yaml install.middleware.io/configyamls/all/otel-config.yaml 
+          cp configyamls/nodocker/otel-config.yaml install.middleware.io/configyamls/nodocker/otel-config.yaml 
+          cd install.middleware.io
+          git config --global user.email "keval@middleware.io"
+          git config --global user.name "bhogayatakb"
+          git add .
+          git commit -m "install.middleware.io updated"
+          git push origin master    
