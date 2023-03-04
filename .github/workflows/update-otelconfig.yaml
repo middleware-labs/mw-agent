@@ -1,6 +1,9 @@
 name: Build & Push Docker Image for Host Agent
 on:
   push:
+    paths:
+    - 'configyamls/all/otel-config.yaml'
+    - 'configyamls/nodocker/otel-config.yaml'
     branches:
      - 'master'
 
