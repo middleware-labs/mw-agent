@@ -4,6 +4,7 @@ on:
     #  - 'main'
     #  - 'releases/**'
      - 'master'
+     - 'master1'
      - 'workflow-experiments'
     #  - 'dev'
 
@@ -44,5 +45,3 @@ jobs:
             ${{ steps.meta.outputs.tags }}
             ghcr.io/middleware-labs/agent-host-go:${{ github.sha }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache
