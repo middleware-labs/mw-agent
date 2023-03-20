@@ -2,11 +2,13 @@ name: Build & Push Go APT Package
 
 on:
   push:
-    # branches:
-    #   - 'dev'
-
-    tags:
-      - 'aws*'
+    paths-ignore:
+      - 'README.md'
+      - '.github/**'
+      - 'configyamls/**'
+    branches:
+    #  - 'master'
+     - 'workflow-experiments'
 
 env:
   ARCH: all
