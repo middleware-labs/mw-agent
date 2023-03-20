@@ -1,12 +1,11 @@
 on:
   push:
+    paths-ignore:
+      - 'README.md'
+      - '.github/**'
     branches:
-    #  - 'main'
-    #  - 'releases/**'
      - 'master'
-     - 'master1'
      - 'workflow-experiments'
-    #  - 'dev'
 
 jobs:
   push_to_docker_registry:
