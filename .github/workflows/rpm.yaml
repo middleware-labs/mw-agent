@@ -10,6 +10,9 @@ on:
     #  - 'master'
      - 'workflow-experiments'
 
+env:
+  ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+  
 # env:
 #   ARCH: arm64
 #   BINARY_SOURCE: release/mw-go-agent-host-aws-arm
