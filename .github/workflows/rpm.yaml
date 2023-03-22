@@ -1,6 +1,7 @@
 name: Build And Push RPM for systems like RedHat / CentOS
 
 on:
+  workflow_dispatch:
   push:
     paths-ignore:
       # - 'README.md'
@@ -81,25 +82,36 @@ jobs:
       run: |
         if [ ${{ matrix.arch }} == "x64" ]; then
           go build -v -o ~/rpmbuild/SOURCES/$BINARY_NAME-0.0.1/$BINARY_NAME
-          cd ~/rpmbuild/SOURCES
-          tar -czvf $BINARY_NAME_0.0.1-1_all.tar.gz $BINARY_NAME-0.0.1/
-          ls
         elif [ ${{ matrix.arch }} == "ARM" ]; then
           GOOS=linux GOARCH=$ARCH  go build -v -a -o ~/rpmbuild/SOURCES/$BINARY_NAME-0.0.1/$BINARY_NAME
-          cd ~/rpmbuild/SOURCES
-          tar -czvf $BINARY_NAME_0.0.1-1_arm64.tar.gz $BINARY_NAME-0.0.1/
-          ls
         else
           echo "Unsupported architecture"
           exit 1
         fi
 
-        
+    - name: Tar Building
+      run: |
+        cd ~/rpmbuild/SOURCES
+        echo "binary name"
+        echo $BINARY_NAME
+        echo "architecture"
+        echo $ARCH
+        tar czvf ~/rpmbuild/SOURCES/${BINARY_NAME}_0.0.1-1_$ARCH.tar.gz $BINARY_NAME-0.0.1/
+
         ls -l ~/rpmbuild/SOURCES/
 
     - name: Create RPM package
       run: |
-        rpmbuild -ba ~/rpmbuild/SPECS/$SPEC_FILE
+        ls -l ~/rpmbuild/SOURCES
+
+        if [ ${{ matrix.arch }} == "x64" ]; then
+          rpmbuild -ba ~/rpmbuild/SPECS/$SPEC_FILE
+        elif [ ${{ matrix.arch }} == "ARM" ]; then
+          rpmbuild -ba --target=aarch64 ~/rpmbuild/SPECS/$SPEC_FILE
+        else
+          echo "Unsupported architecture"
+          exit 1
+        fi
 
     - name: Acquire lock
       run: flock upload.lock -c "echo Lock acquired"
@@ -109,7 +121,17 @@ jobs:
 
         git clone https://.:${{ secrets.GHCR_TOKEN }}@github.com/middleware-labs/install.middleware.io.git
         mkdir -p install.middleware.io/rpms
-        cp -r ~/rpmbuild/RPMS/x86_64/$BINARY_NAME-0.0.1-1.x86_64.rpm install.middleware.io/rpms/
+
+        if [ ${{ matrix.arch }} == "x64" ]; then
+          cp -r ~/rpmbuild/RPMS/x86_64/$BINARY_NAME-0.0.1-1.x86_64.rpm install.middleware.io/rpms/
+        elif [ ${{ matrix.arch }} == "ARM" ]; then
+          cp -r ~/rpmbuild/RPMS/aarch64/$BINARY_NAME-0.0.1-1.aarch64.rpm install.middleware.io/rpms/
+        else
+          echo "Unsupported architecture"
+          exit 1
+        fi
+
+        
         cd install.middleware.io
         git config --global user.email "keval@middleware.io"
         git config --global user.name "bhogayatakb"
@@ -123,3 +145,9 @@ jobs:
       run: flock upload.lock -c "echo Lock released"
     - name: Delay
       run: sleep 10
+
+      # i386: 32-bit x86 architecture
+      # x86_64: 64-bit x86 architecture
+      # armv7hl: 32-bit ARM architecture
+      # aarch64: 64-bit ARM architecture
+      # ppc64: 64-bit PowerPC architecture
