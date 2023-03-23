@@ -83,8 +83,7 @@ jobs:
         if [ ${{ matrix.arch }} == "x64" ]; then
           go build -v -o ~/rpmbuild/SOURCES/$BINARY_NAME-0.0.1/$BINARY_NAME
         elif [ ${{ matrix.arch }} == "ARM" ]; then
-          cp here ~/rpmbuild/SOURCES/$BINARY_NAME-0.0.1/$BINARY_NAME
-          # GOOS=linux GOARCH=$ARCH  go build ldflags="-s -w" -v -a -o ~/rpmbuild/SOURCES/$BINARY_NAME-0.0.1/$BINARY_NAME
+          GOOS=linux GOARCH=$ARCH  go build -ldflags="-s -w" -v -a -o ~/rpmbuild/SOURCES/$BINARY_NAME-0.0.1/$BINARY_NAME
         else
           echo "Unsupported architecture"
           exit 1
