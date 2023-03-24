@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
   push:
     paths-ignore:
-      # - 'README.md'
-      # - '.github/**'
-      # - 'configyamls/**'
+      - 'README.md'
+      - '.github/**'
+      - 'configyamls/**'
     branches:
-    #  - 'master'
+     - 'master'
      - 'workflow-experiments'
 
 env:

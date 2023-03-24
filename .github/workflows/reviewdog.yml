@@ -2,8 +2,7 @@ name: reviewdog
 on:
   push:
     branches:
-      - 'master1'
-      # - 'stage'
+      - 'master'
   pull_request:
 jobs:
   reviewdog:

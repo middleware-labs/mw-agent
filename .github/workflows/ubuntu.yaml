@@ -8,7 +8,7 @@ on:
       - '.github/**'
       - 'configyamls/**'
     branches:
-    #  - 'master'
+     - 'master'
      - 'workflow-experiments'
 
 env:
