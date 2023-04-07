@@ -1,9 +1,9 @@
-name: Build Docker image
+name: Build Docker image Windows
 
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   build:

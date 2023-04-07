@@ -6,7 +6,7 @@ on:
       - 'README.md'
       - '.github/**'
     branches:
-     - 'master'
+     - 'master1'
      - 'workflow-experiments'
 
 jobs:
