@@ -1,6 +1,9 @@
 name: reviewdog
 on:
   push:
+    paths-ignore:
+      - 'README.md'
+      - '.github/**'
     branches:
       - 'master'
   pull_request:

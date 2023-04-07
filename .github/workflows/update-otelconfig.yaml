@@ -5,7 +5,7 @@ on:
     - 'configyamls/all/otel-config.yaml'
     - 'configyamls/nodocker/otel-config.yaml'
     branches:
-     - 'master'
+     - 'master1'
 
 jobs: 
   update-configyaml:
