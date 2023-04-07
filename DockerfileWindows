@@ -1,16 +1,22 @@
-FROM golang:1.16-windowsservercore-ltsc2019 as base
+FROM golang:1.20.3-windowsservercore-ltsc2022 as base
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
-RUN certutil -generateSSTFromChain /certs/MwCA.pem && certutil -addstore -f root /certs/MwCA.sst
+# RUN certutil -addstore -f root /certs/MwCA.sst
 WORKDIR /app
 COPY . .
 ENV CGO_ENABLED=1
-RUN go get -d -v ./... && go mod tidy
-RUN CGO_ENABLED=1 go build -o /tmp/api-server.exe ./*.go
+# RUN go get -d -v ./... 
+# RUN go mod tidy
+RUN write-host $pwd.Path
+RUN ls
+RUN go get -d -v ./... 
+RUN go mod tidy
+RUN go build -o /app/api-server.exe agent_installation_log.go components.go main.go otelstruct.go
 
-FROM mcr.microsoft.com/windows/nanoserver:1809 as prod
-RUN mkdir -p /var/log
+FROM mcr.microsoft.com/windows/nanoserver:ltsc2022 as prod
+# RUN mkdir -p /var/log
 WORKDIR /app
-COPY --from=base /certs/ /certs/
-COPY --from=base /tmp/api-server.exe /usr/bin/api-server.exe
+# COPY --from=base /certs/ /certs/
+COPY --from=base /app/api-server.exe /usr/bin/api-server.exe
 COPY --from=base /app/configyamls /app/configyamls
 CMD ["api-server.exe", "start"]
+

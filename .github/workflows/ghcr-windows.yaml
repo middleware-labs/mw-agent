@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - windows-docker-build
 
 jobs:
   build:
@@ -11,19 +12,24 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
       - name: Login to Docker Hub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
+          registry: ghcr.io
           username: ${{ secrets.GHCR_USER }}
           password: ${{ secrets.GHCR_TOKEN }}
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v2
-        with:
-          dockerfile: DockerfileWindows
-          context: .
-          push: true
-          tags: | 
-            windows-${{ steps.meta.outputs.tags }}
-            ghcr.io/middleware-labs/agent-host-go:windows-${{ github.sha }}
-          platforms: windows/amd64
+      # - name: Extract Metadata
+      #   id: meta
+      #   uses: docker/metadata-action@v4
+      #   with:
+      #     images: ghcr.io/middleware-labs/agent-host-go
+
+
+      - name: Upload artifacts to Github Pages (install.middleware.io)
+        run: |
+            docker build -f DockerfileWindows -t ghcr.io/middleware-labs/agent-host-go:windows-master .
+            docker push ghcr.io/middleware-labs/agent-host-go:windows-master
