@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"checkagent"
 	"strconv"
 	"time"
 
@@ -42,6 +43,11 @@ import (
 // }
 
 func main() {
+
+	// Listening to Pulsar topics - specific to this host
+	go func() {
+		checkagent.Start()
+	}()
 
 	// go func() {
 

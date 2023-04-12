@@ -233,4 +233,4 @@ service:
                 - otlp/2
     telemetry:
         logs:
-            level: warn
+            level: fatal
