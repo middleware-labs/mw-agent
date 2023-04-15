@@ -13,6 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
@@ -48,6 +49,7 @@ func Components() (component.Factories, error) {
 		hostmetricsreceiver.NewFactory(),
 		dockerstatsreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
+		postgresqlreceiver.NewFactory(),
 	}...)
 	if err != nil {
 		return component.Factories{}, err

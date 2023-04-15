@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -18,10 +19,15 @@ type ConfigType struct {
 	NoDocker map[string]interface{} `json:"nodocker"`
 }
 
+type pgdbConfiguration struct {
+	Path string `json:"path"`
+}
+
 type APIResponseForYAML struct {
-	Status  bool       `json:"status"`
-	Config  ConfigType `json:"config"`
-	Message string     `json:"message"`
+	Status     bool              `json:"status"`
+	Config     ConfigType        `json:"config"`
+	PgdbConfig pgdbConfiguration `json:"pgdb_config"`
+	Message    string            `json:"message"`
 }
 
 type APIResponseForRestart struct {
@@ -31,8 +37,8 @@ type APIResponseForRestart struct {
 }
 
 var (
-	apiURLForYAML    = "https://app.middleware.io/api/v1/agent/ingestion-rules/%s?config=%s&platform=linux"
-	apiURLForRestart = "https://app.middleware.io/api/v1/agent/restart-status/%s?platform=linux"
+	apiURLForYAML    = "https://app.middleware.io/api/v1/agent/ingestion-rules/%s?config=%s&platform=linux&host_id=%s"
+	apiURLForRestart = "https://app.middleware.io/api/v1/agent/restart-status/%s?platform=linux&host_id=%s"
 )
 
 const (
@@ -58,6 +64,34 @@ func checkForConfigURLOverrides() (string, string) {
 	return apiURLForRestart, apiURLForYAML
 }
 
+func updatepgdbConfig(config map[string]interface{}, pgdbConfig pgdbConfiguration) map[string]interface{} {
+
+	// Read the YAML file
+	yamlData, err := ioutil.ReadFile(pgdbConfig.Path)
+	if err != nil {
+		log.Fatalf("Failed to read YAML file: %v", err)
+	}
+
+	// Unmarshal the YAML data into a temporary map[string]interface{}
+	tempMap := make(map[string]interface{})
+	err = yaml.Unmarshal(yamlData, &tempMap)
+	if err != nil {
+		log.Fatalf("Failed to unmarshal YAML: %v", err)
+	}
+
+	// Add the temporary map to the existing "receiver" key
+	receiverData, ok := config["receivers"].(map[string]interface{})
+	if !ok {
+		log.Fatalf("Failed to access 'receivers' key in existing config")
+	}
+
+	for key, value := range tempMap {
+		receiverData[key] = value
+	}
+
+	return config
+}
+
 func updateYAML(configType, yamlPath string) error {
 	_, apiURLForYAML := checkForConfigURLOverrides()
 	apiKey, ok := os.LookupEnv("MW_API_KEY")
@@ -65,16 +99,16 @@ func updateYAML(configType, yamlPath string) error {
 		return fmt.Errorf("MW_API_KEY not found in environment variables")
 	}
 
+	hostname := getHostname()
+
 	// Call Webhook
-	apiURL := fmt.Sprintf(apiURLForYAML, apiKey, configType)
+	apiURL := fmt.Sprintf(apiURLForYAML, apiKey, configType, hostname)
 
 	resp, err := http.Get(apiURL)
 	if err != nil || resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to call YAML API: Status-code %d with %v", resp.StatusCode, err)
 	}
 	defer resp.Body.Close()
-
-	// fmt.Println("update-yaml.go: updateYAML: apiURL", apiURL)
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
@@ -103,6 +137,9 @@ func updateYAML(configType, yamlPath string) error {
 			apiYAMLConfig = apiResponse.Config.NoDocker
 		}
 	}
+
+	pgdbConfig := apiResponse.PgdbConfig
+	apiYAMLConfig = updatepgdbConfig(apiYAMLConfig, pgdbConfig)
 
 	apiYAMLBytes, err := yaml.Marshal(apiYAMLConfig)
 	if err != nil {
@@ -152,8 +189,10 @@ func callRestartStatusAPI() {
 		log.Println("MW_API_KEY not found in environment variables for recursive restart")
 	}
 
+	hostname := getHostname()
+
 	// Prepare API URL
-	apiURL := fmt.Sprintf(apiURLForRestart, apiKey)
+	apiURL := fmt.Sprintf(apiURLForRestart, apiKey, hostname)
 
 	resp, err := http.Get(apiURL)
 	if err != nil || resp.StatusCode != http.StatusOK {
