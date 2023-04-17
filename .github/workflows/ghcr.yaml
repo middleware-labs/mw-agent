@@ -4,9 +4,9 @@ on:
   push:
     paths-ignore:
       - 'README.md'
-      - '.github/**'
+      # - '.github/**'
     branches:
-     - 'master1'
+     - 'master'
      - 'workflow-experiments'
 
 jobs:
