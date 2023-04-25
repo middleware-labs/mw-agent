@@ -50,9 +50,11 @@ receivers:
                     - targets:
                         - 0.0.0.0:8888
     filelog:
-        include: [ /var/log/**/*.log*, /var/lib/docker/container/**/*.log*, $MW_LOG_PATHS ]
+        include: [ /home/acq053/work/src/github.com/middleware-labs/agent-host-go/test/multiline/*.log, $MW_LOG_PATHS ]
         exclude:
             - /tmp/mwagent/record_time.log
+        multiline:
+            line_start_pattern: ^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})?\s+(stdout|stderr)?\s?(\[.+?\])?\s+(.+)$
         include_file_path: true
         include_file_name_resolved: true
         include_file_path_resolved: true
@@ -210,8 +212,8 @@ service:
                 - otlp/2
         logs:
             receivers:
-                - otlp
-                - fluentforward
+                # - otlp
+                # - fluentforward
                 - filelog
             processors:
                 # - filter/blanklog
@@ -221,16 +223,17 @@ service:
                 - batch
             exporters:
                 - otlp/2
-        traces:
-            receivers:
-                - otlp
-            processors:
-                - resourcedetection
-                - resource/3
-                - attributes/traces
-                - batch
-            exporters:
-                - otlp/2
+                - logging
+        # traces:
+        #     receivers:
+        #         - otlp
+        #     processors:
+        #         - resourcedetection
+        #         - resource/3
+        #         - attributes/traces
+        #         - batch
+        #     exporters:
+        #         - otlp/2
     telemetry:
         logs:
-            level: warn
+            level: debug

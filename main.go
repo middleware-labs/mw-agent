@@ -1,5 +1,8 @@
 package main
 
+// MW_API_KEY=fktzpvgssq4p2rkk3fdbh8vkxihye64b5qk4 TARGET=https://rp7tv69.middleware.io:443 go run *.go start
+// ^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})\s+\[.+?\]\s+(.+)$
+
 import (
 	"context"
 	"fmt"

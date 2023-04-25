@@ -1,0 +1,8 @@
+2023-04-19T07:53:56.694620158Z stdout F /root/dump/DATASET.json -> 
+s3://platform-mongodb-backups/staging/full/dump-23-04-19/DATASET.json 
+2023-04-19T07:53:57.36007565Z stdout F /root/dump/DATASET_ACCESS.json ->
+s3://platform-mongodb-backups/staging/full/dump-23-04-19/DATASET_ACCESS.json 
+2023-04-19T07:53:57.444882437Z stdout F /root/dump/DATASET AGREEMENT.json -> 
+s3://platform-mongodb-backups/staging/full/dump-23-04-19/DATASET AGREEMENT.json 
+2023-04-19T07:53:57.485864502Z stdout F /root/dump/DATASET_ANALYTICS.json -> 
+s3://platform-mongodb-backups/staging/full/dump-23-04-19/DATASET_ANALYTICS.json
