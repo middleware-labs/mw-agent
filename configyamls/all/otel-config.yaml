@@ -50,7 +50,8 @@ receivers:
                     - targets:
                         - 0.0.0.0:8888
     filelog:
-        include: [ /var/log/**/*.log*, /var/lib/docker/container/**/*.log*, $MW_LOG_PATHS ]
+        encoding: utf-16be
+        include: [ /home/acq053/work/src/github.com/middleware-labs/agent-host-go/test/multiline/*.log, $MW_LOG_PATHS ]
         exclude:
             - /tmp/mwagent/record_time.log
         include_file_path: true
@@ -186,32 +187,32 @@ processors:
 exporters:
     logging:
         loglevel: debug
-    otlp/2:
-        endpoint: ${TARGET}
-        headers:
-            authorization: ${MW_API_KEY}
-        sending_queue:
-            enabled: true
-            num_consumers: 100
-            queue_size: 10000
+    # otlp/2:
+    #     endpoint: ${TARGET}
+    #     headers:
+    #         authorization: ${MW_API_KEY}
+    #     sending_queue:
+    #         enabled: true
+    #         num_consumers: 100
+    #         queue_size: 10000
 service:
     pipelines:
-        metrics:
-            receivers:
-                - hostmetrics
-                - docker_stats
-                - otlp
-                - prometheus
-            processors:
-                - resourcedetection
-                - resource
-                - batch
-            exporters:
-                - otlp/2
+        # metrics:
+        #     receivers:
+        #         - hostmetrics
+        #         - docker_stats
+        #         - otlp
+        #         - prometheus
+        #     processors:
+        #         - resourcedetection
+        #         - resource
+        #         - batch
+        #     exporters:
+        #         - otlp/2
         logs:
             receivers:
-                - otlp
-                - fluentforward
+                # - otlp
+                # - fluentforward
                 - filelog
             processors:
                 # - filter/blanklog
@@ -220,17 +221,18 @@ service:
                 - attributes/logs
                 - batch
             exporters:
-                - otlp/2
-        traces:
-            receivers:
-                - otlp
-            processors:
-                - resourcedetection
-                - resource/3
-                - attributes/traces
-                - batch
-            exporters:
-                - otlp/2
+                # - otlp/2
+                - logging
+        # traces:
+        #     receivers:
+        #         - otlp
+        #     processors:
+        #         - resourcedetection
+        #         - resource/3
+        #         - attributes/traces
+        #         - batch
+        #     exporters:
+        #         - otlp/2
     telemetry:
         logs:
-            level: warn
+            level: debug
