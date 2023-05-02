@@ -1,0 +1,3 @@
+[submodule "pyroscope"]
+	path = pyroscope
+	url = https://github.com/middleware-labs/pyroscope.git
