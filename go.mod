@@ -25,6 +25,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.68.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.68.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.68.0
+	github.com/pyroscope-io/client v0.7.0
 	go.opentelemetry.io/collector/component v0.68.0
 	go.opentelemetry.io/collector/confmap v0.68.0
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.68.0
@@ -187,6 +188,7 @@ require (
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/prometheus/prometheus v0.40.7 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
+	github.com/pyroscope-io/godeltaprof v0.1.0 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.9 // indirect

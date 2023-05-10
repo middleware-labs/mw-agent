@@ -181,50 +181,50 @@ processors:
 exporters:
     logging:
         loglevel: debug
-    otlp/2:
-        endpoint: ${TARGET}
-        headers:
-            authorization: ${MW_API_KEY}
-        sending_queue:
-            enabled: true
-            num_consumers: 100
-            queue_size: 10000
+    # otlp/2:
+    #     endpoint: ${TARGET}
+    #     headers:
+    #         authorization: ${MW_API_KEY}
+    #     sending_queue:
+    #         enabled: true
+    #         num_consumers: 100
+    #         queue_size: 10000
 service:
     pipelines:
         metrics:
             receivers:
-                - hostmetrics
-                - otlp
+                # - hostmetrics
+                # - otlp
                 - prometheus
             processors:
                 - resourcedetection
                 - resource
                 - batch
             exporters:
-                - otlp/2
-        logs:
-            receivers:
-                - otlp
-                - fluentforward
-                - filelog
-            processors:
-                # - filter/blanklog
-                - resourcedetection
-                - resource/2
-                - attributes/logs
-                - batch
-            exporters:
-                - otlp/2
-        traces:
-            receivers:
-                - otlp
-            processors:
-                - resourcedetection
-                - resource/3
-                - attributes/traces
-                - batch
-            exporters:
-                - otlp/2
+                - logging
+        # logs:
+        #     receivers:
+        #         - otlp
+        #         - fluentforward
+        #         - filelog
+        #     processors:
+        #         # - filter/blanklog
+        #         - resourcedetection
+        #         - resource/2
+        #         - attributes/logs
+        #         - batch
+        #     exporters:
+        #         - otlp/2
+        # traces:
+        #     receivers:
+        #         - otlp
+        #     processors:
+        #         - resourcedetection
+        #         - resource/3
+        #         - attributes/traces
+        #         - batch
+        #     exporters:
+        #         - otlp/2
     telemetry:
         logs:
             level: warn

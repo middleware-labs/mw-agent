@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/pyroscope-io/client/pyroscope"
 	"log"
 	"os"
-
 	"strconv"
 	"time"
 
@@ -42,6 +42,40 @@ import (
 // }
 
 func main() {
+
+	serverAddress := os.Getenv("PYROSCOPE_SERVER_ADDRESS")
+	if serverAddress == "" {
+		fmt.Println("PYROSCOPE_SERVER_ADDRESS environment variable not set")
+		os.Exit(1)
+	}
+
+	appName := os.Getenv("PYROSCOPE_APP_NAME")
+	if appName == "" {
+		fmt.Println("PYROSCOPE_APP_NAME environment variable not set")
+		os.Exit(1)
+	}
+
+	pyroscope.Start(pyroscope.Config{
+		ApplicationName: appName,
+		ServerAddress:   serverAddress,
+		Logger:          pyroscope.StandardLogger,
+
+		ProfileTypes: []pyroscope.ProfileType{
+			// these profile types are enabled by default:
+			pyroscope.ProfileCPU,
+			pyroscope.ProfileAllocObjects,
+			pyroscope.ProfileAllocSpace,
+			pyroscope.ProfileInuseObjects,
+			pyroscope.ProfileInuseSpace,
+
+			// these profile types are optional:
+			pyroscope.ProfileGoroutines,
+			pyroscope.ProfileMutexCount,
+			pyroscope.ProfileMutexDuration,
+			pyroscope.ProfileBlockCount,
+			pyroscope.ProfileBlockDuration,
+		},
+	})
 
 	// go func() {
 

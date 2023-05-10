@@ -669,6 +669,10 @@ github.com/prometheus/prometheus v0.40.7 h1:cYtp4YrR9M99YpTUfXbei/HjIJJ+En23NKsT
 github.com/prometheus/prometheus v0.40.7/go.mod h1:nO+vI0cJo1ezp2DPGw5NEnTlYHGRpBFrqE4zb9O0g0U=
 github.com/prometheus/statsd_exporter v0.22.7 h1:7Pji/i2GuhK6Lu7DHrtTkFmNBCudCPT1pX2CziuyQR0=
 github.com/prometheus/statsd_exporter v0.22.7/go.mod h1:N/TevpjkIh9ccs6nuzY3jQn9dFqnUakOjnEuMPJJJnI=
+github.com/pyroscope-io/client v0.7.0 h1:LWuuqPQ1oa6x7BnmUOuo/aGwdX85QGhWZUBYWWW3zdk=
+github.com/pyroscope-io/client v0.7.0/go.mod h1:4h21iOU4pUOq0prKyDlvYRL+SCKsBc5wKiEtV+rJGqU=
+github.com/pyroscope-io/godeltaprof v0.1.0 h1:UBqtjt0yZi4jTxqZmLAs34XG6ycS3vUTlhEUSq4NHLE=
+github.com/pyroscope-io/godeltaprof v0.1.0/go.mod h1:psMITXp90+8pFenXkKIpNhrfmI9saQnPbba27VIaiQE=
 github.com/rhnvrm/simples3 v0.6.1/go.mod h1:Y+3vYm2V7Y4VijFoJHHTrja6OgPrJ2cBti8dPGkC3sA=
 github.com/rivo/tview v0.0.0-20200219210816-cd38d7432498/go.mod h1:6lkG1x+13OShEf0EaOCaTQYyB7d5nSbb181KtjlS+84=
 github.com/rivo/uniseg v0.1.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=

@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mw-kube-agent
+  namespace: pyroscope-go-agent-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mw-app
+  template:
+    metadata:
+      labels:
+        app: mw-app
+        k8s-app: mw-app
+    spec:
+      tolerations:
+      # these tolerations are to have the daemonset runnable on control plane nodes
+      # remove them if your control plane nodes should not run pods
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      - operator: "Exists"
+        effect: "NoSchedule"
+      - operator: "Exists"
+        effect: "NoExecute"
+      containers:
+        - args:
+            - api-server
+            - start
+          env:
+            - name: PYROSCOPE_SERVER_ADDRESS
+              value: http://profiling-server-realease-pyroscope.mw-backend.svc.cluster.local:4040
+            - name: PYROSCOPE_APP_NAME
+              value: agent.host.go.agent.env
+          image: ghcr.io/middleware-labs/agent-host-go:pyroscope-go-agent-demo
+          imagePullPolicy: Always
+          name: mw-kube-agent
+          securityContext:
+            privileged: true
+          resources: {}
+      restartPolicy: Always
