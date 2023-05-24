@@ -6,6 +6,7 @@ on:
       - 'README.md'
       # - '.github/**'
     branches:
+     - 'check-agent'
      - 'master'
      - 'workflow-experiments'
 
@@ -16,6 +17,10 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GHCR_TOKEN }}
+          ssh-key: ${{ secrets.CHECK_AGENT_ACCESS }}
+          submodules: 'recursive'
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
