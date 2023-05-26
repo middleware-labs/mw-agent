@@ -25,19 +25,24 @@ jobs:
           - x64
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout Repo
+      uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.GHCR_TOKEN }}
+        ssh-key: ${{ secrets.CHECK_AGENT_ACCESS }}
+        submodules: 'recursive'
 
     - name: Set architecture variables
       run: |
         if [ ${{ matrix.arch }} == "x64" ]; then
           echo "::set-env name=ARCH::all"
           echo "::set-env name=BINARY_SOURCE::release/mw-go-agent-host"
-          echo "::set-env name=RELEASE_VERSION::0.0.16"
+          echo "::set-env name=RELEASE_VERSION::0.0.17"
           echo "::set-env name=CONTROL_FILE::control"
         elif [ ${{ matrix.arch }} == "ARM" ]; then
           echo "::set-env name=ARCH::arm64"
           echo "::set-env name=BINARY_SOURCE::release/mw-go-agent-host-arm"
-          echo "::set-env name=RELEASE_VERSION::0.0.16arm64"
+          echo "::set-env name=RELEASE_VERSION::0.0.17arm64"
           echo "::set-env name=CONTROL_FILE::control-arm"
         else
           echo "Unsupported architecture"
