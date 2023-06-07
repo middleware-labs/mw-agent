@@ -9,7 +9,7 @@ builds:
       - linux
     goarch:
       - amd64
-      # - arm64
+      - arm64
 
 # dockers:
 #   - image_templates: ["agent-host-go:{{ .Version }}"]
