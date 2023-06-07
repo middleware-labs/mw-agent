@@ -1,9 +1,11 @@
 FROM golang:1.18 as base
-RUN apt-get update && apt-get install -y ca-certificates openssl
-RUN cd ~/Desktop/mw/agent-host-go
 RUN pwd
 RUN ls 
-# COPY MwCA.pem /etc/ssl/certs/MwCA.pem
+RUN apt-get update && apt-get install -y ca-certificates openssl
+# RUN cd ~/Desktop/mw/agent-host-go
+RUN pwd
+RUN ls 
+COPY MwCA.pem /etc/ssl/certs/MwCA.pem
 RUN update-ca-certificates
 WORKDIR /app
 COPY . .
