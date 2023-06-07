@@ -12,8 +12,14 @@ builds:
       - arm64
 
 dockers:
-  - image_templates: ["ghcr.io/middleware-labs/agent-host-go:{{ .Version }}"]
+  - image_templates: 
+      # - "ghcr.io/middleware-labs/agent-host-go:{{ .Version }}"
+      - 'ghcr.io/middleware-labs/agent-host-go:{{ .Tag }}'
+    # use: buildx
     dockerfile: Dockerfile
+    build_flag_templates:
+    - --label=org.opencontainers.image.title={{ .ProjectName }}
+    
 
 # snapcrafts:
 #   - name_template: 'agent-host-go:{{ .Version }}'
