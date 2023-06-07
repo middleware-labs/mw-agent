@@ -13,8 +13,7 @@ builds:
 
 dockers:
   - image_templates: 
-      # - "ghcr.io/middleware-labs/agent-host-go:{{ .Version }}"
-      - 'ghcr.io/middleware-labs/agent-host-go:{{ .Tag }}'
+      - 'ghcr.io/middleware-labs/agent-host-go:{{ .Version }}'
     use: buildx
     dockerfile: Dockerfile
     
