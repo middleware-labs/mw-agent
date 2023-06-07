@@ -11,9 +11,9 @@ builds:
       - amd64
       - arm64
 
-# dockers:
-#   - image_templates: ["agent-host-go:{{ .Version }}"]
-#     dockerfile: Dockerfile
+dockers:
+  - image_templates: ["ghcr.io/middleware-labs/agent-host-go:{{ .Version }}"]
+    dockerfile: Dockerfile
 
 # snapcrafts:
 #   - name_template: 'agent-host-go:{{ .Version }}'
