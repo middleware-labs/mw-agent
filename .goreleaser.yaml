@@ -16,10 +16,10 @@ dockers:
       - 'ghcr.io/middleware-labs/agent-host-go:{{ .Version }}'
     use: buildx
     dockerfile: Dockerfile
-    skip_push: true
-    
-checksum:
-  name_template: "checksums.txt"
+    # skip_push: true
+
+# checksum:
+#   name_template: "checksums.txt"
 
 # snapcrafts:
 #   - name_template: 'agent-host-go:{{ .Version }}'
