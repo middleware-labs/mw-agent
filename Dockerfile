@@ -1,2 +1,5 @@
 FROM busybox:glibc 
-RUN ls 
+RUN mkdir -p /mwapp
+WORKDIR /mwapp
+COPY . /mwapp
+ENTRYPOINT ["/mwapp"]
