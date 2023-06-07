@@ -1,5 +1,6 @@
 FROM golang:1.18 as base
 RUN apt-get update && apt-get install -y ca-certificates openssl
+RUN cd ..
 RUN pwd
 RUN ls 
 # COPY MwCA.pem /etc/ssl/certs/MwCA.pem
