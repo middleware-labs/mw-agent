@@ -18,8 +18,11 @@ dockers:
     dockerfile: Dockerfile
     # skip_push: true
 
-# checksum:
-#   name_template: "checksums.txt"
+changelog:
+  skip: true
+
+checksum:
+  name_template: "checksums.txt"
 
 # snapcrafts:
 #   - name_template: 'agent-host-go:{{ .Version }}'
