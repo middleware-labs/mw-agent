@@ -1,6 +1,6 @@
-# before: 
-#   hooks:
-#     - go mod download
+before: 
+  hooks:
+    - go mod download
 
 builds:
   - env:
@@ -14,7 +14,6 @@ builds:
 dockers:
   - image_templates: 
       - 'ghcr.io/middleware-labs/agent-host-go:{{ .Version }}'
-    use: buildx
     dockerfile: Dockerfile
     # skip_push: true
 
@@ -24,14 +23,15 @@ changelog:
 checksum:
   name_template: "checksums.txt"
 
+release:
+  github:
+    owner: middleware-labs
+    name: agent-host-go    
+
 # snapcrafts:
 #   - name_template: 'agent-host-go:{{ .Version }}'
 #     publish: true
 
-# release:
-#   github:
-#     owner: agent-host-go
-#     name: agent-host-go    
 
 # snapshot:
 #   name_template: "{{ .Tag }}-next"
