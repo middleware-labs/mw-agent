@@ -12,8 +12,7 @@ builds:
       - arm64
 
 dockers:
-  - 
-    image_templates: 
+  - image_templates: 
       - 'ghcr.io/middleware-labs/agent-host-go:{{ .Version }}'
     dockerfile: Dockerfile
     # skip_push: true
