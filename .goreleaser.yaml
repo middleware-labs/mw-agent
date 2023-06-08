@@ -35,6 +35,8 @@ snapcrafts:
   - name_template: mw-agent-host
     name: mw-agent-host
     publish: true
+    summary: test-summary
+    description: test-description
     base: core20
     grade: stable
     confinement: strict
