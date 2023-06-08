@@ -39,14 +39,7 @@ snapcrafts:
       - pkg-config
       - libssl-dev
     channel_templates:
-      - edge
-      - beta
-      - candidate
-      - stable
-      - '{{ .Major }}.{{ .Minor }}/edge'
-      - '{{ .Major }}.{{ .Minor }}/beta'
-      - '{{ .Major }}.{{ .Minor }}/candidate'
-      - '{{ .Major }}.{{ .Minor }}/stable'
+      - latest/stable
     summary: test-summary
     description: | 
       test-description
