@@ -34,9 +34,6 @@ release:
 snapcrafts:
   - name: mw-agent-host
     publish: true
-    builds:
-      - pkg-config
-      - libssl-dev
     channel_templates:
       - latest/stable
     summary: test-summary
