@@ -16,7 +16,7 @@ dockers:
   - image_templates: 
       - 'ghcr.io/middleware-labs/agent-host-go:{{ .Version }}'
     dockerfile: Dockerfile
-    skip_push: true
+    # skip_push: true
     extra_files:
       - configyamls/all/otel-config.yaml
       - configyamls/nodocker/otel-config.yaml
