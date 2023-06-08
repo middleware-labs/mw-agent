@@ -35,14 +35,19 @@ snapcrafts:
   - name_template: mw-agent-host
     name: mw-agent-host
     publish: true
+    builds:
+      - pkg-config
+      - libssl-dev
     summary: test-summary
-    description: test-description
+    description: | 
+      test-description
     base: core20
     grade: stable
     confinement: strict
     apps:
       mw-agent-host:
         command: bin/mw-agent-host
+    
 
 
     
