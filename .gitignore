@@ -3,3 +3,4 @@ otelstruct.go
 dist/
 *.patch
 *.snap
+login.token
