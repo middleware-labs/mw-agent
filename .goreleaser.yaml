@@ -2,15 +2,15 @@ before:
   hooks:
     - go mod download
 
-# builds:
-#   - env:
-#       - CGO_ENABLED=0
-#     goos:
-#       - linux
-#     goarch:
-#       - amd64
-#       - arm64
-
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    skip: true
 
 dockers:
   - image_templates: 
@@ -27,10 +27,11 @@ changelog:
 checksum:
   name_template: "checksums.txt"
 
-# release:
-#   github:
-#     owner: middleware-labs
-#     name: agent-host-go    
+release:
+  github:
+    owner: middleware-labs
+    name: agent-host-go 
+  skip_upload: true
 
 # snapcrafts:
 #   - name_template: 'agent-host-go:{{ .Version }}'
