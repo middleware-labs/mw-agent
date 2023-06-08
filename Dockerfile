@@ -2,4 +2,4 @@ FROM busybox:glibc
 RUN mkdir -p /mwapp
 WORKDIR /mwapp
 COPY . /mwapp
-# ENTRYPOINT ["/mwapp"]
+CMD ["./agent-host-go start"]

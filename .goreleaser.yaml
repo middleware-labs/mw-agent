@@ -2,20 +2,24 @@ before:
   hooks:
     - go mod download
 
-builds:
-  - env:
-      - CGO_ENABLED=0
-    goos:
-      - linux
-    goarch:
-      - amd64
-      - arm64
+# builds:
+#   - env:
+#       - CGO_ENABLED=0
+#     goos:
+#       - linux
+#     goarch:
+#       - amd64
+#       - arm64
+
 
 dockers:
   - image_templates: 
       - 'ghcr.io/middleware-labs/agent-host-go:{{ .Version }}'
     dockerfile: Dockerfile
-    # skip_push: true
+    skip_push: true
+    extra_files:
+      - configyamls/all/otel-config.yaml
+      - configyamls/nodocker/otel-config.yaml
 
 changelog:
   skip: true
@@ -23,10 +27,10 @@ changelog:
 checksum:
   name_template: "checksums.txt"
 
-release:
-  github:
-    owner: middleware-labs
-    name: agent-host-go    
+# release:
+#   github:
+#     owner: middleware-labs
+#     name: agent-host-go    
 
 # snapcrafts:
 #   - name_template: 'agent-host-go:{{ .Version }}'
