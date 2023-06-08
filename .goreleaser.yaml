@@ -29,7 +29,7 @@ release:
   github:
     owner: middleware-labs
     name: agent-host-go 
-  skip_upload: true      
+  # skip_upload: true      
 
 snapcrafts:
   - name_template: mw-agent-host
@@ -40,6 +40,8 @@ snapcrafts:
     apps:
       mw-agent-host:
         command: bin/mw-agent-host
+
+
     
       
 
