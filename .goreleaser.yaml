@@ -33,6 +33,7 @@ release:
 
 snapcrafts:
   - name_template: mw-agent-host
+    name: mw-agent-host
     publish: true
     base: core20
     grade: stable
