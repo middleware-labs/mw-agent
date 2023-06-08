@@ -32,8 +32,7 @@ release:
   # skip_upload: true      
 
 snapcrafts:
-  - name_template: mw-agent-host
-    name: mw-agent-host
+  - name: mw-agent-host
     publish: true
     builds:
       - pkg-config
@@ -46,9 +45,6 @@ snapcrafts:
     base: core20
     grade: stable
     confinement: strict
-    apps:
-      mw-agent-host:
-        command: bin/mw-agent-host
     
 
 
