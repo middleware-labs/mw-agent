@@ -16,7 +16,8 @@ dockers:
       - 'ghcr.io/middleware-labs/agent-host-go:{{ .Version }}'
     dockerfile: Dockerfile
     extra_files:
-      - configyamls
+      - configyamls/all/otel-config.yaml
+      - configyamls/nodocker/otel-config.yaml
 
 changelog:
   skip: true
@@ -30,56 +31,16 @@ release:
     name: agent-host-go 
   skip_upload: true      
 
-# snapcrafts:
-#   - name_template: 'agent-host-go:{{ .Version }}'
-#     publish: true
-
-
-# snapshot:
-#   name_template: "{{ .Tag }}-next"
-
-
+snapcrafts:
+  - name_template: mw-agent-host
+    publish: true
+    base: core20
+    grade: stable
+    confinement: strict
+    apps:
+      mw-agent-host:
+        command: bin/mw-agent-host
     
+      
 
 
-
-
-# before:
-#   hooks:
-#     - go mod download
-# monorepo:
-#   tag_prefix: cmd/builder/
-#   dir: cmd/builder
-# builds:
-#   - flags:
-#       - -trimpath
-#     ldflags:
-#       - -s -w -X go.opentelemetry.io/collector/cmd/builder/internal.version={{.Version}} -X go.opentelemetry.io/collector/cmd/builder/internal.date={{.Date}}
-#     env:
-#       - CGO_ENABLED=0
-#     goos:
-#       - linux
-#       - windows
-#       - darwin
-#     goarch:
-#       - amd64
-#       - arm64
-#       - ppc64le
-#     ignore:
-#       - goos: windows
-#         goarch: arm64
-#     binary: ocb
-# release:
-#   github:
-#     owner: open-telemetry
-#     name: opentelemetry-collector
-#   header: |
-#     ### Images and binaries here: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/tag/{{ .Tag }}
-# archives:
-#   - format: binary
-# checksum:
-#   name_template: "checksums.txt"
-# snapshot:
-#   name_template: "{{ .Tag }}-next"
-# changelog:
-#   skip: true
