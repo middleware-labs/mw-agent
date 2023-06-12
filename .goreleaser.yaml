@@ -37,11 +37,7 @@ signs:
   - artifacts: all
     args:
       [
-        "-u",
-        "parth-dadhaniya",
-        "--output",
         "${signature}",
-        "--detach-sign",
         "${artifact}",
       ]
 
