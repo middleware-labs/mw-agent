@@ -1,3 +1,5 @@
+project_name: middleware-cli
+
 before: 
   hooks:
     - go mod download
@@ -6,10 +8,17 @@ builds:
   - env:
       - CGO_ENABLED=0
     goos:
+      # currently supported os is linux
       - linux
     goarch:
       - amd64
       - arm64
+
+changelog:
+  skip: true
+
+checksum:
+  name_template: "checksums.txt"
 
 dockers:
   - image_templates: 
@@ -19,17 +28,22 @@ dockers:
       - configyamls/all/otel-config.yaml
       - configyamls/nodocker/otel-config.yaml
 
-changelog:
-  skip: true
-
-checksum:
-  name_template: "checksums.txt"
-
 release:
   github:
     owner: middleware-labs
     name: agent-host-go 
-  # skip_upload: true      
+
+signs:
+  - artifacts: all
+    args:
+      [
+        "-u",
+        "0xDC9FC6B1FCE47986",
+        "--output",
+        "${signature}",
+        "--detach-sign",
+        "${artifact}",
+      ]
 
 snapcrafts:
   - name: mw-agent-host
@@ -39,10 +53,15 @@ snapcrafts:
     summary: test-summary
     description: | 
       test-description
-    base: core20
+    base: core18
     grade: stable
     confinement: strict
-    
+    license: Apache-2.0
+    extra_files:
+      - source: configyamls/all/otel-config.yaml
+        destination: configyamls/all/otel-config.yaml
+      - source: configyamls/nodocker/otel-config.yaml
+        destination: configyamls/nodocker/otel-config.yaml
 
 
     

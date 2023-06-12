@@ -1,6 +1,4 @@
 **/node_modules
 otelstruct.go
 dist/
-*.patch
-*.snap
-login.token
+temp/
