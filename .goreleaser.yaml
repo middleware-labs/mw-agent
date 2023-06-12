@@ -38,7 +38,7 @@ signs:
     args:
       [
         "-u",
-        "parth@middleware.io",
+        "parth-dadhaniya",
         "--output",
         "${signature}",
         "--detach-sign",
