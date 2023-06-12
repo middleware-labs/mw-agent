@@ -35,11 +35,9 @@ release:
 
 signs:
   - artifacts: all
+    cmd: gpg2
     args:
       [
-        "-u",
-        "B29BDDB8E1B707B4",
-        "--output",
         "${signature}",
         "--detach-sign",
         "${artifact}",
