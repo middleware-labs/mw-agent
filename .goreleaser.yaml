@@ -35,9 +35,11 @@ release:
 
 signs:
   - artifacts: all
-    cmd: gpg2
     args:
       [
+        "-u",
+        "parth@middleware.io",
+        "--output",
         "${signature}",
         "--detach-sign",
         "${artifact}",
