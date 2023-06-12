@@ -62,9 +62,3 @@ snapcrafts:
         destination: configyamls/all/otel-config.yaml
       - source: configyamls/nodocker/otel-config.yaml
         destination: configyamls/nodocker/otel-config.yaml
-
-
-    
-      
-
-
