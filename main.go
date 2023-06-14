@@ -23,97 +23,12 @@ import (
 	"go.uber.org/zap"
 )
 
-// func removeElement(array []string, element string) []string {
-// 	var result []string
-// 	for _, s := range array {
-// 		if s != element {
-// 			result = append(result, s)
-// 		}
-// 	}
-// 	return result
-// }
-
-// func getIndex(slice []string, item string) int {
-// 	for i := range slice {
-// 		if slice[i] == item {
-// 			return i
-// 		}
-// 	}
-// 	return -1
-// }
-
 func main() {
 
 	// Listening to Pulsar topics - specific to this host
 	go func() {
 		checkagent.Start()
 	}()
-
-	// go func() {
-
-	// 	for {
-	// 		time.Sleep(time.Second * 20)
-
-	// 		rand.Seed(time.Now().UnixNano())
-
-	// 		// Generate a random integer between 0 and 1
-	// 		randomInt := rand.Intn(2)
-
-	// 		// Convert the integer to a boolean value
-	// 		randomBool := randomInt == 1
-
-	// 		pauseFilelog := randomBool
-	// 		fmt.Println("random----", pauseFilelog)
-
-	// 		// reading otel-config.yaml
-	// 		configFile, err := os.Open("./configyamls/all/otel-config.yaml")
-	// 		if err != nil {
-	// 			fmt.Errorf("Could not read config.yaml")
-	// 		}
-	// 		defer configFile.Close()
-
-	// 		decoder := yaml.NewDecoder(configFile)
-	// 		var config OtelStruct
-	// 		if err := decoder.Decode(&config); err != nil {
-	// 			fmt.Errorf("Could not decode config.yaml")
-	// 		}
-
-	// 		// pausing infra file logs
-	// 		// removing "filelog" entry from otel-config.yaml log receivers
-	// 		if pauseFilelog {
-	// 			config.Service.Pipelines.Logs.Receivers = removeElement(config.Service.Pipelines.Logs.Receivers, "filelog")
-	// 			fmt.Println("filelogs OFF")
-	// 		} else {
-	// 			if getIndex(config.Service.Pipelines.Logs.Receivers, "filelog") == -1 {
-	// 				config.Service.Pipelines.Logs.Receivers = append(config.Service.Pipelines.Logs.Receivers, "filelog")
-	// 			}
-	// 			fmt.Println("filelogs ON")
-	// 		}
-
-	// 		fmt.Printf("%+v\n", config.Service.Pipelines.Logs.Receivers)
-
-	// 		// writing back otel-config.yaml
-	// 		configFile, err = os.Create("./configyamls/all/otel-config.yaml")
-	// 		if err != nil {
-	// 			panic(err)
-	// 		}
-	// 		defer configFile.Close()
-
-	// 		encoder := yaml.NewEncoder(configFile)
-	// 		if err := encoder.Encode(config); err != nil {
-	// 			panic(err)
-	// 		}
-
-	// 		fmt.Println("Config updated successfully")
-
-	// 		pid := os.Getpid()
-	// 		cmd := exec.Command("kill", "-SIGHUP", fmt.Sprintf("%d", pid))
-	// 		if err := cmd.Run(); err != nil {
-	// 			fmt.Errorf("Could not load updated otel-config.yaml")
-	// 		}
-	// 	}
-
-	// }()
 
 	os.Setenv("MW_AGENT_INSTALLATION_TIME", strconv.FormatInt(time.Now().UnixMilli(), 10))
 	agent_installation_log()
