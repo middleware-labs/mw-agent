@@ -13,6 +13,7 @@ on:
 
 env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+  RELEASE_VERSION: 0.0.18
 
 jobs:
   build:
@@ -37,12 +38,12 @@ jobs:
         if [ ${{ matrix.arch }} == "x64" ]; then
           echo "::set-env name=ARCH::all"
           echo "::set-env name=BINARY_SOURCE::release/mw-go-agent-host"
-          echo "::set-env name=RELEASE_VERSION::0.0.17"
+          echo "::set-env name=RELEASE_VERSION::${RELEASE_VERSION}"
           echo "::set-env name=CONTROL_FILE::control"
         elif [ ${{ matrix.arch }} == "ARM" ]; then
           echo "::set-env name=ARCH::arm64"
           echo "::set-env name=BINARY_SOURCE::release/mw-go-agent-host-arm"
-          echo "::set-env name=RELEASE_VERSION::0.0.17arm64"
+          echo "::set-env name=RELEASE_VERSION::${RELEASE_VERSION}arm64"
           echo "::set-env name=CONTROL_FILE::control-arm"
         else
           echo "Unsupported architecture"
