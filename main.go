@@ -26,9 +26,11 @@ import (
 func main() {
 
 	// Listening to Pulsar topics - specific to this host
-	go func() {
-		checkagent.Start()
-	}()
+	if os.Getenv("MW_RUN_SYNTHETIC_TEST_MODULE") != "false" {
+		go func() {
+			checkagent.Start()
+		}()
+	}
 
 	os.Setenv("MW_AGENT_INSTALLATION_TIME", strconv.FormatInt(time.Now().UnixMilli(), 10))
 	agent_installation_log()
@@ -48,28 +50,15 @@ func Try[T any](item T, err error) T {
 // air --build.cmd "go build -o /tmp/api-server /app/*.go" --build.bin "/tmp/api-server $*"
 func app() *cli.App {
 
+	// Listen to the config changes provided by Middleware API
+	listenForConfigChanges()
+
 	_, hasMwDockerEndpoint := os.LookupEnv("MW_DOCKER_ENDPOINT")
 	if !hasMwDockerEndpoint {
 		os.Setenv("MW_DOCKER_ENDPOINT", "unix:///var/run/docker.sock")
 	}
 
-	_, haveMwLogPaths := os.LookupEnv("MW_LOG_PATHS")
-	if !haveMwLogPaths {
-		os.Setenv("MW_LOG_PATHS", "")
-	}
-
-	collectionType := "all"
-	_, err := os.Stat("/var/run/docker.sock")
-	if err != nil {
-		collectionType = "nodocker"
-	}
-
-	value, hasCollectionType := os.LookupEnv("MW_COLLECTION_TYPE")
-	if hasCollectionType {
-		collectionType = value
-	}
-	configFile := ""
-	configFile = "configyamls/" + collectionType + "/otel-config.yaml"
+	yamlPath := getUpdatedYAMLPath()
 
 	return &cli.App{
 		Name:  "api-server",
@@ -92,7 +81,7 @@ func app() *cli.App {
 								expandconverter.New(),
 								//overwritepropertiesconverter.New(getSetFlag()),
 							},
-							URIs: []string{configFile},
+							URIs: []string{yamlPath},
 						},
 					})
 					if err != nil {
