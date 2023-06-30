@@ -31,15 +31,7 @@ dockers:
 release:
   github:
     owner: middleware-labs
-    name: agent-host-go 
-
-signs:
-  - artifacts: all
-    args:
-      [
-        "${signature}",
-        "${artifact}",
-      ]
+    name: agent-host-go
 
 snapcrafts:
   - name: mw-agent-host
