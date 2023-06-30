@@ -483,6 +483,8 @@ github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
 github.com/kr/text v0.2.0/go.mod h1:eLer722TekiGuMkidMxC/pM04lWEeraHUUmBw8l2grE=
 github.com/leoluk/perflib_exporter v0.2.0 h1:WJU7N3AIHxfc3CjoEJcBgG3i2ltF5Yz1ADVY9T6f1BY=
 github.com/leoluk/perflib_exporter v0.2.0/go.mod h1:MinSWm88jguXFFrGsP56PtleUb4Qtm4tNRH/wXNXRTI=
+github.com/lib/pq v1.10.7 h1:p7ZhMD+KsSRozJr34udlUrhboJwWAgCg34+/ZZNvZZw=
+github.com/lib/pq v1.10.7/go.mod h1:AlVN5x4E4T544tWzH6hKfbfQvm3HdbOxrmggDNAPY9o=
 github.com/linode/linodego v1.9.3 h1:+lxNZw4avRxhCqGjwfPgQ2PvMT+vOL0OMsTdzixR7hQ=
 github.com/linode/linodego v1.9.3/go.mod h1:h6AuFR/JpqwwM/vkj7s8KV3iGN8/jxn+zc437F8SZ8w=
 github.com/lucasb-eyer/go-colorful v1.0.2/go.mod h1:0MS4r+7BZKSJ5mw4/S5MPN+qHFF1fYclkSPilDOKW0s=
@@ -607,6 +609,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceproc
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.68.0/go.mod h1:hzitK+rGsmZs2F4lBSWd51JQ55fefJ2DbshCTceLbtQ=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.68.0 h1:iOK+eoE2oEPEWYBURMdsn1MXMN81nhY4buNU4+F4lH4=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.68.0/go.mod h1:3mmlqHqKHC1PtbGC8bzuKEgBrO17T5MmRaL9mdyRE6U=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.68.0 h1:fFVbzCISGonGpsKVj1de9fOIC/jjsJIXOah2JRZtceE=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.68.0/go.mod h1:GLVU9CenIBwdkyDUlKvFuEaB5HmJKZM/b64HCVQBMQY=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.68.0 h1:E+cMXZVebOxCRlhCAX8O2kwna6qSyD5DvZi2jaDJLV4=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.68.0/go.mod h1:X4PVmrkPOuUsSXB+UjA+zMgqHaUdQR8ZCKSnw+l73xo=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=

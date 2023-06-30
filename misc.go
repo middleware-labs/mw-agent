@@ -12,3 +12,11 @@ func isSocket(path string) bool {
 	}
 	return fileInfo.Mode().Type() == fs.ModeSocket
 }
+
+func getHostname() string {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return ""
+	}
+	return hostname
+}

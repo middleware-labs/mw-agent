@@ -25,6 +25,8 @@ import (
 
 func main() {
 
+	initLogger()
+
 	// Listening to Pulsar topics - specific to this host
 	if os.Getenv("MW_RUN_SYNTHETIC_TEST_MODULE") != "false" {
 		go func() {
@@ -59,6 +61,9 @@ func app() *cli.App {
 	}
 
 	yamlPath := getUpdatedYAMLPath()
+	GlobalLogger.Debug("YAML Path: " + yamlPath)
+
+	// yamlPath := "configyamls/all/otel-config.yaml"
 
 	return &cli.App{
 		Name:  "api-server",
