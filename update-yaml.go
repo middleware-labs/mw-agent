@@ -69,20 +69,20 @@ func updatepgdbConfig(config map[string]interface{}, pgdbConfig pgdbConfiguratio
 	// Read the YAML file
 	yamlData, err := ioutil.ReadFile(pgdbConfig.Path)
 	if err != nil {
-		log.Fatalf("Failed to read YAML file: %v", err)
+		log.Println("Failed to read YAML file: ", err)
 	}
 
 	// Unmarshal the YAML data into a temporary map[string]interface{}
 	tempMap := make(map[string]interface{})
 	err = yaml.Unmarshal(yamlData, &tempMap)
 	if err != nil {
-		log.Fatalf("Failed to unmarshal YAML: %v", err)
+		log.Println("Failed to unmarshal YAML:", err)
 	}
 
 	// Add the temporary map to the existing "receiver" key
 	receiverData, ok := config["receivers"].(map[string]interface{})
 	if !ok {
-		log.Fatalf("Failed to access 'receivers' key in existing config")
+		log.Println("Failed to access 'receivers' key in existing config")
 	}
 
 	for key, value := range tempMap {
@@ -118,6 +118,7 @@ func updateYAML(configType, yamlPath string) error {
 
 	// Unmarshal JSON response into ApiResponse struct
 	var apiResponse APIResponseForYAML
+	// fmt.Println("body: ", string(body))
 	if err := json.Unmarshal(body, &apiResponse); err != nil {
 		return fmt.Errorf("failed to unmarshal API response: %v", err)
 	}
