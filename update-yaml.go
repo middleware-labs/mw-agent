@@ -23,11 +23,16 @@ type pgdbConfiguration struct {
 	Path string `json:"path"`
 }
 
+type mongodbConfiguration struct {
+	Path string `json:"path"`
+}
+
 type APIResponseForYAML struct {
-	Status     bool              `json:"status"`
-	Config     ConfigType        `json:"config"`
-	PgdbConfig pgdbConfiguration `json:"pgdb_config"`
-	Message    string            `json:"message"`
+	Status        bool                 `json:"status"`
+	Config        ConfigType           `json:"config"`
+	PgdbConfig    pgdbConfiguration    `json:"pgdb_config"`
+	MongodbConfig mongodbConfiguration `json:"mongodb_config"`
+	Message       string               `json:"message"`
 }
 
 type APIResponseForRestart struct {
@@ -65,11 +70,19 @@ func checkForConfigURLOverrides() (string, string) {
 }
 
 func updatepgdbConfig(config map[string]interface{}, pgdbConfig pgdbConfiguration) map[string]interface{} {
+	return updateConfig(config, pgdbConfig.Path)
+}
 
+func updateMongodbConfig(config map[string]interface{}, mongodbConfig mongodbConfiguration) map[string]interface{} {
+	return updateConfig(config, mongodbConfig.Path)
+}
+
+func updateConfig(config map[string]interface{}, path string) map[string]interface{} {
 	// Read the YAML file
-	yamlData, err := ioutil.ReadFile(pgdbConfig.Path)
+	yamlData, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Println("Failed to read YAML file: ", err)
+		return config
 	}
 
 	// Unmarshal the YAML data into a temporary map[string]interface{}
@@ -77,12 +90,14 @@ func updatepgdbConfig(config map[string]interface{}, pgdbConfig pgdbConfiguratio
 	err = yaml.Unmarshal(yamlData, &tempMap)
 	if err != nil {
 		log.Println("Failed to unmarshal YAML:", err)
+		return config
 	}
 
 	// Add the temporary map to the existing "receiver" key
 	receiverData, ok := config["receivers"].(map[string]interface{})
 	if !ok {
 		log.Println("Failed to access 'receivers' key in existing config")
+		return config
 	}
 
 	for key, value := range tempMap {
@@ -140,7 +155,9 @@ func updateYAML(configType, yamlPath string) error {
 	}
 
 	pgdbConfig := apiResponse.PgdbConfig
+	// mongodbConfig := apiResponse.MongodbConfig
 	apiYAMLConfig = updatepgdbConfig(apiYAMLConfig, pgdbConfig)
+	// apiYAMLConfig = updateMongodbConfig(apiYAMLConfig, mongodbConfig)
 
 	apiYAMLBytes, err := yaml.Marshal(apiYAMLConfig)
 	if err != nil {

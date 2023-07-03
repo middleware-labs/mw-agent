@@ -35,6 +35,7 @@ require (
 	go.opentelemetry.io/collector/processor/batchprocessor v0.68.0
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.68.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.68.0
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
@@ -232,7 +233,6 @@ require (
 	google.golang.org/genproto v0.0.0-20221206210731-b1a01be3a5f6 // indirect
 	google.golang.org/grpc v1.51.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
@@ -241,6 +241,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostm
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.0.0-20221229125036-b4b428540347
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.0.0-20221229125036-b4b428540347
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.0.0-20230703072515-60321c48776d
 
 // replace checkagent => github.com/middleware-labs/check-agent v0.0.0-20230411103956-f67eb953ba5e
 replace checkagent => ./check-agent
