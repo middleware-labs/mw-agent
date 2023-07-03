@@ -86,7 +86,19 @@ func updatepgdbConfig(config map[string]interface{}, pgdbConfig pgdbConfiguratio
 	}
 
 	for key, value := range tempMap {
-		receiverData[key] = value
+		mapValue, mapValueOk := value.(map[string]interface{})
+		if mapValueOk {
+			oldValue, oldValueOk := receiverData[key]
+			if oldValueOk {
+				oldMapValue, oldMapValueOk := oldValue.(map[string]interface{})
+				if oldMapValueOk {
+					for k, v := range mapValue {
+						oldMapValue[k] = v
+					}
+					receiverData[key] = oldMapValue
+				}
+			}
+		}
 	}
 
 	return config
