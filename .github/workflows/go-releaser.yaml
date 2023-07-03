@@ -20,7 +20,9 @@ jobs:
         name: Checkout
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          token: ${{ secrets.GHCR_TOKEN }}
+          ssh-key: ${{ secrets.CHECK_AGENT_ACCESS }}
+          submodules: 'recursive'
       -
         name: Set up Go
         uses: actions/setup-go@v3
