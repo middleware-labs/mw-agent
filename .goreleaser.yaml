@@ -2,6 +2,7 @@ project_name: middleware-cli
 
 before: 
   hooks:
+    - git clone https://github.com/middleware-labs/check-agent.git
     - go mod download
 
 builds:
