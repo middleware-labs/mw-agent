@@ -2,7 +2,8 @@ project_name: middleware-cli
 
 before: 
   hooks:
-    - git clone https://github.com/middleware-labs/check-agent.git
+    - ssh-agent bash -c 'ssh-add {{ secrets.CHECK_AGENT_ACCESS }} git clone git@github.com:user/project.git'
+    - git clone git@github.com:middleware-labs/check-agent.git
     - go mod download
 
 builds:
