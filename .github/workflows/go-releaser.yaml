@@ -1,0 +1,39 @@
+name: goreleaser
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      -
+        name: Set up Go
+        uses: actions/setup-go@v3
+      -
+        name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v4
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          SNAPCRAFT_STORE_CREDENTIALS: $${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+
+      -
+        name: Upload assets
+        uses: actions/upload-artifact@v3
+        with:
+          name: middleware_linux_arm64
+          path: dist/middleware_linux_arm64/middleware-cli

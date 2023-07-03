@@ -1,0 +1,50 @@
+project_name: middleware-cli
+
+before: 
+  hooks:
+    - go mod download
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      # currently supported os is linux 
+      - linux
+    goarch:
+      - amd64
+      - arm64
+
+changelog:
+  skip: true
+
+dockers:
+  - image_templates: 
+      - 'ghcr.io/middleware-labs/agent-host-go:{{ .Version }}'
+    dockerfile: Dockerfile
+    extra_files:
+      - configyamls/all/otel-config.yaml
+      - configyamls/nodocker/otel-config.yaml
+
+release:
+  github:
+    owner: middleware-labs
+    name: agent-host-go
+
+snapcrafts:
+  - name: mw-agent-host
+    publish: true
+    channel_templates:
+      - latest/stable
+    summary: test-summary
+    description: | 
+      test-description
+    base: core18
+    grade: stable
+    confinement: strict
+    license: Apache-2.0
+    extra_files:
+      - source: configyamls/all/otel-config.yaml
+        destination: configyamls/all/otel-config.yaml
+      - source: configyamls/nodocker/otel-config.yaml
+        destination: configyamls/nodocker/otel-config.yaml
+

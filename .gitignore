@@ -1,2 +1,4 @@
 **/node_modules
 otelstruct.go
+/dist
+/temp
