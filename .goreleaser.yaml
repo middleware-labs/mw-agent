@@ -4,15 +4,15 @@ before:
   hooks:
     - go mod download
 
-builds:
-  - env:
-      - CGO_ENABLED=0
-    goos:
-      # currently supported os is linux 
-      - linux
-    goarch:
-      - amd64
-      - arm64
+# builds:
+#   - env:
+#       - CGO_ENABLED=0
+#     goos:
+#       # currently supported os is linux 
+#       - linux
+#     goarch:
+#       - amd64
+#       - arm64
 
 changelog:
   skip: true
