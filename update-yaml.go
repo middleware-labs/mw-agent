@@ -86,14 +86,19 @@ func updatepgdbConfig(config map[string]interface{}, pgdbConfig pgdbConfiguratio
 	}
 
 	for key, value := range tempMap {
-		mapValue, mapValueOk := value.(map[string]interface{})
+		mapValue, mapValueOk := value.(map[interface{}]interface{})
 		if mapValueOk {
 			oldValue, oldValueOk := receiverData[key]
 			if oldValueOk {
 				oldMapValue, oldMapValueOk := oldValue.(map[string]interface{})
 				if oldMapValueOk {
 					for k, v := range mapValue {
-						oldMapValue[k] = v
+						strKey, keyOk := k.(string)
+						if keyOk {
+							oldMapValue[strKey] = v
+						} else {
+							fmt.Println("Invalid key type:", k)
+						}
 					}
 					receiverData[key] = oldMapValue
 				}
