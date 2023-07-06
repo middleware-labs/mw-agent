@@ -1,4 +1,4 @@
-package main
+package logger
 
 import (
 	"io"
@@ -74,7 +74,7 @@ func (l *Logger) Error(v ...interface{}) {
 	}
 }
 
-func initLogger() {
+func init() {
 	debugLogHandle := os.Stdout
 	infoLogHandle := os.Stdout
 	warnLogHandle := os.Stdout

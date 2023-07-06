@@ -12,7 +12,9 @@ import (
 
 	"github.com/prometheus/common/version"
 	"github.com/sirupsen/logrus"
+	"github.com/tejaskokje-mw/agent-host-go/pkg/logger"
 	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v2/altsrc"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	expandconverter "go.opentelemetry.io/collector/confmap/converter/expandconverter"
@@ -25,7 +27,7 @@ import (
 
 func main() {
 
-	initLogger()
+	// initLogger()
 
 	// Listening to Pulsar topics - specific to this host
 	if os.Getenv("MW_RUN_SYNTHETIC_TEST_MODULE") != "false" {
@@ -61,18 +63,23 @@ func app() *cli.App {
 	}
 
 	yamlPath := getUpdatedYAMLPath()
-	GlobalLogger.Debug("YAML Path: " + yamlPath)
+	logger.GlobalLogger.Debug("YAML Path: " + yamlPath)
 
 	// yamlPath := "configyamls/all/otel-config.yaml"
 
+	flags := []cli.Flag{
+		altsrc.NewStringFlag(&cli.StringFlag{Name: "MW_API_URL_FOR_RESTART"}),
+		altsrc.NewStringFlag(&cli.StringFlag{Name: "MW_API_URL_FOR_RESTART"}),
+		&cli.StringFlag{Name: "config-file"},
+	}
 	return &cli.App{
-		Name:  "api-server",
-		Usage: "The API",
+		Name:  "mw-agent",
+		Usage: "Middleware Host Agent",
 		Commands: []*cli.Command{
 			&cli.Command{
 				Name:  "start",
 				Usage: "start API server",
-				Flags: []cli.Flag{},
+				Flags: flags,
 				Action: func(c *cli.Context) error {
 
 					configProvider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{

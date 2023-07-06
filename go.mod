@@ -1,4 +1,4 @@
-module github.com/middleware-labs/agent-host-go
+module github.com/tejaskokje-mw/agent-host-go
 
 go 1.18
 
@@ -35,6 +35,7 @@ require (
 	go.opentelemetry.io/collector/processor/batchprocessor v0.68.0
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.68.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.68.0
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
@@ -232,7 +233,6 @@ require (
 	google.golang.org/genproto v0.0.0-20221206210731-b1a01be3a5f6 // indirect
 	google.golang.org/grpc v1.51.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
