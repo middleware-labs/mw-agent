@@ -1,5 +1,5 @@
 Package: mw-go-agent-host-arm
-Version: 0.0.19arm64
+Version: 0.0.20arm64
 Maintainer: example <example@example.com>
 Depends: libc6
 Architecture: arm64
