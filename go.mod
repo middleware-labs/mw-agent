@@ -1,4 +1,4 @@
-module github.com/tejaskokje-mw/agent-host-go
+module github.com/tejaskokje-mw/mw-agent
 
 go 1.18
 
@@ -114,6 +114,7 @@ require (
 	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
+	github.com/BurntSushi/toml v1.1.0 // indirect
 	github.com/adakailabs/go-traceroute v0.0.0-20210727014431-97524352ab91 // indirect
 	github.com/alecthomas/participle/v2 v2.0.0-beta.5 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect

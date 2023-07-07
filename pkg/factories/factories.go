@@ -1,4 +1,4 @@
-package main
+package factories
 
 import (
 	"log"
@@ -15,21 +15,29 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/otelcol"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
-func Components() (component.Factories, error) {
+/*func Try[T any](item T, err error) T {
+	if err != nil {
+		log.Fatalf("error %v", err)
+	}
+	return item
+}*/
+
+func Get() (otelcol.Factories, error) {
 	var err error
-	factories := component.Factories{}
+	factories := otelcol.Factories{}
 	log.Println("factories.Extensions XXXXXXXX233 setup......")
 	log.Println("TARGET ===> ", os.Getenv("TARGET"))
 	log.Println("MW_API_KEY ===> ", os.Getenv("MW_API_KEY"))
@@ -39,10 +47,10 @@ func Components() (component.Factories, error) {
 	// frontend.NewAuthFactory(),
 	)
 	if err != nil {
-		return component.Factories{}, err
+		return otelcol.Factories{}, err
 	}
 
-	factories.Receivers, err = receiver.MakeFactoryMap([]component.ReceiverFactory{
+	factories.Receivers, err = receiver.MakeFactoryMap([]receiver.Factory{
 		otlpreceiver.NewFactory(),
 		filelogreceiver.NewFactory(),
 		fluentforwardreceiver.NewFactory(),
@@ -52,19 +60,19 @@ func Components() (component.Factories, error) {
 		postgresqlreceiver.NewFactory(),
 	}...)
 	if err != nil {
-		return component.Factories{}, err
+		return otelcol.Factories{}, err
 	}
 
-	factories.Exporters, err = exporter.MakeFactoryMap([]component.ExporterFactory{
+	factories.Exporters, err = exporter.MakeFactoryMap([]exporter.Factory{
 		loggingexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
 	}...)
 	if err != nil {
-		return component.Factories{}, err
+		return otelcol.Factories{}, err
 	}
 
-	factories.Processors, err = component.MakeProcessorFactoryMap([]component.ProcessorFactory{
+	factories.Processors, err = processor.MakeFactoryMap([]processor.Factory{
 		// frontend.NewProcessorFactory(),
 		batchprocessor.NewFactory(),
 		filterprocessor.NewFactory(),
@@ -74,7 +82,7 @@ func Components() (component.Factories, error) {
 		attributesprocessor.NewFactory(),
 	}...)
 	if err != nil {
-		return component.Factories{}, err
+		return otelcol.Factories{}, err
 	}
 
 	return factories, nil

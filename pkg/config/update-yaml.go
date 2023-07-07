@@ -1,20 +1,29 @@
-package main
+package config
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
+	"runtime"
 	"time"
 
 	"gopkg.in/yaml.v2"
 )
 
-type ConfigType struct {
+var (
+	ErrRestartStatusAPINotOK = errors.New("received error code from the server")
+)
+
+type configType struct {
 	Docker   map[string]interface{} `json:"docker"`
 	NoDocker map[string]interface{} `json:"nodocker"`
 }
@@ -23,35 +32,31 @@ type pgdbConfiguration struct {
 	Path string `json:"path"`
 }
 
-type APIResponseForYAML struct {
+type apiResponseForYAML struct {
 	Status     bool              `json:"status"`
-	Config     ConfigType        `json:"config"`
+	Config     configType        `json:"config"`
 	PgdbConfig pgdbConfiguration `json:"pgdb_config"`
 	Message    string            `json:"message"`
 }
 
-type APIResponseForRestart struct {
+type apiResponseForRestart struct {
 	Status  bool   `json:"status"`
 	Restart bool   `json:"restart"`
 	Message string `json:"message"`
 }
 
 var (
-	apiURLForYAML    = "https://app.middleware.io/api/v1/agent/ingestion-rules/%s?config=%s&platform=linux&host_id=%s"
-	apiURLForRestart = "https://app.middleware.io/api/v1/agent/restart-status/%s?platform=linux&host_id=%s"
+	apiPathForYAML    = "api/v1/agent/ingestion-rules"
+	apiPathForRestart = "api/v1/agent/restart-status"
 )
 
 const (
-	dockerSocketPath  = "/var/run/docker.sock"
-	yamlFile          = "configyamls/all/otel-config.yaml"
-	yamlFileNoDocker  = "configyamls/nodocker/otel-config.yaml"
-	recursiveInterval = 20 * time.Second
+	dockerSocketPath = "/var/run/docker.sock"
+	yamlFile         = "configyamls/all/otel-config.yaml"
+	yamlFileNoDocker = "configyamls/nodocker/otel-config.yaml"
 )
 
-func checkForConfigURLOverrides() (string, string) {
-
-	// fmt.Println("update-yaml.go: checkForConfigURLOverrides: MW_API_URL_FOR_RESTART", os.Getenv("MW_API_URL_FOR_RESTART"))
-	// fmt.Println("update-yaml.go: checkForConfigURLOverrides: MW_API_URL_FOR_YAML", os.Getenv("MW_API_URL_FOR_YAML"))
+/*func (c *Config) checkForConfigURLOverrides() (string, string) {
 
 	if os.Getenv("MW_API_URL_FOR_RESTART") != "" {
 		apiURLForRestart = os.Getenv("MW_API_URL_FOR_RESTART")
@@ -62,7 +67,7 @@ func checkForConfigURLOverrides() (string, string) {
 	}
 
 	return apiURLForRestart, apiURLForYAML
-}
+}*/
 
 func updatepgdbConfig(config map[string]interface{}, pgdbConfig pgdbConfiguration) map[string]interface{} {
 
@@ -109,19 +114,28 @@ func updatepgdbConfig(config map[string]interface{}, pgdbConfig pgdbConfiguratio
 	return config
 }
 
-func updateYAML(configType, yamlPath string) error {
-	_, apiURLForYAML := checkForConfigURLOverrides()
-	apiKey, ok := os.LookupEnv("MW_API_KEY")
-	if !ok || apiKey == "" {
-		return fmt.Errorf("MW_API_KEY not found in environment variables")
-	}
+func (c *Config) updateYAML(configType, yamlPath string) error {
+	// _, apiURLForYAML := checkForConfigURLOverrides()
 
 	hostname := getHostname()
 
 	// Call Webhook
-	apiURL := fmt.Sprintf(apiURLForYAML, apiKey, configType, hostname)
+	u, err := url.Parse(c.ApiURLForConfigCheck)
+	if err != nil {
+		return err
+	}
 
-	resp, err := http.Get(apiURL)
+	baseUrl := u.JoinPath(apiPathForYAML).JoinPath(c.MWApiKey)
+	params := url.Values{}
+	params.Add("config", configType)
+	params.Add("platform", runtime.GOOS)
+	params.Add("host_id", hostname)
+	// Add Query Parameters to the URL
+	baseUrl.RawQuery = params.Encode() // Escape Query Parameters
+
+	//apiURL := fmt.Sprintf(apiURLForYAML, c.MWApiKey, configType, hostname)
+	log.Println(baseUrl.String())
+	resp, err := http.Get(baseUrl.String())
 	if err != nil || resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to call YAML API: Status-code %d with %v", resp.StatusCode, err)
 	}
@@ -134,7 +148,7 @@ func updateYAML(configType, yamlPath string) error {
 	}
 
 	// Unmarshal JSON response into ApiResponse struct
-	var apiResponse APIResponseForYAML
+	var apiResponse apiResponseForYAML
 	// fmt.Println("body: ", string(body))
 	if err := json.Unmarshal(body, &apiResponse); err != nil {
 		return fmt.Errorf("failed to unmarshal API response: %v", err)
@@ -170,7 +184,7 @@ func updateYAML(configType, yamlPath string) error {
 	return nil
 }
 
-func getUpdatedYAMLPath() string {
+func (c *Config) GetUpdatedYAMLPath() string {
 	configType := "docker"
 	yamlPath := yamlFile
 	if !isSocket(dockerSocketPath) {
@@ -179,7 +193,7 @@ func getUpdatedYAMLPath() string {
 		fmt.Println("Docker socket not found at", dockerSocketPath, ", using nodocker config")
 	}
 
-	if err := updateYAML(configType, yamlPath); err != nil {
+	if err := c.updateYAML(configType, yamlPath); err != nil {
 		fmt.Println(fmt.Errorf("UpdateYAML error: %v", err))
 	}
 
@@ -187,7 +201,7 @@ func getUpdatedYAMLPath() string {
 }
 
 func restartHostAgent() error {
-	getUpdatedYAMLPath()
+	//GetUpdatedYAMLPath()
 	cmd := exec.Command("kill", "-SIGHUP", fmt.Sprintf("%d", os.Getpid()))
 	err := cmd.Run()
 	if err != nil {
@@ -196,34 +210,46 @@ func restartHostAgent() error {
 	return nil
 }
 
-func callRestartStatusAPI() {
+func (c *Config) callRestartStatusAPI() error {
 
 	// fmt.Println("Starting recursive restart check......")
-
-	apiURLForRestart, _ := checkForConfigURLOverrides()
-
-	apiKey, ok := os.LookupEnv("MW_API_KEY")
-	if !ok || apiKey == "" {
-		log.Println("MW_API_KEY not found in environment variables for recursive restart")
+	// apiURLForRestart, _ := checkForConfigURLOverrides()
+	hostname := getHostname()
+	u, err := url.Parse(c.ApiURLForConfigCheck)
+	if err != nil {
+		return err
 	}
 
-	hostname := getHostname()
+	baseUrl := u.JoinPath(apiPathForRestart)
+	baseUrl = baseUrl.JoinPath(c.MWApiKey)
+	params := url.Values{}
+	params.Add("host_id", hostname)
+	params.Add("platform", runtime.GOOS)
+
+	// Add Query Parameters to the URL
+	baseUrl.RawQuery = params.Encode() // Escape Query Parameters
 
 	// Prepare API URL
-	apiURL := fmt.Sprintf(apiURLForRestart, apiKey, hostname)
+	apiURL := fmt.Sprintf(apiPathForRestart, c.MWApiKey, hostname)
 
 	resp, err := http.Get(apiURL)
 	if err != nil || resp.StatusCode != http.StatusOK {
 		log.Printf("Failed to call Restart-API: Status-code %d with %v", resp.StatusCode, err)
+		return err
 	}
+
 	defer resp.Body.Close()
 
-	var apiResponse APIResponseForRestart
-	if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
-		log.Printf("Failed to unmarshal Restart-API response: %v", err)
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("Failed to call Restart-API: Status-code %d", resp.StatusCode)
+		return ErrRestartStatusAPINotOK
 	}
 
-	// fmt.Println("Restart API Response: apiResponse.Restart", apiResponse.Restart)
+	var apiResponse apiResponseForRestart
+	if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
+		log.Printf("Failed to unmarshal Restart-API response: %v", err)
+		return err
+	}
 
 	if apiResponse.Restart {
 		log.Println("Restarting Linux Agent......")
@@ -231,29 +257,46 @@ func callRestartStatusAPI() {
 			log.Printf("Error restarting agent: %v", err)
 		}
 	}
+
+	return err
 }
 
-func listenForConfigChanges() {
+func (c *Config) ListenForConfigChanges(ctx context.Context) error {
 
-	// fmt.Println("listening for config changes")
+	restartInterval, err := time.ParseDuration(c.ConfigCheckInterval)
+	if err != nil {
+		return err
+	}
+
+	ticker := time.NewTicker(restartInterval)
+
 	go func() {
-
-		restartIntervalString, ok := os.LookupEnv("MW_CHECK_FOR_RESTART_INTERVAL")
-		if restartIntervalString == "" || !ok {
-			log.Println("MW_CHECK_FOR_RESTART_INTERVAL not found in environment variables for recursive restart")
-			restartIntervalString = recursiveInterval.String()
-		}
-
-		restartInterval, okk := time.ParseDuration(restartIntervalString)
-		if okk != nil {
-			log.Println("Error parsing restart interval duration", restartIntervalString)
-			restartInterval = recursiveInterval
-		}
-
-		log.Println("Check for Config Changes After ... ===>", restartInterval)
-
-		for range time.Tick(restartInterval) {
-			callRestartStatusAPI()
+		for {
+			log.Println("Check for Config Changes After ... ===>", restartInterval)
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				c.callRestartStatusAPI()
+			}
 		}
 	}()
+
+	return nil
+}
+
+func isSocket(path string) bool {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return fileInfo.Mode().Type() == fs.ModeSocket
+}
+
+func getHostname() string {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return ""
+	}
+	return hostname
 }
