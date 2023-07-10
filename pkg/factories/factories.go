@@ -1,9 +1,6 @@
 package factories
 
 import (
-	"log"
-	"os"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
@@ -38,10 +35,6 @@ import (
 func Get() (otelcol.Factories, error) {
 	var err error
 	factories := otelcol.Factories{}
-	log.Println("factories.Extensions XXXXXXXX233 setup......")
-	log.Println("TARGET ===> ", os.Getenv("TARGET"))
-	log.Println("MW_API_KEY ===> ", os.Getenv("MW_API_KEY"))
-	log.Println("Agent Installed At ===> ", os.Getenv("MW_AGENT_INSTALLATION_TIME"))
 	factories.Extensions, err = extension.MakeFactoryMap(
 		healthcheckextension.NewFactory(),
 	// frontend.NewAuthFactory(),

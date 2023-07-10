@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
 
 	"checkagent"
-	"strconv"
-	"time"
 
 	"github.com/prometheus/common/version"
 	"github.com/sirupsen/logrus"
@@ -32,17 +31,6 @@ import (
 )
 
 func main() {
-
-	// Listening to Pulsar topics - specific to this host
-	if os.Getenv("MW_RUN_SYNTHETIC_TEST_MODULE") != "false" {
-		go func() {
-			checkagent.Start()
-		}()
-	}
-
-	os.Setenv("MW_AGENT_INSTALLATION_TIME", strconv.FormatInt(time.Now().UnixMilli(), 10))
-	// agent_installation_log()
-
 	if err := app().Run(os.Args); err != nil {
 		logrus.WithError(err).Fatal("could not run application")
 	}
@@ -61,12 +49,14 @@ func app() *cli.App {
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "mw-api-key",
 			EnvVars:     []string{"MW_API_KEY"},
+			Usage:       "Middleware API key for your account.",
 			Destination: &cfg.MWApiKey,
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:        "mw-url",
-			EnvVars:     []string{"MW_URL"},
-			Destination: &cfg.MWBackendURL,
+			Name:        "mw-target",
+			EnvVars:     []string{"MW_TARGET"},
+			Usage:       "Middleware target for your account.",
+			Destination: &cfg.MWTarget,
 		}),
 		altsrc.NewBoolFlag(&cli.BoolFlag{
 			Name:        "enable-synthetic-monitoring",
@@ -91,6 +81,7 @@ func app() *cli.App {
 		&cli.StringFlag{
 			Name:    "config-file",
 			EnvVars: []string{"MW_CONFIG_FILE"},
+			Usage:   "Location of the configuration file for this agent.",
 			DefaultText: func() string {
 				switch runtime.GOOS {
 				case "linux":
@@ -112,11 +103,8 @@ func app() *cli.App {
 				Flags:  flags,
 				Before: altsrc.InitInputSourceWithContext(flags, altsrc.NewYamlSourceFromFlagFunc("config-file")),
 				Action: func(c *cli.Context) error {
-
-					log.Printf("%#v", cfg)
 					ctx, cancel := context.WithCancel(c.Context)
 					defer cancel()
-
 					// Listen to the config changes provided by Middleware API
 					if cfg.ConfigCheckInterval != "0" {
 						cfg.ListenForConfigChanges(ctx)
@@ -127,8 +115,29 @@ func app() *cli.App {
 						go checkagent.Start()
 					}
 
-					yamlPath := cfg.GetUpdatedYAMLPath()
+					u, err := url.Parse(cfg.MWTarget)
+					if err != nil {
+						return err
+					}
+
+					target := u.String()
+					if u.Port() != "" {
+						target += ":" + u.Port()
+					} else {
+						target += ":443"
+					}
+
+					yamlPath, err := cfg.GetUpdatedYAMLPath()
+					if err != nil {
+						return err
+					}
+
+					//yamlPath = "./configyamls/all/otel-config.yaml"
 					logger.GlobalLogger.Debug("YAML Path: " + yamlPath)
+
+					// Set MW_TARGET & MW_API_KEY so that envprovider can fill those in the otel config files
+					os.Setenv("MW_TARGET", target)
+					os.Setenv("MW_API_KEY", cfg.MWApiKey)
 
 					configProvider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{
 						ResolverSettings: confmap.ResolverSettings{

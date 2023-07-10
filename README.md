@@ -1,4 +1,4 @@
-# Golang Host Agent
+# Middleware Agent
 
 ## Project Structure
 ```text

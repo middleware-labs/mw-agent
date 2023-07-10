@@ -21,6 +21,7 @@ import (
 
 var (
 	ErrRestartStatusAPINotOK = errors.New("received error code from the server")
+	ErrReceiverKeyNotFound   = errors.New("'receivers' key not found")
 )
 
 type configType struct {
@@ -69,25 +70,25 @@ const (
 	return apiURLForRestart, apiURLForYAML
 }*/
 
-func updatepgdbConfig(config map[string]interface{}, pgdbConfig pgdbConfiguration) map[string]interface{} {
+func updatepgdbConfig(config map[string]interface{}, pgdbConfig pgdbConfiguration) (map[string]interface{}, error) {
 
 	// Read the YAML file
 	yamlData, err := ioutil.ReadFile(pgdbConfig.Path)
 	if err != nil {
-		log.Println("Failed to read YAML file: ", err)
+		return map[string]interface{}{}, err
 	}
 
 	// Unmarshal the YAML data into a temporary map[string]interface{}
 	tempMap := make(map[string]interface{})
 	err = yaml.Unmarshal(yamlData, &tempMap)
 	if err != nil {
-		log.Println("Failed to unmarshal YAML:", err)
+		return map[string]interface{}{}, err
 	}
 
 	// Add the temporary map to the existing "receiver" key
 	receiverData, ok := config["receivers"].(map[string]interface{})
 	if !ok {
-		log.Println("Failed to access 'receivers' key in existing config")
+		return map[string]interface{}{}, ErrReceiverKeyNotFound
 	}
 
 	for key, value := range tempMap {
@@ -111,7 +112,7 @@ func updatepgdbConfig(config map[string]interface{}, pgdbConfig pgdbConfiguratio
 		}
 	}
 
-	return config
+	return config, nil
 }
 
 func (c *Config) updateYAML(configType, yamlPath string) error {
@@ -134,7 +135,6 @@ func (c *Config) updateYAML(configType, yamlPath string) error {
 	baseUrl.RawQuery = params.Encode() // Escape Query Parameters
 
 	//apiURL := fmt.Sprintf(apiURLForYAML, c.MWApiKey, configType, hostname)
-	log.Println(baseUrl.String())
 	resp, err := http.Get(baseUrl.String())
 	if err != nil || resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to call YAML API: Status-code %d with %v", resp.StatusCode, err)
@@ -171,7 +171,10 @@ func (c *Config) updateYAML(configType, yamlPath string) error {
 	}
 
 	pgdbConfig := apiResponse.PgdbConfig
-	apiYAMLConfig = updatepgdbConfig(apiYAMLConfig, pgdbConfig)
+	apiYAMLConfig, err = updatepgdbConfig(apiYAMLConfig, pgdbConfig)
+	if err != nil {
+		return err
+	}
 
 	apiYAMLBytes, err := yaml.Marshal(apiYAMLConfig)
 	if err != nil {
@@ -184,7 +187,7 @@ func (c *Config) updateYAML(configType, yamlPath string) error {
 	return nil
 }
 
-func (c *Config) GetUpdatedYAMLPath() string {
+func (c *Config) GetUpdatedYAMLPath() (string, error) {
 	configType := "docker"
 	yamlPath := yamlFile
 	if !isSocket(dockerSocketPath) {
@@ -194,10 +197,10 @@ func (c *Config) GetUpdatedYAMLPath() string {
 	}
 
 	if err := c.updateYAML(configType, yamlPath); err != nil {
-		fmt.Println(fmt.Errorf("UpdateYAML error: %v", err))
+		return yamlPath, err
 	}
 
-	return yamlPath
+	return yamlPath, nil
 }
 
 func restartHostAgent() error {

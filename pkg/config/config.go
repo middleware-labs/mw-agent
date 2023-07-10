@@ -1,8 +1,8 @@
 package config
 
 type Config struct {
-	MWApiKey     string
-	MWBackendURL string
+	MWApiKey string
+	MWTarget string
 
 	EnableSytheticMonitoring bool
 	ConfigCheckInterval      string
