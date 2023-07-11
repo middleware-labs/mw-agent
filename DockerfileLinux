@@ -3,7 +3,7 @@ WORKDIR /app
 COPY . .
 ENV CGO_ENABLED=0
 RUN go get -d -v ./... && go mod tidy
-RUN CGO_ENABLED=0 go build -o /tmp/mw-agent ./*.go
+RUN CGO_ENABLED=0 go build -o /tmp/mw-agent cmd/host-agent/main.go
 
 FROM busybox:glibc as prod
 RUN mkdir -p /var/log

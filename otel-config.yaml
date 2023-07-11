@@ -1,0 +1,361 @@
+receivers:
+  filelog:
+    include: [ /var/log/pods/*/*/*.log, $MW_LOG_PATHS ]
+    # exclude: [ /var/log/pods/mw-agent-ns*/**/*.log ]
+    include_file_path: true
+    include_file_name_resolved: true
+    include_file_path_resolved: true
+    start_at: beginning
+    multiline:
+      line_start_pattern: ^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})?\s+(stdout|stderr)?\s?(\[.+?\])?\s+(.+)$
+    operators:
+      # Find out which format is used by kubernetes
+      - type: router
+        id: get-format
+        routes:
+          - output: parser-docker
+            expr: 'body matches "^\\{"'
+          - output: parser-crio
+            expr: 'body matches "^[^ Z]+ "'
+          - output: parser-containerd
+            expr: 'body matches "^[^ Z]+Z"'
+      # Parse CRI-O format
+      - type: regex_parser
+        id: parser-crio
+        regex: '^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$'
+        output: extract_metadata_from_filepath
+        timestamp:
+          parse_from: attributes.time
+          layout_type: gotime
+          layout: '2006-01-02T15:04:05.000000000-07:00'
+      # Parse CRI-Containerd format
+      - type: regex_parser
+        id: parser-containerd
+        regex: '^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$'
+        output: extract_metadata_from_filepath
+        timestamp:
+          parse_from: attributes.time
+          layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+      # Parse Docker format
+      - type: json_parser
+        id: parser-docker
+        output: extract_metadata_from_filepath
+        timestamp:
+          parse_from: attributes.time
+          layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+      # Extract metadata from file path
+      - type: regex_parser
+        id: extract_metadata_from_filepath
+        regex: '^.*\/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\-]{36})\/(?P<container_name>[^\._]+)\/(?P<restart_count>\d+)\.log$'
+        parse_from: attributes["log.file.path"]
+        output: move_log_to_body
+      # Fetching only body content from key 'log'
+      - type: move
+        id: move_log_to_body
+        from: attributes.log
+        to: body
+        output: adding_regex_to_attributes
+      # Applying custom patterns for beautifying logs :
+      # -------------------------------------
+      # 1. Rules for beautifying systemd logs
+      # -------------------------------------
+      # If systemd pattern matches -- add systemd regex to attributes
+      - type: add
+        if: 'body matches "ts=.+ caller=.+ level=.+ msg=.+ name=systemd duration_seconds=.+ err=.+"'
+        id: adding_regex_to_attributes
+        field: attributes.regex_identified
+        value: ts=.+ caller=.+ level=.+ msg=.+ name=systemd duration_seconds=.+ err=.+
+        output: systemd_err
+      # If systemd pattern matches parsing details from body to attributes
+      - type: regex_parser
+        if: 'body matches "ts=.+ caller=.+ level=.+ msg=.+ name=systemd duration_seconds=.+ err=.+"'
+        id: systemd_err
+        regex:  'ts=(?P<systemd_err_ts>.+) caller=(?P<systemd_err_caller>.+) level=(?P<level>.+) msg=(?P<systemd_err_msg>.+) name=(?P<name>.+) duration_seconds=(?P<systemd_err_duration_seconds>.+) err="(?P<regex_resolved_body>.+)"'
+        parse_from: body
+        output: backup_unresolved_body
+      # Copying unresolved regex body to attributes
+      - type: copy
+        id: backup_unresolved_body
+        if: "attributes.regex_resolved_body != nil"
+        from: body
+        to: attributes.regex_unresolved_body
+        output: systemd_err_move
+      #  Moving systemd error content from attributes to body
+      - type: move
+        id: systemd_err_move
+        if: "attributes.regex_resolved_body != nil"
+        from: attributes.regex_resolved_body
+        to: body
+
+
+  k8s_cluster:
+    auth_type: serviceAccount
+    collection_interval: 15s
+    node_conditions_to_report: [ Ready, DiskPressure, MemoryPressure, PIDPressure, NetworkUnavailable ]
+    distribution: kubernetes
+    allocatable_types_to_report: [ cpu, memory, ephemeral-storage, storage ]
+  kubeletstats:
+    collection_interval: 15s
+    auth_type: serviceAccount
+    endpoint: "${K8S_NODE_IP}:10250"
+    k8s_api_config:
+      auth_type: serviceAccount
+    insecure_skip_verify: true
+  hostmetrics:
+    collection_interval: 5s
+    scrapers:
+      cpu:
+        metrics:
+          system.cpu.utilization:
+            enabled: true
+      load:
+        cpu_average: true
+      memory:
+        metrics:
+          system.memory.utilization:
+            enabled: true
+      paging: {}
+      disk:
+        metrics:
+          system.disk.io.speed:
+            enabled: true
+      filesystem:
+        metrics:
+          system.filesystem.utilization:
+            enabled: true
+      network:
+        metrics:
+          system.network.io.bandwidth:
+            enabled: true
+      processes: {}
+      process:
+        mute_process_name_error: true
+  docker_stats:
+    endpoint: ${MW_DOCKER_ENDPOINT}
+    collection_interval: 5s
+    timeout: 20s
+    api_version: 1.24
+
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: "otel-collector"
+          scrape_interval: 5s
+          static_configs:
+            - targets: ["0.0.0.0:8888"]
+  
+  k8s_events:
+    auth_type: serviceAccount
+    namespaces: all
+  fluentforward:
+    endpoint: 0.0.0.0:8006
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:9319
+        # max_recv_msg_size_mib: 8
+      http:
+        endpoint: 0.0.0.0:9320
+exporters:
+  logging:
+    loglevel: warn
+  otlp:
+    endpoint: ${TARGET}
+processors:
+  # filter/blanklog:
+  #   logs: 
+  #     exclude:
+  #       match_type: strict
+  #       bodies:
+  #       - \n
+  #       - {}\n
+  k8sattributes:
+    auth_type: "serviceAccount"
+    passthrough: false
+    filter:
+      node_from_env_var: KUBE_NODE_NAME
+    extract:
+      metadata:
+        - k8s.pod.name
+        - k8s.pod.uid
+        - k8s.deployment.name
+        - k8s.cluster.name
+        - k8s.namespace.name
+        - k8s.node.name
+        - k8s.pod.start_time
+    pod_association:
+      - sources:
+        - from: resource_attribute
+          name: k8s.pod.ip
+      - sources:
+        - from: resource_attribute
+          name: k8s.pod.uid
+      - sources:
+        - from: connection
+  resource:
+    attributes:
+      - key: host.id
+        from_attribute: host.name
+        action: upsert
+      # - key: service.name
+      #   action: insert
+      #   value: middleware-logs
+      - key: mw.account_key
+        action: insert
+        value: ${MW_API_KEY}
+      - key: agent.installation.time
+        from_attribute: host.name
+        action: insert
+      - key: agent.installation.time
+        value: ${MW_AGENT_INSTALLATION_TIME}
+        action: update
+      - key: k8s.cluster.name
+        from_attribute: k8s.node.uid
+        action: insert
+      - key: k8s.cluster.name
+        from_attribute: k8s.namespace.uid
+        action: insert
+      - key: k8s.cluster.name
+        from_attribute: k8s.pod.uid
+        action: insert
+      - key: k8s.cluster.name
+        from_attribute: k8s.container.name
+        action: insert
+      - key: k8s.cluster.name
+        from_attribute: k8s.replicaset.uid
+        action: insert
+      - key: k8s.cluster.name
+        from_attribute: k8s.statefulset.uid
+        action: insert
+      - key: k8s.cluster.name
+        from_attribute: k8s.cronjob.uid
+        action: insert
+      - key: k8s.cluster.name
+        from_attribute: k8s.job.uid
+        action: insert
+      - key: k8s.cluster.name
+        from_attribute: k8s.daemonset.uid
+        action: insert
+      - key: k8s.cluster.name
+        from_attribute: k8s.deployment.uid
+        action: insert
+  resource/hostmetrics:
+    attributes:
+      - key: is.k8s.node
+        action: insert
+        value: "yes"
+  
+  resource/docker_stats:
+    attributes:
+      - key: is.k8s.container
+        action: insert
+        value: "yes"
+  resource/logs:
+    attributes:
+      - key: service.name
+        action: insert
+        value: middleware-logs
+  resource/cluster:
+    attributes:
+      - key: k8s.cluster.name
+        action: update
+        value: ${MW_KUBE_CLUSTER_NAME}
+      - key: host.id
+        action: update
+        from_attribute: k8s.node.name
+      - key: host.name
+        action: update
+        from_attribute: k8s.node.name
+  resourcedetection:
+    detectors: [ env, system, docker ]
+    timeout: 2s
+    override: false
+  #  memory_limiter:
+  #    check_interval: 1s
+  #    limit_mib: 4000
+  #    spike_limit_mib: 800
+  batch:
+  batch/2:
+    send_batch_size: 2000
+    timeout: 10s
+  attributes/traces:
+    actions:
+      - key: mw.service.name.derived
+        from_attribute: db.system
+        action: insert
+      - key: mw.service.name.derived
+        from_attribute: messaging.system
+        action: insert
+      - key: mw.service.name.derived
+        from_attribute: rpc.system
+        action: insert
+      - key: mw.service.name.derived
+        from_attribute: http.scheme
+        action: insert
+      - key: mw.service.name.derived
+        from_attribute: faas.trigger
+        action: insert
+  attributes/logs:
+    actions:
+      - key: source
+        from_attribute: name
+        action: upsert
+      - key: source
+        from_attribute: operator_type
+        action: upsert
+      - key: source
+        from_attribute: log.file.name
+        action: upsert
+      - key: source
+        from_attribute: fluent.tag
+        action: upsert
+      - key: source
+        from_attribute: service.name
+        action: upsert
+      - key: source
+        from_attribute: project.name
+        action: upsert
+      - key: source
+        from_attribute: serviceName
+        action: upsert
+      - key: source
+        from_attribute: projectName
+        action: upsert
+      - key: source
+        from_attribute: pod_name
+        action: upsert
+      - key: source
+        from_attribute: container_name
+        action: upsert
+      - key: source
+        from_attribute: namespace
+        action: upsert 
+
+service:
+    telemetry:
+      logs:
+        level: "warn"
+      metrics:
+        address: 0.0.0.0:8888
+    pipelines:
+      traces:
+        receivers: [ otlp ]
+        processors: [ resourcedetection,resource, resource/cluster, attributes/traces, batch, batch/2 ]
+        exporters: [  otlp ]
+      logs:
+        receivers: [fluentforward, k8s_events, otlp, filelog ]
+        processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, batch, batch/2 ]
+        exporters: [ otlp ]
+      metrics:
+        receivers: [  prometheus, otlp, k8s_cluster, kubeletstats  ]
+        processors: [ resourcedetection, resource, k8sattributes, resource/cluster,  batch, batch/2]
+        exporters: [ otlp ]
+      metrics/docker_stats:
+        receivers: [  docker_stats  ]
+        processors: [ resourcedetection, resource, resource/cluster, resource/docker_stats, k8sattributes, batch, batch/2]
+        exporters: [ otlp ]
+
+      metrics/hostmetrics:
+        receivers: [  hostmetrics ]
+        processors: [ resourcedetection, resource, resource/hostmetrics, resource/cluster, k8sattributes, batch, batch/2]
+        exporters: [ otlp ]

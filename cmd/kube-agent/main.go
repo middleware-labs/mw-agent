@@ -2,19 +2,23 @@ package main
 
 import (
 	"context"
-	"net/url"
+	"fmt"
+	"io/fs"
+	"k8sgpt/cmd/analyze"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
+	"time"
 
-	"checkagent"
+	"os/exec"
 
 	"github.com/prometheus/common/version"
+	"github.com/sirupsen/logrus"
 	"github.com/tejaskokje-mw/mw-agent/pkg/config"
-
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	expandconverter "go.opentelemetry.io/collector/confmap/converter/expandconverter"
@@ -26,22 +30,70 @@ import (
 )
 
 func main() {
+
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
 
-	if err := app(logger).Run(os.Args); err != nil {
-		logger.Fatal("could not run application", zap.Error(err))
+	// k8sgpt Daily cycle
+	go func() {
+		// One time execution at the start of the agent
+		analyze.GptAnalysis()
+
+		// Running analysis once everyday
+		for range time.Tick(time.Second * 10800) {
+			analyze.GptAnalysis()
+		}
+	}()
+
+	_, exists := os.LookupEnv("MW_ISSET_AGENT_INSTALLATION_TIME")
+	if exists {
+		fmt.Println("env already exists")
+		if os.Getenv("MW_ISSET_AGENT_INSTALLATION_TIME") != "true" {
+			os.Setenv("MW_ISSET_AGENT_INSTALLATION_TIME", "true")
+			os.Setenv("MW_AGENT_INSTALLATION_TIME", strconv.FormatInt(time.Now().UnixMilli(), 10))
+		}
+	} else {
+		fmt.Println("env does not exists")
+		cmd := exec.Command("echo MW_ISSET_AGENT_INSTALLATION_TIME=true > /etc/environment")
+		stdout, err := cmd.Output()
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		// Print the output
+		fmt.Println("1111", string(stdout))
+		os.Setenv("MW_ISSET_AGENT_INSTALLATION_TIME", "true")
+		os.Setenv("MW_AGENT_INSTALLATION_TIME", strconv.FormatInt(time.Now().UnixMilli(), 10))
 	}
+
+	if err := app(logger).Run(os.Args); err != nil {
+		logrus.WithError(err).Fatal("could not run application")
+	}
+}
+
+func Try[T any](item T, err error) T {
+	if err != nil {
+		log.Fatalf("error %v", err)
+	}
+	return item
+}
+
+func IsSocket(path string) bool {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return fileInfo.Mode().Type() == fs.ModeSocket
 }
 
 // air --build.cmd "go build -o /tmp/api-server /app/*.go" --build.bin "/tmp/api-server $*"
 func app(logger *zap.Logger) *cli.App {
 
 	_, hasMwDockerEndpoint := os.LookupEnv("MW_DOCKER_ENDPOINT")
-	if !hasMwDockerEndpoint {
+	if !hasMwDockerEndpoint || os.Getenv("MW_DOCKER_ENDPOINT") == "" {
 		os.Setenv("MW_DOCKER_ENDPOINT", "unix:///var/run/docker.sock")
 	}
 
+	// configure flags
 	var apiKey, target, configCheckInterval, apiURLForConfigCheck string
 	var enableSyntheticMonitoring bool
 	flags := []cli.Flag{
@@ -95,25 +147,27 @@ func app(logger *zap.Logger) *cli.App {
 
 	return &cli.App{
 		Name:  "mw-agent",
-		Usage: "Middleware host agent",
+		Usage: "Middleware Kubernetes agent",
 		Commands: []*cli.Command{
-			{
-				Name:   "start",
-				Usage:  "Start Middleware host agent",
-				Flags:  flags,
-				Before: altsrc.InitInputSourceWithContext(flags, altsrc.NewYamlSourceFromFlagFunc("config-file")),
+			&cli.Command{
+				Name:  "start",
+				Usage: "Start Middleware Kubernetes agent",
+				Flags: flags,
 				Action: func(c *cli.Context) error {
 
-					cfg := config.NewHostAgent(
-						config.WithHostAgentApiKey(apiKey),
-						config.WithHostAgentTarget(target),
-						config.WithHostAgentEnableSyntheticMonitoring(
+					ctx, cancel := context.WithCancel(c.Context)
+					defer cancel()
+
+					cfg := config.NewKubeAgent(
+						config.WithKubeAgentApiKey(apiKey),
+						config.WithKubeAgentTarget(target),
+						config.WithKubeAgentEnableSyntheticMonitoring(
 							enableSyntheticMonitoring),
-						config.WithHostAgentConfigCheckInterval(
+						config.WithKubeAgentConfigCheckInterval(
 							configCheckInterval),
-						config.WithHostAgentApiURLForConfigCheck(
+						config.WithKubeAgentApiURLForConfigCheck(
 							apiURLForConfigCheck),
-						config.WithHostAgentLogger(logger),
+						config.WithKubeAgentLogger(logger),
 					)
 
 					logger.Info("starting host agent with config",
@@ -122,44 +176,11 @@ func app(logger *zap.Logger) *cli.App {
 						zap.String("config-check-interval", cfg.ConfigCheckInterval),
 						zap.String("api-url-for-config-check", cfg.ApiURLForConfigCheck))
 
-					ctx, cancel := context.WithCancel(c.Context)
-					defer cancel()
-
-					// Listen to the config changes provided by Middleware API
-					if cfg.ConfigCheckInterval != "0" {
-						cfg.ListenForConfigChanges(ctx)
-					}
-
-					if cfg.EnableSytheticMonitoring {
-						// TODO checkagent.Start should take context
-						go checkagent.Start()
-					}
-
-					u, err := url.Parse(cfg.Target)
-					if err != nil {
-						return err
-					}
-
-					target := u.String()
-					if u.Port() != "" {
-						target += ":" + u.Port()
-					} else {
-						target += ":443"
-					}
-
-					// Set MW_TARGET & MW_API_KEY so that envprovider can fill those in the otel config files
-					os.Setenv("MW_TARGET", target)
-					os.Setenv("MW_API_KEY", cfg.ApiKey)
-
-					/*yamlPath, err := cfg.GetUpdatedYAMLPath()
+					yamlPath, err := cfg.GetUpdatedYAMLPath()
 					if err != nil {
 						logger.Error("error getting config file path", zap.Error(err))
 						return err
-					}*/
-
-					yamlPath := "./configyamls/all/otel-config.yaml"
-					logger.Info("yaml path loaded", zap.String("path", yamlPath))
-
+					}
 					configProvider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{
 						ResolverSettings: confmap.ResolverSettings{
 							Providers: map[string]confmap.Provider{
@@ -191,13 +212,11 @@ func app(logger *zap.Logger) *cli.App {
 							// zap.Development(),
 							// zap.IncreaseLevel(zap.DebugLevel),
 						},
-
 						BuildInfo: component.BuildInfo{
-							Command:     "mw-otelcontribcol",
-							Description: "Middleware OpenTelemetry Collector Contrib",
+							Command:     "otelcontribcol",
+							Description: "OpenTelemetry Collector Contrib",
 							Version:     version.Version,
 						},
-
 						Factories:      factories,
 						ConfigProvider: configProvider,
 					}

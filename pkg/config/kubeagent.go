@@ -1,16 +1,20 @@
-package factories
+package config
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
+	"context"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
@@ -23,13 +27,86 @@ import (
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.uber.org/zap"
 )
 
-func Get() (otelcol.Factories, error) {
+type KubeAgent struct {
+	ApiKey string
+	Target string
+
+	EnableSytheticMonitoring bool
+	ConfigCheckInterval      string
+
+	ApiURLForConfigCheck string
+
+	logger *zap.Logger
+}
+
+type KubeOptions func(h *KubeAgent)
+
+func WithKubeAgentApiKey(key string) KubeOptions {
+	return func(h *KubeAgent) {
+		h.ApiKey = key
+	}
+}
+
+func WithKubeAgentTarget(t string) KubeOptions {
+	return func(h *KubeAgent) {
+		h.Target = t
+	}
+}
+
+func WithKubeAgentEnableSyntheticMonitoring(e bool) KubeOptions {
+	return func(h *KubeAgent) {
+		h.EnableSytheticMonitoring = e
+	}
+}
+
+func WithKubeAgentConfigCheckInterval(c string) KubeOptions {
+	return func(h *KubeAgent) {
+		h.ConfigCheckInterval = c
+	}
+}
+
+func WithKubeAgentApiURLForConfigCheck(u string) KubeOptions {
+	return func(h *KubeAgent) {
+		h.ApiURLForConfigCheck = u
+	}
+}
+
+func WithKubeAgentLogger(logger *zap.Logger) KubeOptions {
+	return func(h *KubeAgent) {
+		h.logger = logger
+	}
+}
+func NewKubeAgent(opts ...KubeOptions) *KubeAgent {
+	var cfg KubeAgent
+	for _, apply := range opts {
+		apply(&cfg)
+	}
+
+	if cfg.logger == nil {
+		cfg.logger, _ = zap.NewProduction()
+	}
+
+	return &cfg
+}
+
+func (k *KubeAgent) GetUpdatedYAMLPath() (string, error) {
+	yamlPath := "otel-config.yaml"
+	if !isSocket(dockerSocketPath) {
+		yamlPath = "otel-config-nodocker.yaml"
+		logger.Info("Docker socket not found, using no docker config now", zap.String("docker socket path", dockerSocketPath))
+	}
+
+	return yamlPath, nil
+}
+
+func (k *KubeAgent) GetFactories(ctx context.Context) (otelcol.Factories, error) {
 	var err error
 	factories := otelcol.Factories{}
 	factories.Extensions, err = extension.MakeFactoryMap(
-		healthcheckextension.NewFactory(),
+	//healthcheckextension.NewFactory(),
 	// frontend.NewAuthFactory(),
 	)
 	if err != nil {
@@ -42,9 +119,10 @@ func Get() (otelcol.Factories, error) {
 		filelogreceiver.NewFactory(),
 		dockerstatsreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
-
+		k8sclusterreceiver.NewFactory(),
+		k8seventsreceiver.NewFactory(),
+		kubeletstatsreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
-		postgresqlreceiver.NewFactory(),
 	}...)
 	if err != nil {
 		return otelcol.Factories{}, err
@@ -62,11 +140,12 @@ func Get() (otelcol.Factories, error) {
 	factories.Processors, err = processor.MakeFactoryMap([]processor.Factory{
 		// frontend.NewProcessorFactory(),
 		batchprocessor.NewFactory(),
-		filterprocessor.NewFactory(),
 		memorylimiterprocessor.NewFactory(),
+		filterprocessor.NewFactory(),
+		attributesprocessor.NewFactory(),
 		resourceprocessor.NewFactory(),
 		resourcedetectionprocessor.NewFactory(),
-		attributesprocessor.NewFactory(),
+		k8sattributesprocessor.NewFactory(),
 	}...)
 	if err != nil {
 		return otelcol.Factories{}, err
