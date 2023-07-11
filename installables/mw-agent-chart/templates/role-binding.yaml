@@ -1,0 +1,15 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    k8s-app: mw-app
+  name: mw-role-binding
+  namespace: mw-agent-helm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: mw-role
+subjects:
+  - kind: ServiceAccount
+    name: mw-service-account
+    namespace: mw-agent-helm

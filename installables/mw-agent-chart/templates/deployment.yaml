@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  creationTimestamp: null
+  name: mw-kube-agent
+  namespace: mw-agent-helm
+spec:
+  selector:
+    matchLabels:
+      app: mw-app
+  replicas: 1
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: mw-app
+        k8s-app: mw-app
+      creationTimestamp: null
+    spec:
+      containers:
+        - args:
+            - api-server
+            - start
+          env:
+            - name: TARGET
+              value: "TARGET_VALUE"
+            - name: MW_API_KEY
+              value: "MW_API_KEY_VALUE"
+          image:  "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: Always
+          name: mw-kube-agent
+          resources: {}
+      imagePullSecrets:
+        - name: gh-regcred
+      restartPolicy: Always
+      serviceAccountName: mw-service-account

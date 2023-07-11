@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    k8s-app: mw-app
+  name: mw-service
+  namespace: mw-agent-helm
+spec:
+  type: NodePort
+  ports:
+    - port: 443
+      name: "grpc"
+      targetPort: 8443
+    - port: 9319
+      name: "grpc2"
+      targetPort: 9319
+    - port: 9320
+      name: "http"
+      targetPort: 9320
+    - port: 8006
+      name: "fluent"
+      targetPort: 8006
+  selector:
+    k8s-app: mw-app
