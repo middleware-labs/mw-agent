@@ -23,6 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"go.opentelemetry.io/collector/exporter"
@@ -117,11 +118,16 @@ type pgdbConfiguration struct {
 	Path string `json:"path"`
 }
 
+type mongodbConfiguration struct {
+	Path string `json:"path"`
+}
+
 type apiResponseForYAML struct {
-	Status     bool              `json:"status"`
-	Config     configType        `json:"config"`
-	PgdbConfig pgdbConfiguration `json:"pgdb_config"`
-	Message    string            `json:"message"`
+	Status        bool                 `json:"status"`
+	Config        configType           `json:"config"`
+	PgdbConfig    pgdbConfiguration    `json:"pgdb_config"`
+	MongodbConfig mongodbConfiguration `json:"mongodb_config"`
+	Message       string               `json:"message"`
 }
 
 type apiResponseForRestart struct {
@@ -154,10 +160,20 @@ const (
 	return apiURLForRestart, apiURLForYAML
 }*/
 
-func (c *HostAgent) updatepgdbConfig(config map[string]interface{}, pgdbConfig pgdbConfiguration) (map[string]interface{}, error) {
+func (c *HostAgent) updatepgdbConfig(config map[string]interface{},
+	pgdbConfig pgdbConfiguration) (map[string]interface{}, error) {
+	return c.updateConfig(config, pgdbConfig.Path)
+}
+
+func (c *HostAgent) updateMongodbConfig(config map[string]interface{},
+	mongodbConfig mongodbConfiguration) (map[string]interface{}, error) {
+	return c.updateConfig(config, mongodbConfig.Path)
+}
+
+func (c *HostAgent) updateConfig(config map[string]interface{}, path string) (map[string]interface{}, error) {
 
 	// Read the YAML file
-	yamlData, err := ioutil.ReadFile(pgdbConfig.Path)
+	yamlData, err := ioutil.ReadFile(path)
 	if err != nil {
 		return map[string]interface{}{}, err
 	}
@@ -268,6 +284,11 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 
 	pgdbConfig := apiResponse.PgdbConfig
 	apiYAMLConfig, err = c.updatepgdbConfig(apiYAMLConfig, pgdbConfig)
+	if err != nil {
+		return err
+	}
+	mongodbConfig := apiResponse.MongodbConfig
+	apiYAMLConfig, err = c.updateMongodbConfig(apiYAMLConfig, mongodbConfig)
 	if err != nil {
 		return err
 	}
@@ -403,6 +424,7 @@ func (c *HostAgent) GetFactories(ctx context.Context) (otelcol.Factories, error)
 		hostmetricsreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
 		postgresqlreceiver.NewFactory(),
+		mongodbreceiver.NewFactory(),
 	}...)
 	if err != nil {
 		return otelcol.Factories{}, err

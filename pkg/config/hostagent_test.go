@@ -24,7 +24,7 @@ func TestUpdatepgdbConfig(t *testing.T) {
 	}
 
 	pgdbConfig := pgdbConfiguration{
-		Path: "pgdb-config_test.yaml",
+		Path: "db-config_test.yaml",
 	}
 
 	agent := NewHostAgent(WithHostAgentLogger(zap.NewNop()))
@@ -33,12 +33,46 @@ func TestUpdatepgdbConfig(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Assert that the updated config contains the expected values
-	// Modify the assertions based on your actual implementation
 	assert.Contains(t, updatedConfig, "receivers")
 	receivers, ok := updatedConfig["receivers"].(map[string]interface{})
 	assert.True(t, ok)
 	assert.Contains(t, receivers, "postgresql")
 	postgresql, ok := receivers["postgresql"].(map[string]interface{})
+	assert.True(t, ok)
+	assert.Contains(t, postgresql, "endpoint")
+	assert.Contains(t, postgresql, "database")
+	assert.Contains(t, postgresql, "user")
+	assert.Contains(t, postgresql, "password")
+}
+
+func TestUpdateMongodbConfig(t *testing.T) {
+	// Define the initial config and pgdbConfig
+	initialConfig := map[string]interface{}{
+		"receivers": map[string]interface{}{
+			"mongodb": map[string]interface{}{
+				"endpoint": "example.com:5432",
+				"database": "mydb",
+				"user":     "myuser",
+				"password": "mypassword",
+			},
+		},
+	}
+
+	pgdbConfig := pgdbConfiguration{
+		Path: "db-config_test.yaml",
+	}
+
+	agent := NewHostAgent(WithHostAgentLogger(zap.NewNop()))
+
+	updatedConfig, err := agent.updatepgdbConfig(initialConfig, pgdbConfig)
+	assert.NoError(t, err)
+
+	// Assert that the updated config contains the expected values
+	assert.Contains(t, updatedConfig, "receivers")
+	receivers, ok := updatedConfig["receivers"].(map[string]interface{})
+	assert.True(t, ok)
+	assert.Contains(t, receivers, "mongodb")
+	postgresql, ok := receivers["mongodb"].(map[string]interface{})
 	assert.True(t, ok)
 	assert.Contains(t, postgresql, "endpoint")
 	assert.Contains(t, postgresql, "database")
@@ -89,7 +123,7 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assert.Contains(t, factories.Extensions, component.Type("health_check"))
 
 	// check if factories contains expected receivers
-	assert.Len(t, factories.Receivers, 7)
+	assert.Len(t, factories.Receivers, 8)
 	assert.Contains(t, factories.Receivers, component.Type("otlp"))
 	assert.Contains(t, factories.Receivers, component.Type("fluentforward"))
 	assert.Contains(t, factories.Receivers, component.Type("filelog"))
@@ -97,6 +131,7 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assert.Contains(t, factories.Receivers, component.Type("hostmetrics"))
 	assert.Contains(t, factories.Receivers, component.Type("prometheus"))
 	assert.Contains(t, factories.Receivers, component.Type("postgresql"))
+	assert.Contains(t, factories.Receivers, component.Type("mongodb"))
 
 	// check if factories contain expected exporters
 	assert.Len(t, factories.Exporters, 3)

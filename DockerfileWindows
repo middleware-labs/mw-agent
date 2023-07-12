@@ -1,6 +1,5 @@
 FROM golang:1.16-windowsservercore-ltsc2019 as base
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
-RUN certutil -generateSSTFromChain /certs/MwCA.pem && certutil -addstore -f root /certs/MwCA.sst
 WORKDIR /app
 COPY . .
 ENV CGO_ENABLED=1
