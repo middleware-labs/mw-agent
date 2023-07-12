@@ -141,7 +141,11 @@ func updateYAML(configType, yamlPath string) error {
 
 	resp, err := http.Get(apiURL)
 	if err != nil || resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to call YAML API: Status-code %d with %v", resp.StatusCode, err)
+		if resp != nil {
+			return fmt.Errorf("failed to call YAML API: Status-code %d with %v", resp.StatusCode, err)
+		} else {
+			return fmt.Errorf("failed to call YAML API: with %v", err)
+		}
 	}
 	defer resp.Body.Close()
 
