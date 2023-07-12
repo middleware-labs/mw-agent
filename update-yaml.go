@@ -239,7 +239,11 @@ func callRestartStatusAPI() {
 
 	resp, err := http.Get(apiURL)
 	if err != nil || resp.StatusCode != http.StatusOK {
-		log.Printf("Failed to call Restart-API: Status-code %d with %v", resp.StatusCode, err)
+		if resp != nil {
+			log.Printf("failed to call YAML API: Status-code %d with %v", resp.StatusCode, err)
+		} else {
+			log.Printf("failed to call YAML API: with %v", err)
+		}
 	}
 	defer resp.Body.Close()
 
