@@ -1,52 +1,28 @@
-# Middleware Agent
+# mw-agent (Middleware Agent)
+[![Go Report Card](https://goreportcard.com/badge/github.com/middleware-labs/mw-agent)](https://goreportcard.com/report/github.com/middleware-labs/mw-agent)
+
+This repository contains code for the Middleware Agent (`mw-agent`). 
+
+This agent currently supports [Linux](cmd/host-agent/)  & [Kubernetes](cmd/kube-agent/) environment.
 
 ## Project Structure
 ```text
-agent-host-go
-    ├───configyamls: Set of otel-config.yamls based on MW_COLLECTION_TYPE filter
-    ├───installables: Contains files required to install agent on Client system
-    |       └───docker: Contains Docker deployable script
-    |       └───apt: Contains files required to build APT package (Used in workflow)
-    └───Dockerfile: To create multistage docker image for Golang package
+mw-agent
+    ├───configyamls: Set of otel-config.yamls based on MW_COLLECTION_TYPE filter for host agent.
+    ├───configyamls-k8s: Set of otel-config.yamls for Kubernetes agent.
+    ├───installables: Contains files required to install agent on Client system.
+    |       └───docker: Contains Docker deployable script.
+    |       └───apt: Contains files required to build APT package (Used in workflow).
+    └───DockerfileLinux: To create multistage docker image for Linux environment.
+    └───DockerfileKube: To create multistage docker image for Kubernetes environment.
+    └───pkg: Contains common packages used for Linux & Kubernetes agents.
+         └───config: Configuration options for the `mw-agent`.
 ```
 
-## Docker Installation
-```
-docker run -e MW_API_KEY=<fetch_token_from_account> -e TARGET=<refer target list> -d --pid host --restart always ghcr.io/middleware-labs/agent-host-go:dev
-```
-OR create a `docker-compose.yml` with content given below :
-```
-version: "3.4"
-services:  
-  mw-agent-host-go:
-    image: ghcr.io/middleware-labs/agent-host-go:dev
-    restart: always
-    pid: host
-```
-```
-docker-compose up -d
-```
+## Installation & Configuration
 
-## APT Installation
+`mw-agent` can take configuration from environment variables, CLI flags or configuration file. Details of how to configure the agent can be found [here](docs).
 
-```
-MW_API_KEY=<fetch_token_from_your_account> TARGET=<refer target list> bash -c "$(curl -L https://host-go.melt.so/apt-install.sh)"
-```
-____________________________________________
-
-### Advanced Options 
-
-
-| ENV variables         | Usage            
-| -------------         | ------------- 
-| MW_COLLECTION_TYPE          | Select among `metrics`, `traces` & `logs` to enable only a single pipeline
-____________________________________________
-
-### Target List
-
-List available at https://github.com/middleware-labs/agent-host-rs README.md
-
-----------------------------------------------
 
 ### Data collection
 https://www.notion.so/Kubernetes-mw-c8826e2b20ac4a48b91fd98066924a13

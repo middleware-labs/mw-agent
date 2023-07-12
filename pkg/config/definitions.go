@@ -34,6 +34,8 @@ func isSocket(path string) bool {
 	return fileInfo.Mode().Type() == fs.ModeSocket
 }
 
+var isSocketFn func(path string) bool = isSocket
+
 func getHostname() string {
 	hostname, err := os.Hostname()
 	if err != nil {

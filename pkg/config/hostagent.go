@@ -154,7 +154,7 @@ const (
 	return apiURLForRestart, apiURLForYAML
 }*/
 
-func updatepgdbConfig(config map[string]interface{}, pgdbConfig pgdbConfiguration) (map[string]interface{}, error) {
+func (c *HostAgent) updatepgdbConfig(config map[string]interface{}, pgdbConfig pgdbConfiguration) (map[string]interface{}, error) {
 
 	// Read the YAML file
 	yamlData, err := ioutil.ReadFile(pgdbConfig.Path)
@@ -187,7 +187,7 @@ func updatepgdbConfig(config map[string]interface{}, pgdbConfig pgdbConfiguratio
 						if keyOk {
 							oldMapValue[strKey] = v
 						} else {
-							logger.Info("invalid key type", zap.Any("key type", k))
+							c.logger.Info("invalid key type", zap.Any("key type", k))
 						}
 					}
 					receiverData[key] = oldMapValue
@@ -218,24 +218,23 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	// Add Query Parameters to the URL
 	baseUrl.RawQuery = params.Encode() // Escape Query Parameters
 
-	//apiURL := fmt.Sprintf(apiURLForYAML, c.MWApiKey, configType, hostname)
 	resp, err := http.Get(baseUrl.String())
 	if err != nil {
-		logger.Error("failed to call get configuration api", zap.Error(err))
+		c.logger.Error("failed to call get configuration api", zap.Error(err))
 		return err
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		logger.Error("failed to call get configuration api", zap.Int("statuscode", resp.StatusCode))
+		c.logger.Error("failed to call get configuration api", zap.Int("statuscode", resp.StatusCode))
 		return ErrRestartStatusAPINotOK
 	}
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logger.Error("failed to reas response body", zap.Error(err))
+		c.logger.Error("failed to reas response body", zap.Error(err))
 		return err
 	}
 
@@ -243,19 +242,19 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	var apiResponse apiResponseForYAML
 	// fmt.Println("body: ", string(body))
 	if err := json.Unmarshal(body, &apiResponse); err != nil {
-		logger.Error("failed to unmarshal api response", zap.Error(err))
+		c.logger.Error("failed to unmarshal api response", zap.Error(err))
 		return err
 	}
 
 	// Verify API Response
 	if !apiResponse.Status {
-		logger.Error("failure status from api response for ingestion rules", zap.Bool("status", apiResponse.Status))
+		c.logger.Error("failure status from api response for ingestion rules", zap.Bool("status", apiResponse.Status))
 		return ErrInvalidResponse
 	}
 
 	var apiYAMLConfig map[string]interface{}
 	if len(apiResponse.Config.Docker) == 0 && len(apiResponse.Config.NoDocker) == 0 {
-		logger.Error("failed to get valid response",
+		c.logger.Error("failed to get valid response",
 			zap.Int("config docker len", len(apiResponse.Config.Docker)),
 			zap.Int("config no docker len", len(apiResponse.Config.NoDocker)))
 		return ErrInvalidResponse
@@ -268,19 +267,19 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	}
 
 	pgdbConfig := apiResponse.PgdbConfig
-	apiYAMLConfig, err = updatepgdbConfig(apiYAMLConfig, pgdbConfig)
+	apiYAMLConfig, err = c.updatepgdbConfig(apiYAMLConfig, pgdbConfig)
 	if err != nil {
 		return err
 	}
 
 	apiYAMLBytes, err := yaml.Marshal(apiYAMLConfig)
 	if err != nil {
-		logger.Error("failed to marshal api data", zap.Error(err))
+		c.logger.Error("failed to marshal api data", zap.Error(err))
 		return err
 	}
 
 	if err := os.WriteFile(yamlPath, apiYAMLBytes, 0644); err != nil {
-		logger.Error("failed to write new configuration data to file", zap.Error(err))
+		c.logger.Error("failed to write new configuration data to file", zap.Error(err))
 		return err
 	}
 
@@ -293,7 +292,6 @@ func (c *HostAgent) GetUpdatedYAMLPath() (string, error) {
 	if !isSocket(dockerSocketPath) {
 		configType = "nodocker"
 		yamlPath = yamlFileNoDocker
-		logger.Info("Docker socket not found, using no docker config now", zap.String("docker socket path", dockerSocketPath))
 	}
 
 	if err := c.updateYAML(configType, yamlPath); err != nil {
@@ -334,27 +332,27 @@ func (c *HostAgent) callRestartStatusAPI() error {
 
 	resp, err := http.Get(baseUrl.String())
 	if err != nil {
-		logger.Error("failed to call Restart-API", zap.String("url", baseUrl.String()), zap.Error(err))
+		c.logger.Error("failed to call Restart-API", zap.String("url", baseUrl.String()), zap.Error(err))
 		return err
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		logger.Error("failed to call Restart-API", zap.Int("code", resp.StatusCode))
+		c.logger.Error("failed to call Restart-API", zap.Int("code", resp.StatusCode))
 		return ErrRestartStatusAPINotOK
 	}
 
 	var apiResponse apiResponseForRestart
 	if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
-		logger.Error("failed unmarshal Restart-API response", zap.Error(err))
+		c.logger.Error("failed unmarshal Restart-API response", zap.Error(err))
 		return err
 	}
 
 	if apiResponse.Restart {
-		logger.Info("restarting mw-agent")
+		c.logger.Info("restarting mw-agent")
 		if err := restartHostAgent(); err != nil {
-			logger.Error("error restarting mw-agent", zap.Error(err))
+			c.logger.Error("error restarting mw-agent", zap.Error(err))
 			return err
 		}
 	}
@@ -373,7 +371,7 @@ func (c *HostAgent) ListenForConfigChanges(ctx context.Context) error {
 
 	go func() {
 		for {
-			logger.Info("check for config changes after", zap.Duration("restartInterval", restartInterval))
+			c.logger.Info("check for config changes after", zap.Duration("restartInterval", restartInterval))
 			select {
 			case <-ctx.Done():
 				return
@@ -403,7 +401,6 @@ func (c *HostAgent) GetFactories(ctx context.Context) (otelcol.Factories, error)
 		filelogreceiver.NewFactory(),
 		dockerstatsreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
-
 		prometheusreceiver.NewFactory(),
 		postgresqlreceiver.NewFactory(),
 	}...)

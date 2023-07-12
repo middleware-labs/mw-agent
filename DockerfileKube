@@ -12,6 +12,6 @@ FROM busybox:glibc as prod
 WORKDIR /app
 COPY --from=build /etc/ssl/certs /etc/ssl/certs
 COPY --from=build /tmp/mw-agent /usr/bin/mw-agent
-COPY --from=build /app/otel-config.yaml /app/otel-config.yaml
-COPY --from=build /app/otel-config-nodocker.yaml /app/otel-config-nodocker.yaml
+COPY --from=build /app/configyamls-k8s/otel-config.yaml /app/otel-config.yaml
+COPY --from=build /app/configyamls-k8s/otel-config-nodocker.yaml /app/otel-config-nodocker.yaml
 CMD ["mw-agent", "start"]
