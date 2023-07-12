@@ -149,7 +149,7 @@ func app(logger *zap.Logger) *cli.App {
 		Name:  "mw-agent",
 		Usage: "Middleware Kubernetes agent",
 		Commands: []*cli.Command{
-			&cli.Command{
+			{
 				Name:  "start",
 				Usage: "Start Middleware Kubernetes agent",
 				Flags: flags,
@@ -170,17 +170,19 @@ func app(logger *zap.Logger) *cli.App {
 						config.WithKubeAgentLogger(logger),
 					)
 
-					logger.Info("starting host agent with config",
-						zap.String("api-key", cfg.ApiKey),
-						zap.String("target", cfg.Target),
-						zap.String("config-check-interval", cfg.ConfigCheckInterval),
-						zap.String("api-url-for-config-check", cfg.ApiURLForConfigCheck))
-
 					yamlPath, err := cfg.GetUpdatedYAMLPath()
 					if err != nil {
 						logger.Error("error getting config file path", zap.Error(err))
 						return err
 					}
+
+					logger.Info("starting host agent with config",
+						zap.String("api-key", cfg.ApiKey),
+						zap.String("target", cfg.Target),
+						zap.String("config-check-interval", cfg.ConfigCheckInterval),
+						zap.String("api-url-for-config-check", cfg.ApiURLForConfigCheck),
+						zap.String("yaml path", yamlPath))
+
 					configProvider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{
 						ResolverSettings: confmap.ResolverSettings{
 							Providers: map[string]confmap.Provider{

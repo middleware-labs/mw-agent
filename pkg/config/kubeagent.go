@@ -93,9 +93,9 @@ func NewKubeAgent(opts ...KubeOptions) *KubeAgent {
 }
 
 func (k *KubeAgent) GetUpdatedYAMLPath() (string, error) {
-	yamlPath := "otel-config.yaml"
+	yamlPath := "/app/otel-config.yaml"
 	if !isSocket(dockerSocketPath) {
-		yamlPath = "otel-config-nodocker.yaml"
+		yamlPath = "/app/otel-config-nodocker.yaml"
 		logger.Info("Docker socket not found, using no docker config now", zap.String("docker socket path", dockerSocketPath))
 	}
 

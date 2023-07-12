@@ -332,13 +332,9 @@ func (c *HostAgent) callRestartStatusAPI() error {
 	// Add Query Parameters to the URL
 	baseUrl.RawQuery = params.Encode() // Escape Query Parameters
 
-	// Prepare API URL
-	apiURL := fmt.Sprintf(apiPathForRestart, c.ApiKey, hostname)
-
-	resp, err := http.Get(apiURL)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		logger.Error("failed to call Restart-API", zap.Int("code", resp.StatusCode),
-			zap.Error(err))
+	resp, err := http.Get(baseUrl.String())
+	if err != nil {
+		logger.Error("failed to call Restart-API", zap.String("url", baseUrl.String()), zap.Error(err))
 		return err
 	}
 

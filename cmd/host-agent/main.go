@@ -75,6 +75,7 @@ func app(logger *zap.Logger) *cli.App {
 			EnvVars:     []string{"MW_API_URL_FOR_CONFIG_CHECK"},
 			Destination: &apiURLForConfigCheck,
 			DefaultText: "https://app.middleware.io",
+			Value:       "https://app.middleware.io",
 			Hidden:      true,
 		}),
 
@@ -120,6 +121,7 @@ func app(logger *zap.Logger) *cli.App {
 						zap.String("api-key", cfg.ApiKey),
 						zap.String("target", cfg.Target),
 						zap.String("config-check-interval", cfg.ConfigCheckInterval),
+						zap.Bool("enable-synthetic-monitoring", cfg.EnableSytheticMonitoring),
 						zap.String("api-url-for-config-check", cfg.ApiURLForConfigCheck))
 
 					ctx, cancel := context.WithCancel(c.Context)
@@ -151,13 +153,13 @@ func app(logger *zap.Logger) *cli.App {
 					os.Setenv("MW_TARGET", target)
 					os.Setenv("MW_API_KEY", cfg.ApiKey)
 
-					/*yamlPath, err := cfg.GetUpdatedYAMLPath()
+					yamlPath, err := cfg.GetUpdatedYAMLPath()
 					if err != nil {
 						logger.Error("error getting config file path", zap.Error(err))
 						return err
-					}*/
+					}
 
-					yamlPath := "./configyamls/all/otel-config.yaml"
+					// yamlPath := "./configyamls/all/otel-config.yaml"
 					logger.Info("yaml path loaded", zap.String("path", yamlPath))
 
 					configProvider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{

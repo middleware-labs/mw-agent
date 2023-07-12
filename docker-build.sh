@@ -9,4 +9,5 @@ then
       echo "please pass release tag as 2nd argument"
       exit
 fi
-docker build . --target $1 -t ghcr.io/middleware-labs/agent-host-go:$2 -f $3
+docker build . --target $1 -t ghcr.io/middleware-labs/mw-agent:$2 -f $3
+

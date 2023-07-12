@@ -1,12 +1,16 @@
 FROM golang:1.20 as build
 WORKDIR /app
+RUN apt-get update && apt-get install -y ca-certificates openssl
+RUN update-ca-certificates
 COPY . .
-ENV CGO_ENABLED=0
-RUN go get -d -v ./... && go mod tidy
-RUN CGO_ENABLED=0 go build -ldflags "-s -w" -o /tmp/mw-agent cmd/kube-agent/main.go
+COPY mw-agent /tmp/mw-agent
+#ENV CGO_ENABLED=0
+#RUN go get -d -v ./... && go mod tidy
+#RUN CGO_ENABLED=0 go build -ldflags "-s -w" -o /tmp/mw-agent cmd/kube-agent/main.go
 
 FROM busybox:glibc as prod
 WORKDIR /app
+COPY --from=build /etc/ssl/certs /etc/ssl/certs
 COPY --from=build /tmp/mw-agent /usr/bin/mw-agent
 COPY --from=build /app/otel-config.yaml /app/otel-config.yaml
 COPY --from=build /app/otel-config-nodocker.yaml /app/otel-config-nodocker.yaml

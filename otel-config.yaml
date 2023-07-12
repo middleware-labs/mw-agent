@@ -27,7 +27,7 @@ receivers:
         timestamp:
           parse_from: attributes.time
           layout_type: gotime
-          layout: '2006-01-02T15:04:05.000000000-07:00'
+          layout: '2006-01-02T15:04:05.999999999Z07:00'
       # Parse CRI-Containerd format
       - type: regex_parser
         id: parser-containerd
@@ -130,6 +130,8 @@ receivers:
       processes: {}
       process:
         mute_process_name_error: true
+        
+        
   docker_stats:
     endpoint: ${MW_DOCKER_ENDPOINT}
     collection_interval: 5s
@@ -160,7 +162,7 @@ exporters:
   logging:
     loglevel: warn
   otlp:
-    endpoint: ${TARGET}
+    endpoint: ${MW_TARGET}
 processors:
   # filter/blanklog:
   #   logs: 
