@@ -1,4 +1,4 @@
-module github.com/tejaskokje-mw/mw-agent
+module github.com/middleware-labs/mw-agent
 
 go 1.20
 

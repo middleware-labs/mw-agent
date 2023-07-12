@@ -16,7 +16,7 @@ import (
 
 	"github.com/prometheus/common/version"
 	"github.com/sirupsen/logrus"
-	"github.com/tejaskokje-mw/mw-agent/pkg/config"
+	"github.com/middleware-labs/mw-agent/pkg/config"
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
 	"go.opentelemetry.io/collector/component"

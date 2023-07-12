@@ -10,7 +10,7 @@ import (
 	"checkagent"
 
 	"github.com/prometheus/common/version"
-	"github.com/tejaskokje-mw/mw-agent/pkg/config"
+	"github.com/middleware-labs/mw-agent/pkg/config"
 
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
