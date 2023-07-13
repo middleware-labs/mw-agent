@@ -3,10 +3,9 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y ca-certificates openssl
 RUN update-ca-certificates
 COPY . .
-COPY mw-agent /tmp/mw-agent
-#ENV CGO_ENABLED=0
-#RUN go get -d -v ./... && go mod tidy
-#RUN CGO_ENABLED=0 go build -ldflags "-s -w" -o /tmp/mw-agent cmd/kube-agent/main.go
+ENV CGO_ENABLED=0
+RUN go get -d -v ./... && go mod tidy
+RUN CGO_ENABLED=0 go build -ldflags "-s -w" -o /tmp/mw-agent cmd/kube-agent/main.go
 
 FROM busybox:glibc as prod
 WORKDIR /app
