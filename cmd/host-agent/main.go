@@ -9,8 +9,8 @@ import (
 
 	"checkagent"
 
-	"github.com/prometheus/common/version"
 	"github.com/middleware-labs/mw-agent/pkg/config"
+	"github.com/prometheus/common/version"
 
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
@@ -153,13 +153,13 @@ func app(logger *zap.Logger) *cli.App {
 					os.Setenv("MW_TARGET", target)
 					os.Setenv("MW_API_KEY", cfg.ApiKey)
 
-					yamlPath, err := cfg.GetUpdatedYAMLPath()
+					/*yamlPath, err := cfg.GetUpdatedYAMLPath()
 					if err != nil {
 						logger.Error("error getting config file path", zap.Error(err))
 						return err
-					}
+					}*/
 
-					// yamlPath := "./configyamls/all/otel-config.yaml"
+					yamlPath := "./configyamls/all/otel-config.yaml"
 					logger.Info("yaml path loaded", zap.String("path", yamlPath))
 
 					configProvider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{

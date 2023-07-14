@@ -2,21 +2,18 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"io/fs"
-	"k8sgpt/cmd/analyze"
-	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"sync"
 	"time"
 
-	"os/exec"
+	"github.com/k8sgpt-ai/k8sgpt/pkg/kubernetes"
 
-	"github.com/prometheus/common/version"
-	"github.com/sirupsen/logrus"
 	"github.com/middleware-labs/mw-agent/pkg/config"
+	"github.com/middleware-labs/mw-agent/pkg/mwinsight"
+	"github.com/prometheus/common/version"
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
 	"go.opentelemetry.io/collector/component"
@@ -34,55 +31,29 @@ func main() {
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
 
-	// k8sgpt Daily cycle
-	go func() {
-		// One time execution at the start of the agent
-		analyze.GptAnalysis()
-
-		// Running analysis once everyday
-		for range time.Tick(time.Second * 10800) {
-			analyze.GptAnalysis()
-		}
-	}()
-
 	_, exists := os.LookupEnv("MW_ISSET_AGENT_INSTALLATION_TIME")
 	if exists {
-		fmt.Println("env already exists")
+		logger.Info("MW_ISSET_AGENT_INSTALLATION_TIME env variable exists")
 		if os.Getenv("MW_ISSET_AGENT_INSTALLATION_TIME") != "true" {
 			os.Setenv("MW_ISSET_AGENT_INSTALLATION_TIME", "true")
 			os.Setenv("MW_AGENT_INSTALLATION_TIME", strconv.FormatInt(time.Now().UnixMilli(), 10))
 		}
 	} else {
-		fmt.Println("env does not exists")
-		cmd := exec.Command("echo MW_ISSET_AGENT_INSTALLATION_TIME=true > /etc/environment")
+		logger.Info("MW_ISSET_AGENT_INSTALLATION_TIME env variable does not exists")
+		/*cmd := exec.Command("echo MW_ISSET_AGENT_INSTALLATION_TIME=true > /etc/environment")
 		stdout, err := cmd.Output()
 		if err != nil {
 			fmt.Println(err.Error())
 		}
 		// Print the output
-		fmt.Println("1111", string(stdout))
+		*/
 		os.Setenv("MW_ISSET_AGENT_INSTALLATION_TIME", "true")
 		os.Setenv("MW_AGENT_INSTALLATION_TIME", strconv.FormatInt(time.Now().UnixMilli(), 10))
 	}
 
 	if err := app(logger).Run(os.Args); err != nil {
-		logrus.WithError(err).Fatal("could not run application")
+		logger.Fatal("could not run application", zap.Error(err))
 	}
-}
-
-func Try[T any](item T, err error) T {
-	if err != nil {
-		log.Fatalf("error %v", err)
-	}
-	return item
-}
-
-func IsSocket(path string) bool {
-	fileInfo, err := os.Stat(path)
-	if err != nil {
-		return false
-	}
-	return fileInfo.Mode().Type() == fs.ModeSocket
 }
 
 // air --build.cmd "go build -o /tmp/api-server /app/*.go" --build.bin "/tmp/api-server $*"
@@ -95,6 +66,7 @@ func app(logger *zap.Logger) *cli.App {
 
 	// configure flags
 	var apiKey, target, configCheckInterval, apiURLForConfigCheck string
+	var insightRefreshDuration string
 	var enableSyntheticMonitoring bool
 	flags := []cli.Flag{
 		altsrc.NewStringFlag(&cli.StringFlag{
@@ -129,6 +101,14 @@ func app(logger *zap.Logger) *cli.App {
 			DefaultText: "https://app.middleware.io",
 			Hidden:      true,
 		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "mw-insight-refresh-duration",
+			EnvVars:     []string{"MW_INSIGHT_REFRESH_DURATION"},
+			Destination: &insightRefreshDuration,
+			DefaultText: "24h",
+			Value:       "24h",
+			Hidden:      true,
+		}),
 
 		&cli.StringFlag{
 			Name:    "config-file",
@@ -155,8 +135,12 @@ func app(logger *zap.Logger) *cli.App {
 				Flags: flags,
 				Action: func(c *cli.Context) error {
 
+					var wg sync.WaitGroup
 					ctx, cancel := context.WithCancel(c.Context)
-					defer cancel()
+					defer func() {
+						cancel()
+						wg.Wait()
+					}()
 
 					cfg := config.NewKubeAgent(
 						config.WithKubeAgentApiKey(apiKey),
@@ -176,12 +160,70 @@ func app(logger *zap.Logger) *cli.App {
 						return err
 					}
 
+					k8sClient, err := kubernetes.NewClient("", "")
+					if err != nil {
+						logger.Error("error creating k8s client", zap.Error(err))
+						return err
+					}
+
+					k8sInsight := mwinsight.NewK8sInsight(
+						mwinsight.WithK8sInsightApiKey(cfg.ApiKey),
+						mwinsight.WithK8sInsightTarget(cfg.Target),
+						mwinsight.WithK8sInsightK8sClient(k8sClient),
+						mwinsight.WithK8sInsightBackend(mwinsight.BackendTypeOpenAI),
+					)
+
 					logger.Info("starting host agent with config",
 						zap.String("api-key", cfg.ApiKey),
 						zap.String("target", cfg.Target),
 						zap.String("config-check-interval", cfg.ConfigCheckInterval),
 						zap.String("api-url-for-config-check", cfg.ApiURLForConfigCheck),
 						zap.String("yaml path", yamlPath))
+
+					// start daily insight analysis
+					duration, err := time.ParseDuration(insightRefreshDuration)
+					if err != nil {
+						logger.Error("error in parsing duration", zap.Error(err))
+						return err
+					}
+
+					wg.Add(1)
+					go func(ctx context.Context, duration time.Duration, wg *sync.WaitGroup) {
+						defer wg.Done()
+
+						// define analysis function that can be reused first time when
+						// the agent is run and periodically
+						analysisFunc := func() {
+							analysisChan, err := k8sInsight.Analyze(ctx)
+							if err != nil {
+								logger.Error("error in mwinsight analysis", zap.Error(err))
+								return
+							}
+
+							var sendWg sync.WaitGroup
+							for result := range analysisChan {
+								sendWg.Add(1)
+								go func(result []byte) {
+									defer sendWg.Done()
+									k8sInsight.Send(ctx, result)
+								}(result)
+							}
+
+							sendWg.Wait()
+						}
+
+						// run the analysis for the first time after agent
+						// start
+						analysisFunc()
+						select {
+						case <-ctx.Done():
+							return
+						case <-time.Tick(duration):
+							// run analysis periodically
+							analysisFunc()
+						}
+
+					}(ctx, duration, &wg)
 
 					configProvider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{
 						ResolverSettings: confmap.ResolverSettings{
@@ -227,7 +269,6 @@ func app(logger *zap.Logger) *cli.App {
 						logger.Error("collector server run finished with error", zap.Error(err))
 						return err
 					}
-
 					return nil
 				},
 			},
