@@ -1,4 +1,4 @@
-package config
+package agent
 
 import (
 	"context"
@@ -6,14 +6,14 @@ import (
 	"os"
 
 	"go.opentelemetry.io/collector/otelcol"
-	"go.uber.org/zap"
 )
 
-type Config interface {
+// Agent interface provides common methods for different agents
+// like host agent (Linux, Windows) & Kubernetes
+type Agent interface {
 	GetFactories(ctx context.Context) (otelcol.Factories, error)
 	GetUpdatedYAMLPath(ctx context.Context) (string, error)
 	ListenForConfigChanges(ctx context.Context) error
-	SetLogger(ctx context.Context, l *zap.Logger)
 }
 
 func isSocket(path string) bool {

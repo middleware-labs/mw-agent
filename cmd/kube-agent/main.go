@@ -11,7 +11,7 @@ import (
 
 	"github.com/k8sgpt-ai/k8sgpt/pkg/kubernetes"
 
-	"github.com/middleware-labs/mw-agent/pkg/config"
+	"github.com/middleware-labs/mw-agent/pkg/agent"
 	"github.com/middleware-labs/mw-agent/pkg/mwinsight"
 	"github.com/prometheus/common/version"
 	"github.com/urfave/cli/v2"
@@ -144,23 +144,23 @@ func app(logger *zap.Logger) *cli.App {
 						wg.Wait()
 					}()
 
-					cfg := config.NewKubeAgent(
-						config.WithKubeAgentApiKey(apiKey),
-						config.WithKubeAgentTarget(target),
-						config.WithKubeAgentEnableSyntheticMonitoring(
+					kubeAgent := agent.NewKubeAgent(
+						agent.WithKubeAgentApiKey(apiKey),
+						agent.WithKubeAgentTarget(target),
+						agent.WithKubeAgentEnableSyntheticMonitoring(
 							enableSyntheticMonitoring),
-						config.WithKubeAgentConfigCheckInterval(
+						agent.WithKubeAgentConfigCheckInterval(
 							configCheckInterval),
-						config.WithKubeAgentApiURLForConfigCheck(
+						agent.WithKubeAgentApiURLForConfigCheck(
 							apiURLForConfigCheck),
-						config.WithKubeAgentLogger(logger),
-						config.WithKubeAgentDockerEndpoint(dockerEndpoint),
+						agent.WithKubeAgentLogger(logger),
+						agent.WithKubeAgentDockerEndpoint(dockerEndpoint),
 					)
 
 					// Set MW_DOCKER_ENDPOINT env variable to be used by otel collector
 					os.Setenv("MW_DOCKER_ENDPOINT", dockerEndpoint)
 
-					yamlPath, err := cfg.GetUpdatedYAMLPath()
+					yamlPath, err := kubeAgent.GetUpdatedYAMLPath()
 					if err != nil {
 						logger.Error("error getting config file path", zap.Error(err))
 						return err
@@ -254,7 +254,7 @@ func app(logger *zap.Logger) *cli.App {
 						return err
 					}
 
-					factories, err := cfg.GetFactories(ctx)
+					factories, err := kubeAgent.GetFactories(ctx)
 					if err != nil {
 						logger.Error("failed to get factories", zap.Error(err))
 						return err
