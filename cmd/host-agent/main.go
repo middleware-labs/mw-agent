@@ -9,7 +9,7 @@ import (
 
 	"checkagent"
 
-	"github.com/middleware-labs/mw-agent/pkg/config"
+	"github.com/middleware-labs/mw-agent/pkg/agent"
 	"github.com/prometheus/common/version"
 
 	"github.com/urfave/cli/v2"
@@ -107,17 +107,17 @@ func app(logger *zap.Logger) *cli.App {
 				Before: altsrc.InitInputSourceWithContext(flags, altsrc.NewYamlSourceFromFlagFunc("config-file")),
 				Action: func(c *cli.Context) error {
 
-					cfg := config.NewHostAgent(
-						config.WithHostAgentApiKey(apiKey),
-						config.WithHostAgentTarget(target),
-						config.WithHostAgentEnableSyntheticMonitoring(
+					hostAgent := agent.NewHostAgent(
+						agent.WithHostAgentApiKey(apiKey),
+						agent.WithHostAgentTarget(target),
+						agent.WithHostAgentEnableSyntheticMonitoring(
 							enableSyntheticMonitoring),
-						config.WithHostAgentConfigCheckInterval(
+						agent.WithHostAgentConfigCheckInterval(
 							configCheckInterval),
-						config.WithHostAgentApiURLForConfigCheck(
+						agent.WithHostAgentApiURLForConfigCheck(
 							apiURLForConfigCheck),
-						config.WithHostAgentLogger(logger),
-						config.WithHostAgentDockerEndpoint(dockerEndpoint),
+						agent.WithHostAgentLogger(logger),
+						agent.WithHostAgentDockerEndpoint(dockerEndpoint),
 					)
 
 					logger.Info("starting host agent with config",
@@ -133,7 +133,7 @@ func app(logger *zap.Logger) *cli.App {
 
 					// Listen to the config changes provided by Middleware API
 					if configCheckInterval != "0" {
-						cfg.ListenForConfigChanges(ctx)
+						hostAgent.ListenForConfigChanges(ctx)
 					}
 
 					if enableSyntheticMonitoring {
@@ -160,7 +160,7 @@ func app(logger *zap.Logger) *cli.App {
 					// TODO: check if on Windows, socket scheme is different than "unix"
 					os.Setenv("MW_DOCKER_ENDPOINT", dockerEndpoint)
 
-					yamlPath, err := cfg.GetUpdatedYAMLPath()
+					yamlPath, err := hostAgent.GetUpdatedYAMLPath()
 					if err != nil {
 						logger.Error("error getting config file path", zap.Error(err))
 						return err
@@ -188,7 +188,7 @@ func app(logger *zap.Logger) *cli.App {
 						return err
 					}
 
-					factories, err := cfg.GetFactories(ctx)
+					factories, err := hostAgent.GetFactories(ctx)
 					if err != nil {
 						logger.Error("failed to get factories", zap.Error(err))
 						return err

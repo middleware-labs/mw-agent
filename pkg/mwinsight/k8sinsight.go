@@ -81,13 +81,13 @@ func WithK8sInsightBackend(b BackendType) K8sInsightOptionFunc {
 // NewK8sInsight returns new K8sInsight to be used for analyzing
 // issues on Kubernetes platforms.
 func NewK8sInsight(opts ...K8sInsightOptionFunc) *K8sInsight {
-	var analyzer K8sInsight
-	analyzer.backend = BackendTypeOpenAI
+	var k8sInsight K8sInsight
+	k8sInsight.backend = BackendTypeOpenAI
 	for _, apply := range opts {
-		apply(&analyzer)
+		apply(&k8sInsight)
 	}
 
-	return &analyzer
+	return &k8sInsight
 }
 
 // Analyze will look for issues in the given Kubernetes clusters and

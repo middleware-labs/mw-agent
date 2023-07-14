@@ -1,4 +1,4 @@
-package config
+package agent
 
 import (
 	"context"
@@ -42,6 +42,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// HostAgent implements Agent interface for Hosts (e.g Linux)
 type HostAgent struct {
 	apiKey string
 	target string
@@ -55,50 +56,65 @@ type HostAgent struct {
 	dockerEndpoint string
 }
 
+// HostOptions takes in various options for HostAgent
 type HostOptions func(h *HostAgent)
 
+// WithHostAgentApiKey sets api key for interacting with
+// the Middleware backend
 func WithHostAgentApiKey(key string) HostOptions {
 	return func(h *HostAgent) {
 		h.apiKey = key
 	}
 }
 
+// WithHostAgentTarget sets target URL for sending insights
+// to the Middlware backend.
 func WithHostAgentTarget(t string) HostOptions {
 	return func(h *HostAgent) {
 		h.target = t
 	}
 }
 
+// WithHostAgentEnableSyntheticMonitoring enables synthetic
+// monitoring to be performed from the agent.
 func WithHostAgentEnableSyntheticMonitoring(e bool) HostOptions {
 	return func(h *HostAgent) {
 		h.enableSyntheticMonitoring = e
 	}
 }
 
+// WithHostAgentConfigCheckInterval sets the duration for checking with
+// the Middleware backend for configuration update.
 func WithHostAgentConfigCheckInterval(c string) HostOptions {
 	return func(h *HostAgent) {
 		h.configCheckInterval = c
 	}
 }
 
+// WithHostAgentApiURLForConfigCheck sets the URL for the periodic
+// configuration check.
 func WithHostAgentApiURLForConfigCheck(u string) HostOptions {
 	return func(h *HostAgent) {
 		h.apiURLForConfigCheck = u
 	}
 }
 
+// WithHostAgentLogger sets the logger to be used with agent logs
 func WithHostAgentLogger(logger *zap.Logger) HostOptions {
 	return func(h *HostAgent) {
 		h.logger = logger
 	}
 }
 
+// WithHostAgentDockerEndpoint sets the endpoint for docker so that
+// the agent can figure out if it needs to send docker logs & metrics.
 func WithHostAgentDockerEndpoint(endpoint string) HostOptions {
 	return func(h *HostAgent) {
 		h.dockerEndpoint = endpoint
 	}
 }
 
+// NewHostAgent returns new agent for Kubernetes with given options.
 func NewHostAgent(opts ...HostOptions) *HostAgent {
 	var cfg HostAgent
 	for _, apply := range opts {
@@ -302,6 +318,7 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	return nil
 }
 
+// GetUpdatedYAMLPath gets the correct otel configuration file.
 func (c *HostAgent) GetUpdatedYAMLPath() (string, error) {
 	configType := "docker"
 	yamlPath := yamlFile
@@ -377,6 +394,9 @@ func (c *HostAgent) callRestartStatusAPI() error {
 	return err
 }
 
+// ListenForConfigChanges listens for configuration changes for the
+// agent on the Middleware backend and restarts the agent if configuration
+// has changed.
 func (c *HostAgent) ListenForConfigChanges(ctx context.Context) error {
 
 	restartInterval, err := time.ParseDuration(c.configCheckInterval)
@@ -401,6 +421,7 @@ func (c *HostAgent) ListenForConfigChanges(ctx context.Context) error {
 	return nil
 }
 
+// GetFactories get otel factories for HostAgent
 func (c *HostAgent) GetFactories(ctx context.Context) (otelcol.Factories, error) {
 	var err error
 	factories := otelcol.Factories{}
