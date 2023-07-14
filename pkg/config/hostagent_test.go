@@ -82,7 +82,7 @@ func TestUpdateMongodbConfig(t *testing.T) {
 
 func TestListenForConfigChanges(t *testing.T) {
 	agent := NewHostAgent(WithHostAgentLogger(zap.NewNop()))
-	agent.ConfigCheckInterval = "1s"
+	agent.configCheckInterval = "1s"
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
