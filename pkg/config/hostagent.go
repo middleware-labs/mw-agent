@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
@@ -42,46 +43,47 @@ import (
 )
 
 type HostAgent struct {
-	ApiKey string
-	Target string
+	apiKey string
+	target string
 
-	EnableSytheticMonitoring bool
-	ConfigCheckInterval      string
+	enableSyntheticMonitoring bool
+	configCheckInterval       string
 
-	ApiURLForConfigCheck string
+	apiURLForConfigCheck string
 
-	logger *zap.Logger
+	logger         *zap.Logger
+	dockerEndpoint string
 }
 
 type HostOptions func(h *HostAgent)
 
 func WithHostAgentApiKey(key string) HostOptions {
 	return func(h *HostAgent) {
-		h.ApiKey = key
+		h.apiKey = key
 	}
 }
 
 func WithHostAgentTarget(t string) HostOptions {
 	return func(h *HostAgent) {
-		h.Target = t
+		h.target = t
 	}
 }
 
 func WithHostAgentEnableSyntheticMonitoring(e bool) HostOptions {
 	return func(h *HostAgent) {
-		h.EnableSytheticMonitoring = e
+		h.enableSyntheticMonitoring = e
 	}
 }
 
 func WithHostAgentConfigCheckInterval(c string) HostOptions {
 	return func(h *HostAgent) {
-		h.ConfigCheckInterval = c
+		h.configCheckInterval = c
 	}
 }
 
 func WithHostAgentApiURLForConfigCheck(u string) HostOptions {
 	return func(h *HostAgent) {
-		h.ApiURLForConfigCheck = u
+		h.apiURLForConfigCheck = u
 	}
 }
 
@@ -90,6 +92,13 @@ func WithHostAgentLogger(logger *zap.Logger) HostOptions {
 		h.logger = logger
 	}
 }
+
+func WithHostAgentDockerEndpoint(endpoint string) HostOptions {
+	return func(h *HostAgent) {
+		h.dockerEndpoint = endpoint
+	}
+}
+
 func NewHostAgent(opts ...HostOptions) *HostAgent {
 	var cfg HostAgent
 	for _, apply := range opts {
@@ -142,23 +151,9 @@ var (
 )
 
 const (
-	dockerSocketPath = "/var/run/docker.sock"
 	yamlFile         = "configyamls/all/otel-config.yaml"
 	yamlFileNoDocker = "configyamls/nodocker/otel-config.yaml"
 )
-
-/*func (c *Config) checkForConfigURLOverrides() (string, string) {
-
-	if os.Getenv("MW_API_URL_FOR_RESTART") != "" {
-		apiURLForRestart = os.Getenv("MW_API_URL_FOR_RESTART")
-	}
-
-	if os.Getenv("MW_API_URL_FOR_YAML") != "" {
-		apiURLForYAML = os.Getenv("MW_API_URL_FOR_YAML")
-	}
-
-	return apiURLForRestart, apiURLForYAML
-}*/
 
 func (c *HostAgent) updatepgdbConfig(config map[string]interface{},
 	pgdbConfig pgdbConfiguration) (map[string]interface{}, error) {
@@ -221,12 +216,12 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	hostname := getHostname()
 
 	// Call Webhook
-	u, err := url.Parse(c.ApiURLForConfigCheck)
+	u, err := url.Parse(c.apiURLForConfigCheck)
 	if err != nil {
 		return err
 	}
 
-	baseUrl := u.JoinPath(apiPathForYAML).JoinPath(c.ApiKey)
+	baseUrl := u.JoinPath(apiPathForYAML).JoinPath(c.apiKey)
 	params := url.Values{}
 	params.Add("config", configType)
 	params.Add("platform", runtime.GOOS)
@@ -310,7 +305,8 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 func (c *HostAgent) GetUpdatedYAMLPath() (string, error) {
 	configType := "docker"
 	yamlPath := yamlFile
-	if !isSocket(dockerSocketPath) {
+	dockerSocketPath := strings.Split(c.dockerEndpoint, "//")
+	if len(dockerSocketPath) != 2 || !isSocketFn(dockerSocketPath[1]) {
 		configType = "nodocker"
 		yamlPath = yamlFileNoDocker
 	}
@@ -337,13 +333,13 @@ func (c *HostAgent) callRestartStatusAPI() error {
 	// fmt.Println("Starting recursive restart check......")
 	// apiURLForRestart, _ := checkForConfigURLOverrides()
 	hostname := getHostname()
-	u, err := url.Parse(c.ApiURLForConfigCheck)
+	u, err := url.Parse(c.apiURLForConfigCheck)
 	if err != nil {
 		return err
 	}
 
 	baseUrl := u.JoinPath(apiPathForRestart)
-	baseUrl = baseUrl.JoinPath(c.ApiKey)
+	baseUrl = baseUrl.JoinPath(c.apiKey)
 	params := url.Values{}
 	params.Add("host_id", hostname)
 	params.Add("platform", runtime.GOOS)
@@ -383,7 +379,7 @@ func (c *HostAgent) callRestartStatusAPI() error {
 
 func (c *HostAgent) ListenForConfigChanges(ctx context.Context) error {
 
-	restartInterval, err := time.ParseDuration(c.ConfigCheckInterval)
+	restartInterval, err := time.ParseDuration(c.configCheckInterval)
 	if err != nil {
 		return err
 	}

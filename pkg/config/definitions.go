@@ -9,16 +9,6 @@ import (
 	"go.uber.org/zap"
 )
 
-var logger *zap.Logger
-
-func init() {
-	logger, _ = zap.NewProduction()
-}
-
-func SetLogger(l *zap.Logger) {
-	logger = l
-}
-
 type Config interface {
 	GetFactories(ctx context.Context) (otelcol.Factories, error)
 	GetUpdatedYAMLPath(ctx context.Context) (string, error)

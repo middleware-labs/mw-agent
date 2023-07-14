@@ -1,6 +1,3 @@
 [submodule "check-agent"]
 	path = check-agent
 	url = https://github.com/middleware-labs/check-agent.git
-[submodule "k8sgpt"]
-	path = k8sgpt
-	url = https://github.com/middleware-labs/k8sgpt.git

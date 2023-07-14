@@ -34,15 +34,9 @@ func main() {
 	}
 }
 
-// air --build.cmd "go build -o /tmp/api-server /app/*.go" --build.bin "/tmp/api-server $*"
 func app(logger *zap.Logger) *cli.App {
-
-	_, hasMwDockerEndpoint := os.LookupEnv("MW_DOCKER_ENDPOINT")
-	if !hasMwDockerEndpoint {
-		os.Setenv("MW_DOCKER_ENDPOINT", "unix:///var/run/docker.sock")
-	}
-
 	var apiKey, target, configCheckInterval, apiURLForConfigCheck string
+	var dockerEndpoint string
 	var enableSyntheticMonitoring bool
 	flags := []cli.Flag{
 		altsrc.NewStringFlag(&cli.StringFlag{
@@ -69,6 +63,14 @@ func app(logger *zap.Logger) *cli.App {
 				"Setting the value to 0 disables this feature.",
 			Destination: &configCheckInterval,
 			DefaultText: "60s",
+		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "docker-endpoint",
+			EnvVars:     []string{"MW_DOCKER_ENDPOINT"},
+			Usage:       "Set the endpoint for Docker socket if different from default",
+			Destination: &dockerEndpoint,
+			DefaultText: "unix:///var/run/docker.sock",
+			Value:       "unix:///var/run/docker.sock",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "api-url-for-config-check",
@@ -115,29 +117,31 @@ func app(logger *zap.Logger) *cli.App {
 						config.WithHostAgentApiURLForConfigCheck(
 							apiURLForConfigCheck),
 						config.WithHostAgentLogger(logger),
+						config.WithHostAgentDockerEndpoint(dockerEndpoint),
 					)
 
 					logger.Info("starting host agent with config",
-						zap.String("api-key", cfg.ApiKey),
-						zap.String("target", cfg.Target),
-						zap.String("config-check-interval", cfg.ConfigCheckInterval),
-						zap.Bool("enable-synthetic-monitoring", cfg.EnableSytheticMonitoring),
-						zap.String("api-url-for-config-check", cfg.ApiURLForConfigCheck))
+						zap.String("api-key", apiKey),
+						zap.String("target", target),
+						zap.String("config-check-interval", configCheckInterval),
+						zap.Bool("enable-synthetic-monitoring", enableSyntheticMonitoring),
+						zap.String("api-url-for-config-check", apiURLForConfigCheck),
+						zap.String("docker-endpoint", dockerEndpoint))
 
 					ctx, cancel := context.WithCancel(c.Context)
 					defer cancel()
 
 					// Listen to the config changes provided by Middleware API
-					if cfg.ConfigCheckInterval != "0" {
+					if configCheckInterval != "0" {
 						cfg.ListenForConfigChanges(ctx)
 					}
 
-					if cfg.EnableSytheticMonitoring {
+					if enableSyntheticMonitoring {
 						// TODO checkagent.Start should take context
 						go checkagent.Start()
 					}
 
-					u, err := url.Parse(cfg.Target)
+					u, err := url.Parse(target)
 					if err != nil {
 						return err
 					}
@@ -151,15 +155,18 @@ func app(logger *zap.Logger) *cli.App {
 
 					// Set MW_TARGET & MW_API_KEY so that envprovider can fill those in the otel config files
 					os.Setenv("MW_TARGET", target)
-					os.Setenv("MW_API_KEY", cfg.ApiKey)
+					os.Setenv("MW_API_KEY", apiKey)
 
-					/*yamlPath, err := cfg.GetUpdatedYAMLPath()
+					// TODO: check if on Windows, socket scheme is different than "unix"
+					os.Setenv("MW_DOCKER_ENDPOINT", dockerEndpoint)
+
+					yamlPath, err := cfg.GetUpdatedYAMLPath()
 					if err != nil {
 						logger.Error("error getting config file path", zap.Error(err))
 						return err
-					}*/
+					}
 
-					yamlPath := "./configyamls/all/otel-config.yaml"
+					// yamlPath := "./configyamls/all/otel-config.yaml"
 					logger.Info("yaml path loaded", zap.String("path", yamlPath))
 
 					configProvider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{

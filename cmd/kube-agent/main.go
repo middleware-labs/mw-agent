@@ -56,17 +56,11 @@ func main() {
 	}
 }
 
-// air --build.cmd "go build -o /tmp/api-server /app/*.go" --build.bin "/tmp/api-server $*"
 func app(logger *zap.Logger) *cli.App {
-
-	_, hasMwDockerEndpoint := os.LookupEnv("MW_DOCKER_ENDPOINT")
-	if !hasMwDockerEndpoint || os.Getenv("MW_DOCKER_ENDPOINT") == "" {
-		os.Setenv("MW_DOCKER_ENDPOINT", "unix:///var/run/docker.sock")
-	}
 
 	// configure flags
 	var apiKey, target, configCheckInterval, apiURLForConfigCheck string
-	var insightRefreshDuration string
+	var insightRefreshDuration, dockerEndpoint string
 	var enableSyntheticMonitoring bool
 	flags := []cli.Flag{
 		altsrc.NewStringFlag(&cli.StringFlag{
@@ -93,6 +87,14 @@ func app(logger *zap.Logger) *cli.App {
 				"Setting the value to 0 disables this feature.",
 			Destination: &configCheckInterval,
 			DefaultText: "60s",
+		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "docker-socket-endpoint",
+			EnvVars:     []string{"MW_DOCKER_ENDPOINT"},
+			Usage:       "Set the endpoint for Docker socket if different from default",
+			Destination: &dockerEndpoint,
+			DefaultText: "unix:///var/run/docker.sock",
+			Value:       "unix:///var/run/docker.sock",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "api-url-for-config-check",
@@ -152,7 +154,11 @@ func app(logger *zap.Logger) *cli.App {
 						config.WithKubeAgentApiURLForConfigCheck(
 							apiURLForConfigCheck),
 						config.WithKubeAgentLogger(logger),
+						config.WithKubeAgentDockerEndpoint(dockerEndpoint),
 					)
+
+					// Set MW_DOCKER_ENDPOINT env variable to be used by otel collector
+					os.Setenv("MW_DOCKER_ENDPOINT", dockerEndpoint)
 
 					yamlPath, err := cfg.GetUpdatedYAMLPath()
 					if err != nil {
@@ -167,18 +173,19 @@ func app(logger *zap.Logger) *cli.App {
 					}
 
 					k8sInsight := mwinsight.NewK8sInsight(
-						mwinsight.WithK8sInsightApiKey(cfg.ApiKey),
-						mwinsight.WithK8sInsightTarget(cfg.Target),
+						mwinsight.WithK8sInsightApiKey(apiKey),
+						mwinsight.WithK8sInsightTarget(target),
 						mwinsight.WithK8sInsightK8sClient(k8sClient),
 						mwinsight.WithK8sInsightBackend(mwinsight.BackendTypeOpenAI),
 					)
 
 					logger.Info("starting host agent with config",
-						zap.String("api-key", cfg.ApiKey),
-						zap.String("target", cfg.Target),
-						zap.String("config-check-interval", cfg.ConfigCheckInterval),
-						zap.String("api-url-for-config-check", cfg.ApiURLForConfigCheck),
-						zap.String("yaml path", yamlPath))
+						zap.String("api-key", apiKey),
+						zap.String("target", target),
+						zap.String("config-check-interval", configCheckInterval),
+						zap.String("api-url-for-config-check", apiURLForConfigCheck),
+						zap.String("yaml path", yamlPath),
+						zap.String("docker-endpoint", dockerEndpoint))
 
 					// start daily insight analysis
 					duration, err := time.ParseDuration(insightRefreshDuration)
@@ -205,7 +212,10 @@ func app(logger *zap.Logger) *cli.App {
 								sendWg.Add(1)
 								go func(result []byte) {
 									defer sendWg.Done()
-									k8sInsight.Send(ctx, result)
+									er := k8sInsight.Send(ctx, result)
+									if er != nil {
+										logger.Error("error sending insight data to mw backend", zap.Error(err))
+									}
 								}(result)
 							}
 

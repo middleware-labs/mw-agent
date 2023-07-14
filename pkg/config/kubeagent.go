@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
@@ -30,47 +31,49 @@ import (
 	"go.uber.org/zap"
 )
 
+// KubeAgent implements Agent interface for Kubernetes
 type KubeAgent struct {
-	ApiKey string
-	Target string
+	apiKey string
+	target string
 
-	EnableSytheticMonitoring bool
-	ConfigCheckInterval      string
+	enableSytheticMonitoring bool
+	configCheckInterval      string
 
-	ApiURLForConfigCheck string
+	apiURLForConfigCheck string
 
-	logger *zap.Logger
+	logger         *zap.Logger
+	dockerEndpoint string
 }
 
 type KubeOptions func(h *KubeAgent)
 
 func WithKubeAgentApiKey(key string) KubeOptions {
 	return func(h *KubeAgent) {
-		h.ApiKey = key
+		h.apiKey = key
 	}
 }
 
 func WithKubeAgentTarget(t string) KubeOptions {
 	return func(h *KubeAgent) {
-		h.Target = t
+		h.target = t
 	}
 }
 
 func WithKubeAgentEnableSyntheticMonitoring(e bool) KubeOptions {
 	return func(h *KubeAgent) {
-		h.EnableSytheticMonitoring = e
+		h.enableSytheticMonitoring = e
 	}
 }
 
 func WithKubeAgentConfigCheckInterval(c string) KubeOptions {
 	return func(h *KubeAgent) {
-		h.ConfigCheckInterval = c
+		h.configCheckInterval = c
 	}
 }
 
 func WithKubeAgentApiURLForConfigCheck(u string) KubeOptions {
 	return func(h *KubeAgent) {
-		h.ApiURLForConfigCheck = u
+		h.apiURLForConfigCheck = u
 	}
 }
 
@@ -79,6 +82,13 @@ func WithKubeAgentLogger(logger *zap.Logger) KubeOptions {
 		h.logger = logger
 	}
 }
+
+func WithKubeAgentDockerEndpoint(endpoint string) KubeOptions {
+	return func(h *KubeAgent) {
+		h.dockerEndpoint = endpoint
+	}
+}
+
 func NewKubeAgent(opts ...KubeOptions) *KubeAgent {
 	var cfg KubeAgent
 	for _, apply := range opts {
@@ -94,7 +104,9 @@ func NewKubeAgent(opts ...KubeOptions) *KubeAgent {
 
 func (k *KubeAgent) GetUpdatedYAMLPath() (string, error) {
 	yamlPath := "/app/otel-config.yaml"
-	if !isSocketFn(dockerSocketPath) {
+	dockerSocketPath := strings.Split(k.dockerEndpoint, "//")
+
+	if len(dockerSocketPath) != 2 || !isSocketFn(dockerSocketPath[1]) {
 		yamlPath = "/app/otel-config-nodocker.yaml"
 	}
 

@@ -16,7 +16,9 @@ func setIsSocketMock(b bool) {
 }
 
 func TestGetUpdatedYAMLPath(t *testing.T) {
-	agent := NewKubeAgent(WithKubeAgentLogger(zap.NewNop()))
+	agent := NewKubeAgent(
+		WithKubeAgentLogger(zap.NewNop()),
+		WithKubeAgentDockerEndpoint("unix:///var/run/docker.sock"))
 
 	// Test when docker socket is found
 	yamlPath, err := agent.GetUpdatedYAMLPath()
