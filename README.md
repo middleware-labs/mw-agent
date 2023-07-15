@@ -19,7 +19,8 @@ mw-agent
     └───DockerfileLinux: To create multistage docker image for Linux environment.
     └───DockerfileKube: To create multistage docker image for Kubernetes environment.
     └───pkg: Contains common packages used for Linux & Kubernetes agents.
-         └───config: Configuration options for the `mw-agent`.
+         └───agent: Configuration options for the `mw-agent`.
+         └───mwinsight: Package implementing agent code for Middleware Insight.
 ```
 
 ## Installation & Configuration
