@@ -11,9 +11,20 @@ import (
 	"github.com/k8sgpt-ai/k8sgpt/pkg/ai"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/analyzer"
 	"github.com/k8sgpt-ai/k8sgpt/pkg/kubernetes"
+	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 )
 
 type BackendType int
+
+type CtxKey int
+
+const (
+	TimeStampCtxKey CtxKey = 0
+)
 
 const (
 	BackendTypeOpenAI = 0
@@ -29,6 +40,7 @@ type K8sInsight struct {
 	k8sNameSpace string
 	backend      BackendType
 	aiClient     ai.IAI
+	logger       *zap.Logger
 }
 
 type K8sInsightOptionFunc func(k *K8sInsight)
@@ -75,6 +87,13 @@ func WithK8sInsightBackend(b BackendType) K8sInsightOptionFunc {
 		case BackendTypeOpenAI:
 			k.aiClient = &ai.OpenAIClient{}
 		}
+	}
+}
+
+// WithK8sInsightLogger sets the zap logger
+func WithK8sInsightLogger(l *zap.Logger) K8sInsightOptionFunc {
+	return func(k *K8sInsight) {
+		k.logger = l
 	}
 }
 
@@ -125,13 +144,16 @@ func (k *K8sInsight) Analyze(ctx context.Context) (
 				innerWg.Add(1)
 				go func(message string, analysis analyzer.Analysis) {
 					defer innerWg.Done()
-
-					analysisChan <- k.getPayloadToSend(ctx, message, analysis)
+					b, er := k.getPayloadToSend(ctx, message, analysis)
+					if er != nil {
+						k.logger.Error("error marshalling insight analysis to json", zap.Error(er))
+						return
+					}
+					analysisChan <- b
 
 				}(err, analysis)
 
 			}
-
 		}
 		innerWg.Wait()
 	}(analysisResults)
@@ -139,10 +161,10 @@ func (k *K8sInsight) Analyze(ctx context.Context) (
 	return analysisChan, nil
 }
 
-func (k *K8sInsight) getPayloadToSend(ctx context.Context,
+// TODO delete this method once getPayloadToSend() is verified
+func (k *K8sInsight) getPayloadToSendRaw(ctx context.Context,
 	message string, analysis analyzer.Analysis) []byte {
 
-	// TODO create a resource struct instead of a string json
 	return []byte(`{
 			"resource_logs": [
 			  {
@@ -202,6 +224,51 @@ func (k *K8sInsight) getPayloadToSend(ctx context.Context,
 			]
 		  } 
 		  `)
+}
+
+// getPayloadToSend creates otlp log payload to send to
+// the Middleware backend
+func (k *K8sInsight) getPayloadToSend(ctx context.Context,
+	message string, analysis analyzer.Analysis) ([]byte, error) {
+
+	logs := plog.NewLogs()
+
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	resource := resourceLogs.Resource()
+
+	resourceAttributes := resource.Attributes()
+	resourceAttributes.PutStr("mw.account_key", k.apiKey)
+	resourceAttributes.PutStr("mw.resource_type", "custom")
+	resourceAttributes.PutStr("service.name", analysis.Name)
+
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	logRecord := scopeLogs.LogRecords().AppendEmpty()
+
+	logAttributes := logRecord.Attributes()
+	logAttributes.PutStr("component", analysis.Name)
+	logAttributes.PutStr("parent", analysis.ParentObject)
+
+	logBody := logRecord.Body()
+	logBody.SetStr(message)
+	logRecord.SetSeverityNumber(plog.SeverityNumberError)
+	logRecord.SetSeverityText(plog.SeverityNumberError.String())
+
+	timestamp, ok := ctx.Value(TimeStampCtxKey).(time.Time)
+	if !ok {
+		timestamp = time.Now()
+	}
+
+	pcommonTimeStamp := pcommon.NewTimestampFromTime(timestamp)
+	logRecord.SetTimestamp(pcommonTimeStamp)
+	logRecord.SetObservedTimestamp(pcommonTimeStamp)
+
+	otlpLogReq := plogotlp.NewExportRequestFromLogs(logs)
+
+	b, err := otlpLogReq.MarshalJSON()
+	if err != nil {
+		return b, err
+	}
+	return b, nil
 }
 
 // Send method sends a given byte slice with insight information to the Middleware backend

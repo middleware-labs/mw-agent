@@ -201,6 +201,10 @@ func app(logger *zap.Logger) *cli.App {
 						// define analysis function that can be reused first time when
 						// the agent is run and periodically
 						analysisFunc := func() {
+							// save current timestamp in the context so that all results of analysis
+							// have the same time
+							ctx = context.WithValue(ctx, mwinsight.TimeStampCtxKey,
+								time.Now())
 							analysisChan, err := k8sInsight.Analyze(ctx)
 							if err != nil {
 								logger.Error("error in mwinsight analysis", zap.Error(err))
