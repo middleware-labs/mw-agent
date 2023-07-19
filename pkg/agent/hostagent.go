@@ -54,6 +54,7 @@ type HostAgent struct {
 
 	logger         *zap.Logger
 	dockerEndpoint string
+	hostTags       string
 }
 
 // HostOptions takes in various options for HostAgent
@@ -114,6 +115,13 @@ func WithHostAgentDockerEndpoint(endpoint string) HostOptions {
 	}
 }
 
+// WithHostAgentHostTags sets the tag for particular host
+func WithHostAgentHostTags(tags string) HostOptions {
+	return func(h *HostAgent) {
+		h.hostTags = tags
+	}
+}
+
 // NewHostAgent returns new agent for Kubernetes with given options.
 func NewHostAgent(opts ...HostOptions) *HostAgent {
 	var cfg HostAgent
@@ -132,6 +140,7 @@ var (
 	ErrRestartStatusAPINotOK = errors.New("received error code from the server")
 	ErrReceiverKeyNotFound   = errors.New("'receivers' key not found")
 	ErrInvalidResponse       = errors.New("invalid response from ingestion rules api")
+	ErrInvalidHostTags       = errors.New("invalid host tags, kindly check the format")
 )
 
 type configType struct {
@@ -470,4 +479,18 @@ func (c *HostAgent) GetFactories(ctx context.Context) (otelcol.Factories, error)
 	}
 
 	return factories, nil
+}
+
+func (c *HostAgent) HasValidTags() bool {
+	if c.hostTags == "" {
+		return true
+	}
+	pairs := strings.Split(c.hostTags, ",")
+	for _, pair := range pairs {
+		keyValue := strings.Split(pair, ":")
+		if len(keyValue) != 2 {
+			return false
+		}
+	}
+	return true
 }

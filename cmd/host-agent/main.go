@@ -36,6 +36,7 @@ func main() {
 
 func app(logger *zap.Logger) *cli.App {
 	var apiKey, target, configCheckInterval, apiURLForConfigCheck string
+	var hostTags string
 	var dockerEndpoint string
 	var enableSyntheticMonitoring bool
 	flags := []cli.Flag{
@@ -80,6 +81,11 @@ func app(logger *zap.Logger) *cli.App {
 			Value:       "https://app.middleware.io",
 			Hidden:      true,
 		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "host-tags",
+			EnvVars:     []string{"MW_HOST_TAGS"},
+			Destination: &hostTags,
+		}),
 
 		&cli.StringFlag{
 			Name:    "config-file",
@@ -118,6 +124,7 @@ func app(logger *zap.Logger) *cli.App {
 							apiURLForConfigCheck),
 						agent.WithHostAgentLogger(logger),
 						agent.WithHostAgentDockerEndpoint(dockerEndpoint),
+						agent.WithHostAgentHostTags(hostTags),
 					)
 
 					logger.Info("starting host agent with config",
@@ -126,7 +133,8 @@ func app(logger *zap.Logger) *cli.App {
 						zap.String("config-check-interval", configCheckInterval),
 						zap.Bool("enable-synthetic-monitoring", enableSyntheticMonitoring),
 						zap.String("api-url-for-config-check", apiURLForConfigCheck),
-						zap.String("docker-endpoint", dockerEndpoint))
+						zap.String("docker-endpoint", dockerEndpoint),
+						zap.String("host-tags", hostTags))
 
 					ctx, cancel := context.WithCancel(c.Context)
 					defer cancel()
@@ -159,6 +167,14 @@ func app(logger *zap.Logger) *cli.App {
 
 					// TODO: check if on Windows, socket scheme is different than "unix"
 					os.Setenv("MW_DOCKER_ENDPOINT", dockerEndpoint)
+
+					// Setting MW_HOST_TAGS so that envprovider can fill those in the otel config files
+					os.Setenv("MW_HOST_TAGS", hostTags)
+
+					// Checking if host agent has valid tags
+					if !hostAgent.HasValidTags() {
+						return agent.ErrInvalidHostTags
+					}
 
 					yamlPath, err := hostAgent.GetUpdatedYAMLPath()
 					if err != nil {

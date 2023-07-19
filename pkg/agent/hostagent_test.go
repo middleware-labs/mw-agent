@@ -149,3 +149,31 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assert.Contains(t, factories.Processors, component.Type("attributes"))
 
 }
+
+func TestHostAgentHasValidTags(t *testing.T) {
+	testCases := []struct {
+		tags    string
+		isValid bool
+	}{
+		// case 1: host tags not provided
+		{"", true},
+
+		// case 2: tags match with expected pattern
+		{"name:my-machine,env:prod1", true},
+
+		// case 3: tags do not match expected pattern
+		{"name", false},
+		{"name:,", false},
+		{"name:1,", false},
+		{"name:1,test", false},
+	}
+
+	for i, tc := range testCases {
+		agent := NewHostAgent(WithHostAgentHostTags(tc.tags))
+
+		isValid := agent.HasValidTags()
+		if isValid != tc.isValid {
+			t.Errorf("Test case %d failed. Expected HasValidTags to return: %v, but got: %v", i+1, tc.isValid, isValid)
+		}
+	}
+}
