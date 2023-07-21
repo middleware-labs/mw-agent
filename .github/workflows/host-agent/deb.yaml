@@ -1,0 +1,209 @@
+name: Build And Push APT Package for Ubuntu
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag for DEB package'
+        required: true
+    push:
+      branches:
+        - 'master'
+        - 'workflow-experiments'
+      tags:
+        - 'v[0-9]+.[0-9]+.[0-9]+'
+
+env:
+  ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+  RELEASE_VERSION: 0.0.20
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        arch:
+          - ARM
+          - x64
+
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.GHCR_TOKEN }}
+        ssh-key: ${{ secrets.CHECK_AGENT_ACCESS }}
+        submodules: 'recursive'
+
+    - name: Set architecture variables
+      run: |
+        if [ ${{ matrix.arch }} == "x64" ]; then
+          echo "::set-env name=ARCH::all"
+          echo "::set-env name=BINARY_SOURCE::release/mw-go-agent-host"
+          echo "::set-env name=RELEASE_VERSION::${RELEASE_VERSION}"
+          echo "::set-env name=CONTROL_FILE::control"
+        elif [ ${{ matrix.arch }} == "ARM" ]; then
+          echo "::set-env name=ARCH::arm64"
+          echo "::set-env name=BINARY_SOURCE::release/mw-go-agent-host-arm"
+          echo "::set-env name=RELEASE_VERSION::${RELEASE_VERSION}arm64"
+          echo "::set-env name=CONTROL_FILE::control-arm"
+        else
+          echo "Unsupported architecture"
+          exit 1
+        fi
+
+    - uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+
+    - name: Creating Required Folder Structure
+      run: |
+        mkdir -p example/mw-agent_$RELEASE_VERSION-1_all/usr/bin
+        mkdir -p example/mw-agent_$RELEASE_VERSION-1_all/DEBIAN
+        mkdir -p example/repos/$RELEASE_VERSION/apt-repo/pool/main/
+        mkdir -p example/repos/$RELEASE_VERSION/apt-repo/dists/stable/main/binary-$ARCH
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.18
+
+    - name: Go Build
+      run: |
+        if [ ${{ matrix.arch }} == "x64" ]; then
+          go build -o $BINARY_SOURCE
+        elif [ ${{ matrix.arch }} == "ARM" ]; then
+          GOOS=linux GOARCH=$ARCH go build -a -o $BINARY_SOURCE
+        else
+          echo "Unsupported architecture"
+          exit 1
+        fi
+        
+
+    - name: Copying Code Binary into target location
+      run: |
+          cp $BINARY_SOURCE example/mw-agent_$RELEASE_VERSION-1_all/usr/bin/.
+
+    - name: Creating Control File
+      run: |
+          cp installables/apt/deb/$CONTROL_FILE example/mw-agent_$RELEASE_VERSION-1_all/DEBIAN/control
+
+    - name: Creating DEB package
+      run: |
+          dpkg --build example/mw-agent_$RELEASE_VERSION-1_all
+          dpkg-deb --info example/mw-agent_$RELEASE_VERSION-1_all.deb
+          dpkg-deb --contents example/mw-agent_$RELEASE_VERSION-1_all.deb
+
+    - name: Creating APT Repo structure & Adding DEB into it
+      run: |
+          cp example/mw-agent_$RELEASE_VERSION-1_all.deb example/repos/$RELEASE_VERSION/apt-repo/pool/main/.
+
+    - name: Building Packages along with compressed version
+      run: |  
+          cd example/repos/$RELEASE_VERSION/apt-repo
+          dpkg-scanpackages --arch $ARCH pool/ > dists/stable/main/binary-$ARCH/Packages
+          cd ../../../../
+          cat example/repos/$RELEASE_VERSION/apt-repo/dists/stable/main/binary-$ARCH/Packages | gzip -9 > example/repos/$RELEASE_VERSION/apt-repo/dists/stable/main/binary-$ARCH/Packages.gz
+
+    - name: Generating Release
+      run: |
+          echo '#!/bin/sh
+          set -e
+
+          do_hash() {
+              HASH_NAME=$1
+              HASH_CMD=$2
+              echo "${HASH_NAME}:"
+              for f in $(find -type f); do
+                  f=$(echo $f | cut -c3-) # remove ./ prefix
+                  if [ "$f" = "Release" ]; then
+                      continue
+                  fi
+                  echo " $(${HASH_CMD} ${f}  | cut -d" " -f1) $(wc -c $f)"
+              done
+          }
+
+          cat << EOF
+          Origin: Example Repository
+          Label: Example
+          Suite: stable
+          Codename: stable
+          Version: 1.0
+          Architectures: amd64 arm64 arm7
+          Components: main
+          Description: An example software repository
+          Date: $(date -Ru)
+          EOF
+          do_hash "MD5Sum" "md5sum"
+          do_hash "SHA1" "sha1sum"
+          do_hash "SHA256" "sha256sum"
+          ' > example/generate-release.sh && chmod +x example/generate-release.sh
+
+    - name: Run bash script
+      run: |
+        cd example/repos/$RELEASE_VERSION/apt-repo/dists/stable/
+        ../../../../../generate-release.sh > Release
+        cd ../../../../../
+        ls
+
+    - name: Creating PGP Key Pairs
+      run: |
+        echo "%echo Generating an example PGP key
+          Key-Type: RSA
+          Key-Length: 4096
+          Name-Real: example
+          Name-Email: example@example.com
+          Expire-Date: 0
+          %no-ask-passphrase
+          %no-protection
+          %commit" > /tmp/example-pgp-key.batch
+
+        export GNUPGHOME="$(mktemp -d example/pgpkeys-XXXXXX)"
+        gpg --no-tty --batch --gen-key /tmp/example-pgp-key.batch
+        mkdir -p example/public-keys
+        mkdir -p example/private-keys
+        gpg --armor --export example > example/public-keys/pgp-key-$RELEASE_VERSION.public
+        gpg --armor --export-secret-keys example > example/private-keys/pgp-key-$RELEASE_VERSION.private
+
+    - name: Generating GPG for Release - Creating InRelease
+      run: |
+        export GNUPGHOME="$(mktemp -d example/pgpkeys-XXXXXX)"
+        cat example/private-keys/pgp-key-$RELEASE_VERSION.private | gpg --import
+        cat example/repos/$RELEASE_VERSION/apt-repo/dists/stable/Release | gpg --default-key example -abs > example/repos/$RELEASE_VERSION/apt-repo/dists/stable/Release.gpg
+        cat example/repos/$RELEASE_VERSION/apt-repo/dists/stable/Release | gpg --default-key example -abs --clearsign > example/repos/$RELEASE_VERSION/apt-repo/dists/stable/InRelease
+
+    - name: Acquire lock
+      run: flock upload.lock -c "echo Lock acquired"
+
+    - name: Remove extra files & Upload to Github Pages (install.middleware.io)
+      run: |
+        mkdir -p example/scripts
+        mkdir -p example/configyamls
+        cp -r configyamls example
+        cp installables/apt/apt-install.sh example/scripts/apt-install.sh
+        cp configyamls/all/otel-config.yaml example/otel-config.yaml
+        rm -rf example/pgpkeys-*
+        rm -rf example/generate-release.sh
+        rm -rf example/mw-agent_$RELEASE_VERSION-1_all
+        rm -rf example/mw-agent_$RELEASE_VERSION-1_all.deb
+
+        git clone https://.:${{ secrets.GHCR_TOKEN }}@github.com/middleware-labs/install.middleware.io.git
+        cp -r example/private-keys/* install.middleware.io/private-keys/
+        cp -r example/public-keys/* install.middleware.io/public-keys/
+        cp -r example/repos/* install.middleware.io/repos/
+        cp configyamls/all/otel-config.yaml install.middleware.io/configyamls/all/otel-config.yaml 
+        cp configyamls/nodocker/otel-config.yaml install.middleware.io/configyamls/nodocker/otel-config.yaml 
+        cd install.middleware.io
+        git config --global user.email "keval@middleware.io"
+        git config --global user.name "bhogayatakb"
+        git add .
+        git commit -m "install.middleware.io updated"
+        git push origin master
+    
+    - name: Release lock
+      run: flock upload.lock -c "echo Lock released"
+    - name: Delay
+      run: sleep 10
