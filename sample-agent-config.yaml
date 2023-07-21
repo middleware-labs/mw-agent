@@ -16,3 +16,7 @@ enable-synthetic-monitoring: true
 # this duration to a smaller value will impact resource consumption on the
 # host.
 config-check-interval: "5m"
+
+# The tags required to identify / categorize the host in the Middleware UI.
+# The tags are comma separated key:value pairs.
+host-tags: "name:my-machine,env:production"
