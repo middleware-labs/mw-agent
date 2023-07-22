@@ -185,7 +185,7 @@ exporters:
     logging:
         loglevel: debug
     otlp/2:
-        endpoint: ${TARGET}
+        endpoint: ${MW_TARGET}
         headers:
             authorization: ${MW_API_KEY}
         sending_queue:
