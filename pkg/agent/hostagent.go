@@ -303,14 +303,19 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	}
 
 	pgdbConfig := apiResponse.PgdbConfig
-	apiYAMLConfig, err = c.updatepgdbConfig(apiYAMLConfig, pgdbConfig)
-	if err != nil {
-		return err
+	if pgdbConfig.Path != "" {
+		apiYAMLConfig, err = c.updatepgdbConfig(apiYAMLConfig, pgdbConfig)
+		if err != nil {
+			return err
+		}
 	}
+
 	mongodbConfig := apiResponse.MongodbConfig
-	apiYAMLConfig, err = c.updateMongodbConfig(apiYAMLConfig, mongodbConfig)
-	if err != nil {
-		return err
+	if mongodbConfig.Path != "" {
+		apiYAMLConfig, err = c.updateMongodbConfig(apiYAMLConfig, mongodbConfig)
+		if err != nil {
+			return err
+		}
 	}
 
 	apiYAMLBytes, err := yaml.Marshal(apiYAMLConfig)

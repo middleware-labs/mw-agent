@@ -1,5 +1,7 @@
-FROM golang:1.20 as base
+FROM golang:1.20 as build
 WORKDIR /app
+RUN apt-get update && apt-get install -y ca-certificates openssl
+RUN update-ca-certificates
 COPY . .
 ENV CGO_ENABLED=0
 RUN go get -d -v ./... && go mod tidy
@@ -8,6 +10,7 @@ RUN CGO_ENABLED=0 go build -o /tmp/mw-agent cmd/host-agent/main.go
 FROM busybox:glibc as prod
 RUN mkdir -p /var/log
 WORKDIR /app
-COPY --from=base /tmp/mw-agent /usr/bin/mw-agent
-COPY --from=base /app/configyamls /app/configyamls
+COPY --from=build /etc/ssl/certs /etc/ssl/certs
+COPY --from=build /tmp/mw-agent /usr/bin/mw-agent
+COPY --from=build /app/configyamls /app/configyamls
 CMD ["mw-agent", "start"]
