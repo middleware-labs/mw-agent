@@ -12,6 +12,7 @@ import (
 	"github.com/middleware-labs/mw-agent/pkg/agent"
 	"github.com/prometheus/common/version"
 
+	"github.com/kardianos/service"
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
 
@@ -25,12 +26,51 @@ import (
 	"go.uber.org/zap"
 )
 
+type program struct {
+	logger *zap.Logger
+	args   []string
+}
+
+// Service interface for kardianos/service package to run
+// on Linux, Windows, MacOS & BSD
+func (p *program) Start(s service.Service) error {
+	// Start should not block. Do the actual work async.
+	go p.run()
+	return nil
+}
+
+func (p *program) Stop(s service.Service) error {
+	// Stop should not block. Return with a few seconds.
+	return nil
+}
+
+func (p *program) run() {
+	if err := app(p.logger).Run(p.args); err != nil {
+		p.logger.Fatal("could not run application", zap.Error(err))
+	}
+}
 func main() {
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
 
-	if err := app(logger).Run(os.Args); err != nil {
-		logger.Fatal("could not run application", zap.Error(err))
+	svcConfig := &service.Config{
+		Name:        "MiddlewareHostAgent",
+		DisplayName: "Middleware Host Agent",
+		Description: "Middleware Host Agent for collecting observability signals.",
+	}
+
+	prg := &program{
+		logger: logger,
+		args:   os.Args,
+	}
+
+	s, err := service.New(prg, svcConfig)
+	if err != nil {
+		logger.Fatal("could not create OS service", zap.Error(err))
+	}
+
+	err = s.Run()
+	if err != nil {
 	}
 }
 
@@ -113,6 +153,15 @@ func app(logger *zap.Logger) *cli.App {
 				Before: altsrc.InitInputSourceWithContext(flags, altsrc.NewYamlSourceFromFlagFunc("config-file")),
 				Action: func(c *cli.Context) error {
 
+					execPath, err := os.Executable()
+					if err != nil {
+						logger.Info("error getting executable path", zap.Error(err))
+						return err
+					}
+
+					logger.Info("starting host agent", zap.String("agent location", execPath))
+					installDir := filepath.Dir(execPath)
+
 					hostAgent := agent.NewHostAgent(
 						agent.WithHostAgentApiKey(apiKey),
 						agent.WithHostAgentTarget(target),
@@ -125,6 +174,7 @@ func app(logger *zap.Logger) *cli.App {
 						agent.WithHostAgentLogger(logger),
 						agent.WithHostAgentDockerEndpoint(dockerEndpoint),
 						agent.WithHostAgentHostTags(hostTags),
+						agent.WithHostAgentInstallDirectory(installDir),
 					)
 
 					logger.Info("starting host agent with config",
@@ -155,9 +205,7 @@ func app(logger *zap.Logger) *cli.App {
 					}
 
 					target := u.String()
-					if u.Port() != "" {
-						target += ":" + u.Port()
-					} else {
+					if u.Port() == "" {
 						target += ":443"
 					}
 
