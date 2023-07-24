@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -27,6 +28,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
+
+	//	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
+	//	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
+
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -52,9 +57,10 @@ type HostAgent struct {
 
 	apiURLForConfigCheck string
 
-	logger         *zap.Logger
-	dockerEndpoint string
-	hostTags       string
+	logger           *zap.Logger
+	dockerEndpoint   string
+	hostTags         string
+	installDirectory string
 }
 
 // HostOptions takes in various options for HostAgent
@@ -119,6 +125,14 @@ func WithHostAgentDockerEndpoint(endpoint string) HostOptions {
 func WithHostAgentHostTags(tags string) HostOptions {
 	return func(h *HostAgent) {
 		h.hostTags = tags
+	}
+}
+
+// WithHostAgentInstallDirectory sets the location of
+// the host agent binary
+func WithHostAgentInstallDirectory(d string) HostOptions {
+	return func(h *HostAgent) {
+		h.installDirectory = d
 	}
 }
 
@@ -211,7 +225,7 @@ func (c *HostAgent) updateMongodbConfig(config map[string]interface{},
 func (c *HostAgent) updateConfig(config map[string]interface{}, path string) (map[string]interface{}, error) {
 
 	// Read the YAML file
-	yamlData, err := ioutil.ReadFile(path)
+	yamlData, err := ioutil.ReadFile(filepath.Join(c.installDirectory, path))
 	if err != nil {
 		return map[string]interface{}{}, err
 	}
@@ -267,7 +281,8 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	baseUrl := u.JoinPath(apiPathForYAML).JoinPath(c.apiKey)
 	params := url.Values{}
 	params.Add("config", configType)
-	params.Add("platform", runtime.GOOS)
+	//params.Add("platform", runtime.GOOS)
+	params.Add("platform", "linux")
 	params.Add("host_id", hostname)
 	// Add Query Parameters to the URL
 	baseUrl.RawQuery = params.Encode() // Escape Query Parameters
@@ -360,11 +375,12 @@ func (c *HostAgent) GetUpdatedYAMLPath() (string, error) {
 		yamlPath = yamlFileNoDocker
 	}
 
-	if err := c.updateYAML(configType, yamlPath); err != nil {
-		return yamlPath, err
+	absYamlPath := filepath.Join(c.installDirectory, yamlPath)
+	if err := c.updateYAML(configType, absYamlPath); err != nil {
+		return "", err
 	}
 
-	return yamlPath, nil
+	return absYamlPath, nil
 }
 
 func (c *HostAgent) checkDBConfigValidity(dbType DatabaseType, configPath string) bool {
@@ -487,6 +503,8 @@ func (c *HostAgent) GetFactories(ctx context.Context) (otelcol.Factories, error)
 		hostmetricsreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
 		postgresqlreceiver.NewFactory(),
+		//windowseventlogreceiver.NewFactory(),
+		//windowsperfcountersreceiver.NewFactory(),
 		mongodbreceiver.NewFactory(),
 	}...)
 	if err != nil {
