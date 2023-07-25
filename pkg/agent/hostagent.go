@@ -148,6 +148,14 @@ type configType struct {
 	NoDocker map[string]interface{} `json:"nodocker"`
 }
 
+// DatabaseType represents the type of the database.
+type DatabaseType int
+
+const (
+	PostgreSQL DatabaseType = iota
+	MongoDB
+)
+
 type pgdbConfiguration struct {
 	Path string `json:"path"`
 }
@@ -179,6 +187,16 @@ const (
 	yamlFile         = "configyamls/all/otel-config.yaml"
 	yamlFileNoDocker = "configyamls/nodocker/otel-config.yaml"
 )
+
+func (d DatabaseType) String() string {
+	switch d {
+	case PostgreSQL:
+		return "postgresql"
+	case MongoDB:
+		return "mongodb"
+	}
+	return "unknown"
+}
 
 func (c *HostAgent) updatepgdbConfig(config map[string]interface{},
 	pgdbConfig pgdbConfiguration) (map[string]interface{}, error) {
@@ -303,7 +321,7 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	}
 
 	pgdbConfig := apiResponse.PgdbConfig
-	if pgdbConfig.Path != "" {
+	if c.checkDBConfigValidity(PostgreSQL, pgdbConfig.Path) {
 		apiYAMLConfig, err = c.updatepgdbConfig(apiYAMLConfig, pgdbConfig)
 		if err != nil {
 			return err
@@ -311,7 +329,7 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	}
 
 	mongodbConfig := apiResponse.MongodbConfig
-	if mongodbConfig.Path != "" {
+	if c.checkDBConfigValidity(MongoDB, mongodbConfig.Path) {
 		apiYAMLConfig, err = c.updateMongodbConfig(apiYAMLConfig, mongodbConfig)
 		if err != nil {
 			return err
@@ -347,6 +365,20 @@ func (c *HostAgent) GetUpdatedYAMLPath() (string, error) {
 	}
 
 	return yamlPath, nil
+}
+
+func (c *HostAgent) checkDBConfigValidity(dbType DatabaseType, configPath string) bool {
+	if configPath != "" {
+		// Check if the file exists
+		if _, err := os.Stat(configPath); os.IsNotExist(err) {
+			c.logger.Warn(fmt.Sprintf("%v config file not found", dbType), zap.String("path", configPath))
+			return false
+		} else {
+			return true
+		}
+	} else {
+		return false
+	}
 }
 
 func restartHostAgent() error {
