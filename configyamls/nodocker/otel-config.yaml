@@ -100,7 +100,7 @@ processors:
             - key: agent.installation.time
               action: update
               value: ${MW_AGENT_INSTALLATION_TIME}
-            - key: mw-host-tags
+            - key: mw.host.tags
               action: insert
               value: ${MW_HOST_TAGS}
     resource/2:
