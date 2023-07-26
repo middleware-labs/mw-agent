@@ -27,6 +27,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
+//	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
+//	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
+
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -267,7 +270,8 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	baseUrl := u.JoinPath(apiPathForYAML).JoinPath(c.apiKey)
 	params := url.Values{}
 	params.Add("config", configType)
-	params.Add("platform", runtime.GOOS)
+	//params.Add("platform", runtime.GOOS)
+	params.Add("platform", "linux")
 	params.Add("host_id", hostname)
 	// Add Query Parameters to the URL
 	baseUrl.RawQuery = params.Encode() // Escape Query Parameters
@@ -487,6 +491,8 @@ func (c *HostAgent) GetFactories(ctx context.Context) (otelcol.Factories, error)
 		hostmetricsreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
 		postgresqlreceiver.NewFactory(),
+		//windowseventlogreceiver.NewFactory(),
+		//windowsperfcountersreceiver.NewFactory(),
 		mongodbreceiver.NewFactory(),
 	}...)
 	if err != nil {
