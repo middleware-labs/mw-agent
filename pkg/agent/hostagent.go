@@ -27,6 +27,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
+//	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
+//	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
+
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -148,6 +151,14 @@ type configType struct {
 	NoDocker map[string]interface{} `json:"nodocker"`
 }
 
+// DatabaseType represents the type of the database.
+type DatabaseType int
+
+const (
+	PostgreSQL DatabaseType = iota
+	MongoDB
+)
+
 type pgdbConfiguration struct {
 	Path string `json:"path"`
 }
@@ -179,6 +190,16 @@ const (
 	yamlFile         = "configyamls/all/otel-config.yaml"
 	yamlFileNoDocker = "configyamls/nodocker/otel-config.yaml"
 )
+
+func (d DatabaseType) String() string {
+	switch d {
+	case PostgreSQL:
+		return "postgresql"
+	case MongoDB:
+		return "mongodb"
+	}
+	return "unknown"
+}
 
 func (c *HostAgent) updatepgdbConfig(config map[string]interface{},
 	pgdbConfig pgdbConfiguration) (map[string]interface{}, error) {
@@ -249,7 +270,8 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	baseUrl := u.JoinPath(apiPathForYAML).JoinPath(c.apiKey)
 	params := url.Values{}
 	params.Add("config", configType)
-	params.Add("platform", runtime.GOOS)
+	//params.Add("platform", runtime.GOOS)
+	params.Add("platform", "linux")
 	params.Add("host_id", hostname)
 	// Add Query Parameters to the URL
 	baseUrl.RawQuery = params.Encode() // Escape Query Parameters
@@ -303,7 +325,7 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	}
 
 	pgdbConfig := apiResponse.PgdbConfig
-	if pgdbConfig.Path != "" {
+	if c.checkDBConfigValidity(PostgreSQL, pgdbConfig.Path) {
 		apiYAMLConfig, err = c.updatepgdbConfig(apiYAMLConfig, pgdbConfig)
 		if err != nil {
 			return err
@@ -311,7 +333,7 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	}
 
 	mongodbConfig := apiResponse.MongodbConfig
-	if mongodbConfig.Path != "" {
+	if c.checkDBConfigValidity(MongoDB, mongodbConfig.Path) {
 		apiYAMLConfig, err = c.updateMongodbConfig(apiYAMLConfig, mongodbConfig)
 		if err != nil {
 			return err
@@ -347,6 +369,20 @@ func (c *HostAgent) GetUpdatedYAMLPath() (string, error) {
 	}
 
 	return yamlPath, nil
+}
+
+func (c *HostAgent) checkDBConfigValidity(dbType DatabaseType, configPath string) bool {
+	if configPath != "" {
+		// Check if the file exists
+		if _, err := os.Stat(configPath); os.IsNotExist(err) {
+			c.logger.Warn(fmt.Sprintf("%v config file not found", dbType), zap.String("path", configPath))
+			return false
+		} else {
+			return true
+		}
+	} else {
+		return false
+	}
 }
 
 func restartHostAgent() error {
@@ -455,6 +491,8 @@ func (c *HostAgent) GetFactories(ctx context.Context) (otelcol.Factories, error)
 		hostmetricsreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
 		postgresqlreceiver.NewFactory(),
+		//windowseventlogreceiver.NewFactory(),
+		//windowsperfcountersreceiver.NewFactory(),
 		mongodbreceiver.NewFactory(),
 	}...)
 	if err != nil {

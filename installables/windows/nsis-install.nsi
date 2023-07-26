@@ -11,6 +11,7 @@
 !include "nsDialogs.nsh"
 !include "MUI2.nsh"
 !include "LogicLib.nsh"
+<<<<<<< HEAD
   
 ;--------------------------------
 
@@ -58,15 +59,35 @@ FunctionEnd
 
   !define APPNAME "Middleware Windows Agent"
   !define APP_NAME_IN_INSTALLED_DIR "mw-agent"
+=======
+!include "ReplaceInFile3.nsh"
+!addplugindir "Plugins"
+  
+
+
+;--------------------------------
+;Settings
+  !define APPNAME "Middleware Windows Agent"
+  !define APP_NAME_IN_INSTALLED_DIR "mw-windows-agent"
+  !define CONFIG_FILE_NAME_IN_INSTALLED_DIR "config.yaml"
+>>>>>>> c17af0cc9a84f8ae77b2baece5ca15416b49d9d2
   !define COMPANYNAME "Middleware Inc"
   !define DESCRIPTION "Middleware Windows Agent."
   !define DEVELOPER "Middleware Inc" #License Holder
   # Files Directory
   ;!define FILE_DIR "windows" #Replace with the full path of install folder
+<<<<<<< HEAD
   ;!define LOGO_ICON_FILE "${FILE_DIR}\logo.ico"
   !define LICENSE_TEXT_FILE "LICENSE.txt"
   ;!define SPLASH_IMG_FILE "splash.bmp"
   ;!define HEADER_IMG_FILE "${FILE_DIR}\header.bmp"
+=======
+  !define LOGO_ICON_FILE "logo.ico"
+  !define MUI_ICON "logo.ico"
+  !define LICENSE_TEXT_FILE "LICENSE.txt"
+  ;!define SPLASH_IMG_FILE "splash.bmp"
+  ;!define HEADER_IMG_FILE "header.bmp"
+>>>>>>> c17af0cc9a84f8ae77b2baece5ca15416b49d9d2
   # These three must be integers
   !define VERSIONMAJOR 1	#Major release Number
   !define VERSIONMINOR 1	#Minor release Number
@@ -84,8 +105,13 @@ FunctionEnd
 
   ;Name and file
   Name "${APPNAME}"
+<<<<<<< HEAD
   ;Icon "logo.ico"
   OutFile "${APPNAME} mw-windows-agent-setup.exe"
+=======
+  Icon "logo.ico"
+  OutFile "mw-windows-agent-setup.exe"
+>>>>>>> c17af0cc9a84f8ae77b2baece5ca15416b49d9d2
 
   ;Default installation folder
   InstallDir "$PROGRAMFILES\${APPNAME}"
@@ -95,6 +121,7 @@ FunctionEnd
 
   ;Request application privileges for Windows Vista
   RequestExecutionLevel admin ;Require admin rights on NT6+ (When UAC is turned on)
+<<<<<<< HEAD
   
 ;--------------------------------
 ;Splash Screen
@@ -113,15 +140,22 @@ FunctionEnd
 ;	Pop $0 ; $0 has '1' if the user closed the splash screen early,
 ;		; '0' if everything closed normally, and '-1' if some error occurred.
  ; FunctionEnd
+=======
+>>>>>>> c17af0cc9a84f8ae77b2baece5ca15416b49d9d2
 
 ;--------------------------------
 ;Variables
 
+<<<<<<< HEAD
   Var StartMenuFolder
+=======
+Var StartMenuFolder
+>>>>>>> c17af0cc9a84f8ae77b2baece5ca15416b49d9d2
   
 ;--------------------------------
 ;Interface Settings
 
+<<<<<<< HEAD
 ;  !define MUI_HEADERIMAGE
 ;  !define MUI_HEADERIMAGE_BITMAP "${HEADER_IMG_FILE}" ; optional
   
@@ -130,6 +164,15 @@ FunctionEnd
 ;--------------------------------
 ;Pages
 
+=======
+;!define MUI_HEADERIMAGE
+;!define MUI_HEADERIMAGE_BITMAP "${HEADER_IMG_FILE}" ; optional
+  
+!define MUI_ABORTWARNING
+
+;--------------------------------
+;Pages
+>>>>>>> c17af0cc9a84f8ae77b2baece5ca15416b49d9d2
   !insertmacro MUI_PAGE_WELCOME
   !insertmacro MUI_PAGE_LICENSE "${LICENSE_TEXT_FILE}"
   Page custom pgPageCreate pgPageLeave
@@ -167,6 +210,74 @@ FunctionEnd
   ${EndIf}
   !macroend
 
+<<<<<<< HEAD
+=======
+
+;--------------------------------
+Var Dialog
+Var TextAPIKey
+Var TextTarget
+
+Function pgPageCreate
+    !insertmacro MUI_HEADER_TEXT "Middleware Settings" "Please provide API Key and Target URL for your Middleware account"
+
+    nsDialogs::Create 1018
+    Pop $Dialog
+
+    ${If} $Dialog == error
+        Abort
+    ${EndIf}
+
+    ${NSD_CreateGroupBox} 5% 10u 90% 70u "Middleware Account Details"
+    Pop $0
+
+        ${NSD_CreateLabel} 10% 26u 30% 14u "API Key (MW_API_KEY) :"
+        Pop $0
+
+        ${NSD_CreateText} 40% 24u 50% 14u ""
+        Pop $TextAPIKey
+
+        ${NSD_CreateLabel} 10% 55u 30% 14u "Target (MW_TARGET)   :"
+        Pop $0
+
+        ${NSD_CreateText} 40% 53u 50% 14u ""
+        Pop $TextTarget
+    
+    ${NSD_CreateLabel} 5% 86u 90% 34u "API key and Target can be found in the installation section of your Middleware account."
+    Pop $0
+    nsDialogs::Show
+FunctionEnd
+
+Function PgPageLeave
+    ${NSD_GetText} $TextAPIKey $0
+    ${NSD_GetText} $TextTarget $1
+    ${If} $0 == ""
+        MessageBox MB_OK "Please provide a valid Middleware API key"
+        Abort
+    ${EndIf}
+    ${If} $1 == ""
+        MessageBox MB_OK "Please provide a valid Middleware target"
+        Abort
+    ${EndIf}
+FunctionEnd
+
+Function UpdateConfigFile
+    StrCpy $OLD_STR "api-key:"
+    StrCpy $FST_OCC all
+    StrCpy $NR_OCC all
+    StrCpy $REPLACEMENT_STR "api-key: $0"
+    StrCpy $FILE_TO_MODIFIED "$INSTDIR\config.yaml"
+    !insertmacro ReplaceInFile $OLD_STR $FST_OCC $NR_OCC $REPLACEMENT_STR $FILE_TO_MODIFIED
+
+    StrCpy $OLD_STR 'target:'
+    StrCpy $FST_OCC all
+    StrCpy $NR_OCC all
+    StrCpy $REPLACEMENT_STR "target: $1"
+    !insertmacro ReplaceInFile $OLD_STR $FST_OCC $NR_OCC $REPLACEMENT_STR $FILE_TO_MODIFIED
+
+
+FunctionEnd
+>>>>>>> c17af0cc9a84f8ae77b2baece5ca15416b49d9d2
 ;--------------------------------
 ;Installer section
 
@@ -175,6 +286,7 @@ Section "install"
   SetOutPath $INSTDIR
 
   ################################################################################################################
+<<<<<<< HEAD
   #Create required Directories in Install Location
   CreateDirectory "$INSTDIR\mw-windows-agent-setup"
   
@@ -187,6 +299,26 @@ Section "install"
   SetOutPath "$INSTDIR\mw-windows-agent-setup"
 ;  file "sample folder\sample file.txt"
   
+=======
+    
+  #Add your Files Here
+  # Files add here should be removed by the uninstaller (see section "uninstall")
+  file "${APP_NAME_IN_INSTALLED_DIR}.exe"
+  file "logo.ico"
+  file "${CONFIG_FILE_NAME_IN_INSTALLED_DIR}"
+  file /r "configyamls"
+
+  Call UpdateConfigFile
+  ;ExecWait 'sc create ${APP_NAME_IN_INSTALLED_DIR} error= "severe" displayname= "${APPNAME}" type= "own" start= "auto" binpath= "$INSTDIR\${APP_NAME_IN_INSTALLED_DIR}.exe start --config-file $INSTDIR\config.yaml"'
+  ;ExecWait 'net start ${APP_NAME_IN_INSTALLED_DIR}'
+  SimpleSC::InstallService "mw-windows-agent" "Middleware Windows Agent" "16" "2" "$INSTDIR\${APP_NAME_IN_INSTALLED_DIR}.exe start --config-file $INSTDIR\config.yaml" "" "" ""
+  Pop $0 ; returns an errorcode (<>0) otherwise success (0)
+
+  SimpleSC::StartService "mw-windows-agent" "" 30
+  Pop $0 ; returns an errorcode (<>0) otherwise success (0)
+ 
+ 
+>>>>>>> c17af0cc9a84f8ae77b2baece5ca15416b49d9d2
   ################################################################################################################
 
   # Uninstaller - see function un.onInit and section "uninstall" for configuration
@@ -195,7 +327,11 @@ Section "install"
   SetOutPath $INSTDIR
   # Start Menu
   CreateDirectory "$SMPROGRAMS\${APPNAME}"
+<<<<<<< HEAD
   CreateShortCut "$SMPROGRAMS\${APPNAME}\${APPNAME}.lnk" "$INSTDIR\${APP_NAME_IN_INSTALLED_DIR}.exe" "" ;"$INSTDIR\logo.ico"
+=======
+  CreateShortCut "$SMPROGRAMS\${APPNAME}\${APPNAME}.lnk" "$INSTDIR\${APP_NAME_IN_INSTALLED_DIR}.exe" "" "$INSTDIR\logo.ico"
+>>>>>>> c17af0cc9a84f8ae77b2baece5ca15416b49d9d2
   CreateShortCut "$SMPROGRAMS\${APPNAME}\uninstall.lnk" "$INSTDIR\uninstall.exe" "" ""
   
   # Desktop Shortcut
@@ -205,7 +341,11 @@ Section "install"
   WriteRegStr HKLM "Software\Microstft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayName" "${APPNAME} - ${DESCRIPTION}"
   WriteRegStr HKLM "Software\Microstft\Windows\CurrentVersion\Uninstall\${APPNAME}" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
   WriteRegStr HKLM "Software\Microstft\Windows\CurrentVersion\Uninstall\${APPNAME}" "QuitUninstallString" "$\"$INSTDIR\uninstall.exe$\" /S"
+<<<<<<< HEAD
 ;  WriteRegStr HKLM "Software\Microstft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayIcon" "$\"$INSTDIR\logo.ico$\""
+=======
+  WriteRegStr HKLM "Software\Microstft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayIcon" "$\"$INSTDIR\logo.ico$\""
+>>>>>>> c17af0cc9a84f8ae77b2baece5ca15416b49d9d2
   WriteRegStr HKLM "Software\Microstft\Windows\CurrentVersion\Uninstall\${APPNAME}" "Publisher" "$\"${COMPANYNAME}$\""
  ; WriteRegStr HKLM "Software\Microstft\Windows\CurrentVersion\Uninstall\${APPNAME}" "HelpLink" "$\"${HELPURL}$\""
  ; WriteRegStr HKLM "Software\Microstft\Windows\CurrentVersion;\Uninstall\${APPNAME}" "URLUpdateInfo" "$\"${UPDATEURL}$\""
@@ -234,7 +374,11 @@ SectionEnd
   VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductVersion" "${VERSIONMAJOR}.${VERSIONMINOR}.${VERSIONBUILD}.${BUILDNUMBER}"
 
 ;--------------------------------
+<<<<<<< HEAD
 ;Verify Unintall
+=======
+;Verify Uninstall
+>>>>>>> c17af0cc9a84f8ae77b2baece5ca15416b49d9d2
 
   function un.onInit		
 	# Verify the uninstaller - last chance to back out
@@ -256,6 +400,7 @@ Section "uninstall"
   #Try to remove the Start Menu folder - this will only happen if it is empty
   rmDir "$SMPROGRAMS\${APPNAME}"
 
+<<<<<<< HEAD
   ################################################################################################################
   #Remove files
   delete $INSTDIR\${APP_NAME_IN_INSTALLED_DIR}.exe
@@ -266,6 +411,24 @@ Section "uninstall"
   
   #Remove Directories created in Install Location
   rmDir "$INSTDIR\mw-windows-agent-setup"
+=======
+  ;ExecWait "sc delete ${APP_NAME_IN_INSTALLED_DIR}"
+  SimpleSC::StopService "mw-windows-agent" 1 30
+  Pop $0 ; returns an errorcode (<>0) otherwise success (0)
+ 
+  SimpleSC::RemoveService "mw-windows-agent"
+  Pop $0 ; returns an errorcode (<>0) otherwise success (0)
+
+  ################################################################################################################
+  #Remove files
+  delete $INSTDIR\${APP_NAME_IN_INSTALLED_DIR}.exe
+  delete $INSTDIR\logo.ico
+  delete $INSTDIR\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}
+  rmDir /r  $INSTDIR\configyamls
+
+  #Remove Directories created in Install Location
+  rmDir /r "$INSTDIR\mw-windows-agent-setup"
+>>>>>>> c17af0cc9a84f8ae77b2baece5ca15416b49d9d2
   
   ################################################################################################################
 	
