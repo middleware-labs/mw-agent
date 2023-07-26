@@ -59,6 +59,7 @@ require (
 
 require (
 	checkagent v0.0.0-00010101000000-000000000000
+	github.com/kardianos/service v1.2.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.0.0-00010101000000-000000000000
 )
 
