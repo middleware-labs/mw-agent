@@ -13,4 +13,4 @@ WORKDIR /opt/mw-host-agent
 COPY --from=build /etc/ssl/certs /etc/ssl/certs
 COPY --from=build /tmp/mw-agent /opt/mw-host-agent/mw-agent
 COPY --from=build /app/configyamls /opt/mw-host-agent/configyamls
-CMD ["/app/mw-agent", "start"]
+CMD ["/opt/mw-host-agent/mw-agent", "start"]
