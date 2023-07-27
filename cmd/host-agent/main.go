@@ -174,7 +174,7 @@ func app(logger *zap.Logger) *cli.App {
 						agent.WithHostAgentLogger(logger),
 						agent.WithHostAgentDockerEndpoint(dockerEndpoint),
 						agent.WithHostAgentHostTags(hostTags),
-						agent.WithHostAgentInstallDirectory(installDir),
+						agent.WithHostAgentOtelConfigDirectory(installDir),
 					)
 
 					logger.Info("starting host agent with config",

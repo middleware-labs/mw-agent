@@ -57,10 +57,10 @@ type HostAgent struct {
 
 	apiURLForConfigCheck string
 
-	logger           *zap.Logger
-	dockerEndpoint   string
-	hostTags         string
-	installDirectory string
+	logger              *zap.Logger
+	dockerEndpoint      string
+	hostTags            string
+	otelConfigDirectory string
 }
 
 // HostOptions takes in various options for HostAgent
@@ -128,11 +128,11 @@ func WithHostAgentHostTags(tags string) HostOptions {
 	}
 }
 
-// WithHostAgentInstallDirectory sets the location of
-// the host agent binary
-func WithHostAgentInstallDirectory(d string) HostOptions {
+// WithHostAgentOtelConfigDirectory sets the location of
+// the OTEL configuration
+func WithHostAgentOtelConfigDirectory(d string) HostOptions {
 	return func(h *HostAgent) {
-		h.installDirectory = d
+		h.otelConfigDirectory = d
 	}
 }
 
@@ -225,7 +225,7 @@ func (c *HostAgent) updateMongodbConfig(config map[string]interface{},
 func (c *HostAgent) updateConfig(config map[string]interface{}, path string) (map[string]interface{}, error) {
 
 	// Read the YAML file
-	yamlData, err := ioutil.ReadFile(filepath.Join(c.installDirectory, path))
+	yamlData, err := ioutil.ReadFile(filepath.Join(c.otelConfigDirectory, path))
 	if err != nil {
 		return map[string]interface{}{}, err
 	}
@@ -375,7 +375,7 @@ func (c *HostAgent) GetUpdatedYAMLPath() (string, error) {
 		yamlPath = yamlFileNoDocker
 	}
 
-	absYamlPath := filepath.Join(c.installDirectory, yamlPath)
+	absYamlPath := filepath.Join(c.otelConfigDirectory, yamlPath)
 	if err := c.updateYAML(configType, absYamlPath); err != nil {
 		return "", err
 	}
