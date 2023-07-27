@@ -322,7 +322,7 @@ processors:
 service:
     telemetry:
       logs:
-        level: "warn"
+        level: "fatal"
       metrics:
         address: 0.0.0.0:8888
     #extensions:
