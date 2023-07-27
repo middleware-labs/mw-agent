@@ -407,6 +407,7 @@ github.com/hashicorp/go-immutable-radix v1.3.1 h1:DKHmCUm2hRBK510BaiZlwvpD40f8bJ
 github.com/hashicorp/go-immutable-radix v1.3.1/go.mod h1:0y9vanUI8NX6FsYoO3zeMjhV/C5i9g4Q3DwcSNZ4P60=
 github.com/hashicorp/go-msgpack v0.5.3/go.mod h1:ahLV/dePpqEmjfWmKiqvPkv/twdG7iPBM1vqhUKIvfM=
 github.com/hashicorp/go-msgpack v0.5.5 h1:i9R9JSrqIz0QVLz3sz+i3YJdT7TTSLcfLLzJi9aZTuI=
+github.com/hashicorp/go-msgpack v0.5.5/go.mod h1:ahLV/dePpqEmjfWmKiqvPkv/twdG7iPBM1vqhUKIvfM=
 github.com/hashicorp/go-multierror v1.0.0/go.mod h1:dHtQlpGsu+cZNNAkkCN/P3hoUDHhCYQXV3UM06sGGrk=
 github.com/hashicorp/go-multierror v1.1.0/go.mod h1:spPvp8C1qA32ftKqdAHm4hHTbPw+vmowP0z+KUhOZdA=
 github.com/hashicorp/go-multierror v1.1.1 h1:H5DkEtf6CXdFp0N0Em5UCwQpXMWke8IA0+lD48awMYo=
@@ -670,6 +671,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencen
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.68.0 h1:lu48qnhe26Xgw7hOfBi4mpRNYmcfGl3pYhW0XrAKcsk=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.68.0/go.mod h1:tB+Z8MllASAwp3HAO48y4V1DrnHPgj3XiTIkkVd0UqM=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.68.0 h1:mbRIu00uZN490DkHLmJl2IVw7WpJU3tUAIDtkKngKXM=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.68.0 h1:jhjC09pFyyu3snnFRQh9nu4Ho19FH2CspwkHeTwp4yo=
+github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.68.0/go.mod h1:tQa2iWARxkQZSsgAbIzoyM+Q1+mTvqwvXv7xqkJy9Xg=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.68.0 h1:29vsvQoCb4VrNJRszAudDkDna+K+721Cd/61M/EGg3o=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.68.0/go.mod h1:vjNc8k2MmqAzc8pqVdiT+5/S1MCVldEt/a3CgQRPUrA=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.68.0 h1:wCH4ZzX3ZBdB/Ke3uAkCGpJOPqiBATP+zERpluyDYAw=
@@ -686,6 +689,10 @@ github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiv
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.68.0/go.mod h1:dWkVjmJXnNitCu5KxnZ4cKDrW1eUC6TNsTQPIp7kuNE=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.68.0 h1:fFVbzCISGonGpsKVj1de9fOIC/jjsJIXOah2JRZtceE=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.68.0/go.mod h1:GLVU9CenIBwdkyDUlKvFuEaB5HmJKZM/b64HCVQBMQY=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.68.0 h1:UfBOxrp2PArnk8P18hZD4QcEHDC5q4T5sHrC+Fuop5o=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.68.0/go.mod h1:9pQ84JZMY4M1G/6eJsUTJPO3KH5zW6mPzHKIOM61Cz4=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.68.0 h1:aVAwVjyyx4ajRJ4WPyGx7IuUbHGYPL4FsaDVYvM6t8I=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.68.0/go.mod h1:VopyQ7/fEM/2k1P8HR+qp4WQZbpNfsdqDS4cOv6gDYk=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.1.0-rc2 h1:2zx/Stx4Wc5pIPDvIxHXvXtQFW/7XWJGmnM7r3wg034=
@@ -1271,6 +1278,7 @@ golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7/go.mod h1:I/5z698sn9Ka8T
 golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
+golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2/go.mod h1:K8+ghG5WaK9qNqU5K3HdILfMLy1f3aNYFI/wnl100a8=
 gonum.org/v1/gonum v0.13.0 h1:a0T3bh+7fhRyqeNbiC3qVHYmkiQgit3wnNan/2c0HMM=
 gonum.org/v1/gonum v0.13.0/go.mod h1:/WPYRckkfWrhWefxyYTfrTtQR0KH4iyHNuzxqXAKyAU=
 google.golang.org/api v0.4.0/go.mod h1:8k5glujaEP+g9n7WNsDg8QP6cUVNI86fCNMcbazEtwE=
