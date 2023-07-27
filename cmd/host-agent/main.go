@@ -153,6 +153,15 @@ func app(logger *zap.Logger) *cli.App {
 				Before: altsrc.InitInputSourceWithContext(flags, altsrc.NewYamlSourceFromFlagFunc("config-file")),
 				Action: func(c *cli.Context) error {
 
+					execPath, err := os.Executable()
+					if err != nil {
+						logger.Info("error getting executable path", zap.Error(err))
+						return err
+					}
+
+					logger.Info("starting host agent", zap.String("agent location", execPath))
+					installDir := filepath.Dir(execPath)
+
 					hostAgent := agent.NewHostAgent(
 						agent.WithHostAgentApiKey(apiKey),
 						agent.WithHostAgentTarget(target),
@@ -165,6 +174,7 @@ func app(logger *zap.Logger) *cli.App {
 						agent.WithHostAgentLogger(logger),
 						agent.WithHostAgentDockerEndpoint(dockerEndpoint),
 						agent.WithHostAgentHostTags(hostTags),
+						agent.WithHostAgentInstallDirectory(installDir),
 					)
 
 					logger.Info("starting host agent with config",
@@ -214,13 +224,13 @@ func app(logger *zap.Logger) *cli.App {
 						return agent.ErrInvalidHostTags
 					}
 
-					/*yamlPath, err := hostAgent.GetUpdatedYAMLPath()
+					yamlPath, err := hostAgent.GetUpdatedYAMLPath()
 					if err != nil {
 						logger.Error("error getting config file path", zap.Error(err))
 						return err
-					}*/
+					}
 
-					yamlPath := "./configyamls/all/otel-config.yaml"
+					// yamlPath := "./configyamls/all/otel-config.yaml"
 					logger.Info("yaml path loaded", zap.String("path", yamlPath))
 
 					configProvider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{
