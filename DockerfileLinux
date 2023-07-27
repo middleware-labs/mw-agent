@@ -9,8 +9,8 @@ RUN CGO_ENABLED=0 go build -o /tmp/mw-agent cmd/host-agent/main.go
 
 FROM busybox:glibc as prod
 RUN mkdir -p /var/log
-WORKDIR /app
+WORKDIR /opt/mw-host-agent
 COPY --from=build /etc/ssl/certs /etc/ssl/certs
-COPY --from=build /tmp/mw-agent /usr/bin/mw-agent
-COPY --from=build /app/configyamls /app/configyamls
-CMD ["mw-agent", "start"]
+COPY --from=build /tmp/mw-agent /opt/mw-host-agent/mw-agent
+COPY --from=build /app/configyamls /opt/mw-host-agent/configyamls
+CMD ["/app/mw-agent", "start"]

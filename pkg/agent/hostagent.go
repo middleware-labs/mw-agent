@@ -16,33 +16,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
-
 	//	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
 	//	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
 
-	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/loggingexporter"
-	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
-	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/otelcol"
-	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/processor/batchprocessor"
-	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
-	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 )
@@ -57,10 +33,10 @@ type HostAgent struct {
 
 	apiURLForConfigCheck string
 
-	logger           *zap.Logger
-	dockerEndpoint   string
-	hostTags         string
-	installDirectory string
+	logger              *zap.Logger
+	dockerEndpoint      string
+	hostTags            string
+	otelConfigDirectory string
 }
 
 // HostOptions takes in various options for HostAgent
@@ -128,11 +104,11 @@ func WithHostAgentHostTags(tags string) HostOptions {
 	}
 }
 
-// WithHostAgentInstallDirectory sets the location of
-// the host agent binary
-func WithHostAgentInstallDirectory(d string) HostOptions {
+// WithHostAgentOtelConfigDirectory sets the location of
+// the OTEL configuration
+func WithHostAgentOtelConfigDirectory(d string) HostOptions {
 	return func(h *HostAgent) {
-		h.installDirectory = d
+		h.otelConfigDirectory = d
 	}
 }
 
@@ -225,7 +201,7 @@ func (c *HostAgent) updateMongodbConfig(config map[string]interface{},
 func (c *HostAgent) updateConfig(config map[string]interface{}, path string) (map[string]interface{}, error) {
 
 	// Read the YAML file
-	yamlData, err := ioutil.ReadFile(filepath.Join(c.installDirectory, path))
+	yamlData, err := ioutil.ReadFile(filepath.Join(c.otelConfigDirectory, path))
 	if err != nil {
 		return map[string]interface{}{}, err
 	}
@@ -375,7 +351,7 @@ func (c *HostAgent) GetUpdatedYAMLPath() (string, error) {
 		yamlPath = yamlFileNoDocker
 	}
 
-	absYamlPath := filepath.Join(c.installDirectory, yamlPath)
+	absYamlPath := filepath.Join(c.otelConfigDirectory, yamlPath)
 	if err := c.updateYAML(configType, absYamlPath); err != nil {
 		return "", err
 	}
@@ -481,59 +457,6 @@ func (c *HostAgent) ListenForConfigChanges(ctx context.Context) error {
 	}()
 
 	return nil
-}
-
-// GetFactories get otel factories for HostAgent
-func (c *HostAgent) GetFactories(ctx context.Context) (otelcol.Factories, error) {
-	var err error
-	factories := otelcol.Factories{}
-	factories.Extensions, err = extension.MakeFactoryMap(
-		healthcheckextension.NewFactory(),
-	// frontend.NewAuthFactory(),
-	)
-	if err != nil {
-		return otelcol.Factories{}, err
-	}
-
-	factories.Receivers, err = receiver.MakeFactoryMap([]receiver.Factory{
-		otlpreceiver.NewFactory(),
-		fluentforwardreceiver.NewFactory(),
-		filelogreceiver.NewFactory(),
-		dockerstatsreceiver.NewFactory(),
-		hostmetricsreceiver.NewFactory(),
-		prometheusreceiver.NewFactory(),
-		postgresqlreceiver.NewFactory(),
-		//windowseventlogreceiver.NewFactory(),
-		//windowsperfcountersreceiver.NewFactory(),
-		mongodbreceiver.NewFactory(),
-	}...)
-	if err != nil {
-		return otelcol.Factories{}, err
-	}
-
-	factories.Exporters, err = exporter.MakeFactoryMap([]exporter.Factory{
-		loggingexporter.NewFactory(),
-		otlpexporter.NewFactory(),
-		otlphttpexporter.NewFactory(),
-	}...)
-	if err != nil {
-		return otelcol.Factories{}, err
-	}
-
-	factories.Processors, err = processor.MakeFactoryMap([]processor.Factory{
-		// frontend.NewProcessorFactory(),
-		batchprocessor.NewFactory(),
-		filterprocessor.NewFactory(),
-		memorylimiterprocessor.NewFactory(),
-		resourceprocessor.NewFactory(),
-		resourcedetectionprocessor.NewFactory(),
-		attributesprocessor.NewFactory(),
-	}...)
-	if err != nil {
-		return otelcol.Factories{}, err
-	}
-
-	return factories, nil
 }
 
 func (c *HostAgent) HasValidTags() bool {
