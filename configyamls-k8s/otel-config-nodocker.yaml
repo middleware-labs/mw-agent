@@ -155,7 +155,7 @@ exporters:
   logging:
     loglevel: warn
   otlp:
-    endpoint: ${TARGET}
+    endpoint: ${MW_TARGET}
 processors:
   # filter/blanklog:
   #   logs: 
