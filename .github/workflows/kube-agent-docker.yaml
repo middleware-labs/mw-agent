@@ -51,5 +51,5 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: | 
-            ${{  github.event.inputs.tag || steps.meta.outputs.tags }}
+            ghcr.io/middleware-labs/mw-kube-agent:${{  github.event.inputs.tag || steps.meta.outputs.tags }}
             ghcr.io/middleware-labs/agent-kube-go:${{  github.event.inputs.tag || steps.meta.outputs.tags }}
