@@ -260,6 +260,7 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	//params.Add("platform", runtime.GOOS)
 	params.Add("platform", "linux")
 	params.Add("host_id", hostname)
+        params.Add("host_tags", c.hostTags)
 	// Add Query Parameters to the URL
 	baseUrl.RawQuery = params.Encode() // Escape Query Parameters
 
