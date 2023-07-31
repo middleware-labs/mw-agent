@@ -1,4 +1,12 @@
 receivers:
+  mongodb:
+    hosts:
+      - endpoint: localhost:27017
+    collection_interval: 60s
+    initial_delay: 1s
+    tls:
+      insecure: true
+      insecure_skip_verify: true
   filelog:
     include: [ /var/log/pods/*/*/*.log, $MW_LOG_PATHS ]
     # exclude: [ /var/log/pods/mw-agent-ns*/**/*.log ]
@@ -322,7 +330,7 @@ processors:
 service:
     telemetry:
       logs:
-        level: "fatal"
+        level: "debug"
       metrics:
         address: 0.0.0.0:8888
     #extensions:
@@ -330,19 +338,15 @@ service:
     #  - zpages
     #  - pprof
     pipelines:
-      traces:
-        receivers: [ otlp ]
-        processors: [ resourcedetection,resource, resource/cluster, attributes/traces, batch, batch/2 ]
-        exporters: [  otlp ]
-      logs:
-        receivers: [fluentforward, k8s_events, otlp, filelog ]
-        processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, batch, batch/2 ]
-        exporters: [ otlp ]
+      # traces:
+      #   receivers: [ otlp ]
+      #   processors: [ resourcedetection,resource, resource/cluster, attributes/traces, batch, batch/2 ]
+      #   exporters: [  otlp ]
+      # logs:
+      #   receivers: [fluentforward, k8s_events, otlp, filelog ]
+      #   processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, batch, batch/2 ]
+      #   exporters: [ otlp ]
       metrics:
-        receivers: [ prometheus, otlp, k8s_cluster, kubeletstats ]
+        receivers: [ mongodb ]
         processors: [ resourcedetection, resource, k8sattributes, resource/cluster, batch, batch/2]
-        exporters: [ otlp ]
-      metrics/hostmetrics:
-        receivers: [ hostmetrics ]
-        processors: [ resourcedetection, resource, resource/hostmetrics, resource/cluster, k8sattributes, batch, batch/2]
-        exporters: [ otlp ]
+        exporters: [ otlp, logging ]
