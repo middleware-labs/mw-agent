@@ -71,6 +71,7 @@ func main() {
 
 	err = s.Run()
 	if err != nil {
+		logger.Error("error after running the service", zap.Error(err))
 	}
 }
 
