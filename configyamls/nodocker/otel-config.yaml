@@ -98,7 +98,7 @@ processors:
               from_attribute: mongodb.database.name
               action: insert
             - key: mw.db.name
-              action: upsert
+              action: update
               value: mongodb
     
     resource/postgresql:
@@ -107,7 +107,7 @@ processors:
               from_attribute: postgresql.database.name
               action: insert
             - key: mw.db.name
-              action: upsert
+              action: update
               value: postgresql
     resource:
         attributes:
