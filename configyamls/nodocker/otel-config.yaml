@@ -228,7 +228,20 @@ service:
     #  receivers:
     #  - otlp
     #  - fluentforward
-    metrics:
+    metrics/postgresql:
+      exporters:
+      - otlp/2
+      - logging
+      processors:
+      - resourcedetection
+      - resource
+      - resource/postgresql
+      - batch
+      receivers:
+      #- hostmetrics
+      # - otlp
+      - postgresql
+    metrics/mongodb:
       exporters:
       - otlp/2
       - logging
@@ -236,13 +249,11 @@ service:
       - resourcedetection
       - resource
       - resource/mongodb
-      - resource/postgresql
       - batch
       receivers:
       #- hostmetrics
       # - otlp
       - mongodb
-      - postgresql
     #traces:
     #  exporters:
     #  - otlp/2
