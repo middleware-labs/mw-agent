@@ -71,7 +71,7 @@ func app(logger *zap.Logger) *cli.App {
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "target",
-			EnvVars:     []string{"MW_TARGET"},
+			EnvVars:     []string{"MW_TARGET", "TARGET"},
 			Usage:       "Middleware target for your account.",
 			Destination: &target,
 		}),
@@ -156,6 +156,10 @@ func app(logger *zap.Logger) *cli.App {
 						agent.WithKubeAgentLogger(logger),
 						agent.WithKubeAgentDockerEndpoint(dockerEndpoint),
 					)
+
+					// Set MW_TARGET & MW_API_KEY so that envprovider can fill those in the otel config files
+					os.Setenv("MW_TARGET", target)
+					os.Setenv("MW_API_KEY", apiKey)
 
 					// Set MW_DOCKER_ENDPOINT env variable to be used by otel collector
 					os.Setenv("MW_DOCKER_ENDPOINT", dockerEndpoint)

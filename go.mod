@@ -5,19 +5,19 @@ go 1.20
 // replace checkagent => github.com/middleware-labs/check-agent v0.0.0-20230411103956-f67eb953ba5e
 replace checkagent => ./check-agent
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.0.0-20230711072828-d68b220dd964
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.0.0-20230804091959-8b0fed988a39
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.0.0-20230711072828-d68b220dd964
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.0.0-20230804091959-8b0fed988a39
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.0.0-20230711072828-d68b220dd964
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.0.0-20230804091959-8b0fed988a39
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.0.0-20230711072828-d68b220dd964
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.0.0-20230804091959-8b0fed988a39
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.0.0-20230711072828-d68b220dd964
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.0.0-20230804091959-8b0fed988a39
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.0.0-20230711072828-d68b220dd964
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.0.0-20230804091959-8b0fed988a39
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.0.0-20230711072828-d68b220dd964
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.0.0-20230804091959-8b0fed988a39
 
 require (
 	// checkagent v0.0.0-00010101000000-000000000000
@@ -61,6 +61,8 @@ require (
 	checkagent v0.0.0-00010101000000-000000000000
 	github.com/kardianos/service v1.2.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.68.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.68.0
 )
 
 require (
@@ -202,8 +204,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.68.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.68.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.68.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.68.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.68.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc2 // indirect
 	github.com/openshift/api v3.9.0+incompatible // indirect
