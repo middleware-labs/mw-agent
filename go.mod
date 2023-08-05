@@ -19,6 +19,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sev
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.0.0-20230804091959-8b0fed988a39
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.0.0-20230711072828-d68b220dd964
+
 require (
 	// checkagent v0.0.0-00010101000000-000000000000
 	github.com/k8sgpt-ai/k8sgpt v0.1.8
