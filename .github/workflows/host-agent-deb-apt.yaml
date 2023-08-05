@@ -41,13 +41,13 @@ jobs:
         if [ ${{ matrix.arch }} == "x64" ]; then
           echo "::set-env name=ARCH::all"
           echo "::set-env name=BINARY_SOURCE::release/mw-go-agent-host"
-          echo "::set-env name=RELEASE_VERSION::${{  github.event.inputs.release_version }}"
+          echo "::set-env name=RELEASE_VERSION::$(echo "${{ github.event.inputs.release_version }}" | tr -d '\n')"
           echo "::set-env name=CONTROL_FILE::control"
         elif [ ${{ matrix.arch }} == "ARM" ]; then
           echo "::set-env name=ARCH::arm64"
           echo "::set-env name=BINARY_SOURCE::release/mw-go-agent-host-arm"
-          echo "::set-env name=RELEASE_VERSION::${{  github.event.inputs.release_version }}"
-          echo "::set-env name=CONTROL_FILE::control-arm"
+          echo "::set-env name=RELEASE_VERSION::$(echo "${{ github.event.inputs.release_version }}" | tr -d '\n')"
+          echo "::set-env name=CONTROL_FILE::control"
         else
           echo "Unsupported architecture"
           exit 1
@@ -66,11 +66,38 @@ jobs:
         mkdir -p example/mw-agent_$RELEASE_VERSION-1_all/DEBIAN
         mkdir -p example/repos/$RELEASE_VERSION/apt-repo/pool/main/
         mkdir -p example/repos/$RELEASE_VERSION/apt-repo/dists/stable/main/binary-$ARCH
+        mkdir -p controlsetup
+        touch controlsetup/control
+
+        if [ ${{ matrix.arch }} == "x64" ]; then
+          cat << EOF > controlsetup/control
+        Package: mw-go-agent-host
+        Version: ${RELEASE_VERSION}
+        Maintainer: example <example@example.com>
+        Depends: libc6
+        Architecture: all
+        Homepage: http://example.com
+        Description: Telemetry Collector Tool
+        EOF
+        elif [ ${{ matrix.arch }} == "ARM" ]; then
+          cat << EOF > controlsetup/control
+        Package: mw-go-agent-host-arm
+        Version: ${RELEASE_VERSION}arm64
+        Maintainer: example <example@example.com>
+        Depends: libc6
+        Architecture: arm64
+        Homepage: http://example.com
+        Description: Telemetry Collector Tool
+        EOF
+        else
+          echo "Unsupported architecture"
+          exit 1
+        fi
 
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
-        go-version: 1.18
+        go-version: 1.20.0
 
     - name: Go Build
       run: |
@@ -90,7 +117,7 @@ jobs:
 
     - name: Creating Control File
       run: |
-          cp installables/apt/deb/$CONTROL_FILE example/mw-agent_$RELEASE_VERSION-1_all/DEBIAN/control
+          cp controlsetup/$CONTROL_FILE example/mw-agent_$RELEASE_VERSION-1_all/DEBIAN/control
 
     - name: Creating DEB package
       run: |
@@ -184,7 +211,6 @@ jobs:
         mkdir -p example/scripts
         mkdir -p example/configyamls
         cp -r configyamls example
-        cp installables/apt/apt-install.sh example/scripts/apt-install.sh
         cp configyamls/all/otel-config.yaml example/otel-config.yaml
         rm -rf example/pgpkeys-*
         rm -rf example/generate-release.sh
