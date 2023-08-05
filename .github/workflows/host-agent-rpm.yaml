@@ -62,6 +62,65 @@ jobs:
           exit 1
         fi
 
+    - name: Creating Spec files
+      run: |
+        mkdir -p installables/rpmessentials
+        touch installables/rpmessentials/$SPEC_FILE
+        if [ ${{ matrix.arch }} == "x64" ]; then
+          echo "Name: mw-go-agent-host-aws
+          Version: ${{  github.event.inputs.release_version }}
+          Release: 1
+          Summary: My Package Summary
+          License: GPL
+          Group: Development/Tools
+          Source0: mw-go-agent-host-aws_${{  github.event.inputs.release_version }}-1_all.tar.gz
+          
+          
+          %description
+          My package description
+          
+          %prep
+          %setup -q
+          
+          %build
+          
+          %install
+          mkdir -p %{buildroot}/usr/bin/mw-go-agent-host-aws
+          cp -rfa ~/rpmbuild/BUILD/mw-go-agent-host-aws-${{  github.event.inputs.release_version }}/* %{buildroot}/usr/bin/mw-go-agent-host-aws
+          
+          %files
+          /usr/bin/mw-go-agent-host-aws/*
+          " > installables/rpmessentials/test.spec
+        elif [ ${{ matrix.arch }} == "ARM" ]; then
+          echo "Name: mw-go-agent-host-aws-arm
+          Version: ${{  github.event.inputs.release_version }}
+          Release: 1
+          Summary: My Package Summary
+          License: GPL
+          Group: Development/Tools
+          Source0: mw-go-agent-host-aws-arm_${{  github.event.inputs.release_version }}-1_arm64.tar.gz
+          
+          
+          %description
+          My package description
+          
+          %prep
+          %setup -q
+          
+          %build
+          
+          %install
+          mkdir -p %{buildroot}/usr/bin/mw-go-agent-host-aws-arm
+          cp -rfa ~/rpmbuild/BUILD/mw-go-agent-host-aws-arm-${{  github.event.inputs.release_version }}/* %{buildroot}/usr/bin/mw-go-agent-host-aws-arm
+          
+          %files
+          /usr/bin/mw-go-agent-host-aws-arm/*
+          " > installables/rpmessentials/test-arm.spec
+        else
+          echo "Unsupported architecture"
+          exit 1
+        fi
+
     - uses: actions/cache@v3
       with:
         path: |
@@ -85,7 +144,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
-        go-version: 1.18
+        go-version: 1.20.0
 
     - name: Go Build
       run: |
