@@ -2,18 +2,21 @@ name: Build And Push RPM for systems like RedHat / CentOS
 
 on:
   workflow_dispatch:
-  push:
-    paths-ignore:
-      - 'README.md'
-      - '.github/**'
-      - 'configyamls/**'
-    branches:
-     - 'master'
-     - 'workflow-experiments'
+    inputs:
+      release_version:
+        description: 'Release number for RPM package'
+        required: true
+  # push:
+  #   paths-ignore:
+  #     - 'README.md'
+  #     - '.github/**'
+  #     - 'configyamls/**'
+  #   branches:
+  #    - 'master'
+  #    - 'workflow-experiments'
 
 env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-  RELEASE_VERSION: 0.0.20
   
 # env:
 #   ARCH: arm64
@@ -45,13 +48,13 @@ jobs:
         if [ ${{ matrix.arch }} == "x64" ]; then
           echo "::set-env name=ARCH::all"
           echo "::set-env name=BINARY_SOURCE::release/mw-go-agent-host-aws"
-          echo "::set-env name=RELEASE_VERSION::${RELEASE_VERSION}-rpm-amd64"
+          echo "::set-env name=RELEASE_VERSION::${{  github.event.inputs.release_version }}-rpm-amd64"
           echo "::set-env name=BINARY_NAME::mw-go-agent-host-aws"
           echo "::set-env name=SPEC_FILE::test.spec"
         elif [ ${{ matrix.arch }} == "ARM" ]; then
           echo "::set-env name=ARCH::arm64"
           echo "::set-env name=BINARY_SOURCE::release/mw-go-agent-host-aws-arm"
-          echo "::set-env name=RELEASE_VERSION::${RELEASE_VERSION}-rpm-arm64"
+          echo "::set-env name=RELEASE_VERSION::${{  github.event.inputs.release_version }}-rpm-arm64"
           echo "::set-env name=BINARY_NAME::mw-go-agent-host-aws-arm"
           echo "::set-env name=SPEC_FILE::test-arm.spec"
         else
@@ -74,7 +77,7 @@ jobs:
         mkdir -p ~/rpmbuild/SOURCES
         mkdir -p ~/rpmbuild/SPECS
         mkdir -p ~/rpmbuild/SRPMS
-        mkdir -p ~/rpmbuild/SOURCES/$BINARY_NAME-0.0.1
+        mkdir -p ~/rpmbuild/SOURCES/$BINARY_NAME-${{  github.event.inputs.release_version }}
         echo '%_topdir %(echo $HOME)/rpmbuild' > ~/.rpmmacros
         touch ~/rpmbuild/SPECS/$SPEC_FILE
         cp installables/rpmessentials/$SPEC_FILE ~/rpmbuild/SPECS/$SPEC_FILE
@@ -87,9 +90,9 @@ jobs:
     - name: Go Build
       run: |
         if [ ${{ matrix.arch }} == "x64" ]; then
-          go build -v -o ~/rpmbuild/SOURCES/$BINARY_NAME-0.0.1/$BINARY_NAME
+          go build -v -o ~/rpmbuild/SOURCES/$BINARY_NAME-${{  github.event.inputs.release_version }}/$BINARY_NAME cmd/host-agent/main.go
         elif [ ${{ matrix.arch }} == "ARM" ]; then
-          GOOS=linux GOARCH=$ARCH  go build -ldflags="-s -w" -v -a -o ~/rpmbuild/SOURCES/$BINARY_NAME-0.0.1/$BINARY_NAME
+          GOOS=linux GOARCH=$ARCH  go build -ldflags="-s -w" -v -a -o ~/rpmbuild/SOURCES/$BINARY_NAME-${{  github.event.inputs.release_version }}/$BINARY_NAME cmd/host-agent/main.go
         else
           echo "Unsupported architecture"
           exit 1
@@ -102,7 +105,7 @@ jobs:
         echo $BINARY_NAME
         echo "architecture"
         echo $ARCH
-        tar czvf ~/rpmbuild/SOURCES/${BINARY_NAME}_0.0.1-1_$ARCH.tar.gz $BINARY_NAME-0.0.1/
+        tar czvf ~/rpmbuild/SOURCES/${BINARY_NAME}_${{  github.event.inputs.release_version }}-1_$ARCH.tar.gz $BINARY_NAME-${{  github.event.inputs.release_version }}/
 
         ls -l ~/rpmbuild/SOURCES/
 
@@ -129,9 +132,9 @@ jobs:
         mkdir -p install.middleware.io/rpms
 
         if [ ${{ matrix.arch }} == "x64" ]; then
-          cp -r ~/rpmbuild/RPMS/x86_64/$BINARY_NAME-0.0.1-1.x86_64.rpm install.middleware.io/rpms/
+          cp -r ~/rpmbuild/RPMS/x86_64/$BINARY_NAME-${{  github.event.inputs.release_version }}-1.x86_64.rpm install.middleware.io/rpms/
         elif [ ${{ matrix.arch }} == "ARM" ]; then
-          cp -r ~/rpmbuild/RPMS/aarch64/$BINARY_NAME-0.0.1-1.aarch64.rpm install.middleware.io/rpms/
+          cp -r ~/rpmbuild/RPMS/aarch64/$BINARY_NAME-${{  github.event.inputs.release_version }}-1.aarch64.rpm install.middleware.io/rpms/
         else
           echo "Unsupported architecture"
           exit 1
