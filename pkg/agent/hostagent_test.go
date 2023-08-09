@@ -46,7 +46,7 @@ func TestUpdatepgdbConfig(t *testing.T) {
 }
 
 func TestUpdateMongodbConfig(t *testing.T) {
-	// Define the initial config and pgdbConfig
+	// Define the initial config and mongodbConfig
 	initialConfig := map[string]interface{}{
 		"receivers": map[string]interface{}{
 			"mongodb": map[string]interface{}{
@@ -58,13 +58,13 @@ func TestUpdateMongodbConfig(t *testing.T) {
 		},
 	}
 
-	pgdbConfig := pgdbConfiguration{
+	mongodbConfig := mongodbConfiguration{
 		Path: "db-config_test.yaml",
 	}
 
 	agent := NewHostAgent(WithHostAgentLogger(zap.NewNop()))
 
-	updatedConfig, err := agent.updatepgdbConfig(initialConfig, pgdbConfig)
+	updatedConfig, err := agent.updateMongodbConfig(initialConfig, mongodbConfig)
 	assert.NoError(t, err)
 
 	// Assert that the updated config contains the expected values
@@ -72,12 +72,47 @@ func TestUpdateMongodbConfig(t *testing.T) {
 	receivers, ok := updatedConfig["receivers"].(map[string]interface{})
 	assert.True(t, ok)
 	assert.Contains(t, receivers, "mongodb")
-	postgresql, ok := receivers["mongodb"].(map[string]interface{})
+	mongodb, ok := receivers["mongodb"].(map[string]interface{})
 	assert.True(t, ok)
-	assert.Contains(t, postgresql, "endpoint")
-	assert.Contains(t, postgresql, "database")
-	assert.Contains(t, postgresql, "user")
-	assert.Contains(t, postgresql, "password")
+	assert.Contains(t, mongodb, "endpoint")
+	assert.Contains(t, mongodb, "database")
+	assert.Contains(t, mongodb, "user")
+	assert.Contains(t, mongodb, "password")
+}
+
+func TestUpdateMysqlConfig(t *testing.T) {
+	// Define the initial config and mysqlConfig
+	initialConfig := map[string]interface{}{
+		"receivers": map[string]interface{}{
+			"mysql": map[string]interface{}{
+				"endpoint": "example.com:5432",
+				"database": "mydb",
+				"user":     "myuser",
+				"password": "mypassword",
+			},
+		},
+	}
+
+	mysqlConfig := mysqlConfiguration{
+		Path: "db-config_test.yaml",
+	}
+
+	agent := NewHostAgent(WithHostAgentLogger(zap.NewNop()))
+	// Call the updateMysqlConfig function
+	updatedConfig, err := agent.updateMysqlConfig(initialConfig, mysqlConfig)
+	assert.NoError(t, err)
+
+	// Assert that the updated config contains the expected values
+	assert.Contains(t, updatedConfig, "receivers")
+	receivers, ok := updatedConfig["receivers"].(map[string]interface{})
+	assert.True(t, ok)
+	assert.Contains(t, receivers, "mysql")
+	mysql, ok := receivers["mysql"].(map[string]interface{})
+	assert.True(t, ok)
+	assert.Contains(t, mysql, "endpoint")
+	assert.Contains(t, mysql, "database")
+	assert.Contains(t, mysql, "user")
+	assert.Contains(t, mysql, "password")
 }
 
 func TestListenForConfigChanges(t *testing.T) {
@@ -132,6 +167,7 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assert.Contains(t, factories.Receivers, component.Type("prometheus"))
 	assert.Contains(t, factories.Receivers, component.Type("postgresql"))
 	assert.Contains(t, factories.Receivers, component.Type("mongodb"))
+	assert.Contains(t, factories.Receivers, component.Type("mysql"))
 
 	// check if factories contain expected exporters
 	assert.Len(t, factories.Exporters, 3)
