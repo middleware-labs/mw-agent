@@ -144,6 +144,7 @@ type DatabaseType int
 const (
 	PostgreSQL DatabaseType = iota
 	MongoDB
+	MySQL
 )
 
 type pgdbConfiguration struct {
@@ -154,11 +155,16 @@ type mongodbConfiguration struct {
 	Path string `json:"path"`
 }
 
+type mysqlConfiguration struct {
+	Path string `json:"path"`
+}
+
 type apiResponseForYAML struct {
 	Status        bool                 `json:"status"`
 	Config        configType           `json:"config"`
 	PgdbConfig    pgdbConfiguration    `json:"pgdb_config"`
 	MongodbConfig mongodbConfiguration `json:"mongodb_config"`
+	MysqlConfig   mysqlConfiguration   `json:"mysql_config"`
 	Message       string               `json:"message"`
 }
 
@@ -184,6 +190,8 @@ func (d DatabaseType) String() string {
 		return "postgresql"
 	case MongoDB:
 		return "mongodb"
+	case MySQL:
+		return "mysql"
 	}
 	return "unknown"
 }
@@ -196,6 +204,11 @@ func (c *HostAgent) updatepgdbConfig(config map[string]interface{},
 func (c *HostAgent) updateMongodbConfig(config map[string]interface{},
 	mongodbConfig mongodbConfiguration) (map[string]interface{}, error) {
 	return c.updateConfig(config, mongodbConfig.Path)
+}
+
+func (c *HostAgent) updateMysqlConfig(config map[string]interface{},
+	mysqlConfig mysqlConfiguration) (map[string]interface{}, error) {
+	return c.updateConfig(config, mysqlConfig.Path)
 }
 
 func (c *HostAgent) updateConfig(config map[string]interface{}, path string) (map[string]interface{}, error) {
@@ -260,7 +273,7 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	//params.Add("platform", runtime.GOOS)
 	params.Add("platform", "linux")
 	params.Add("host_id", hostname)
-        params.Add("host_tags", c.hostTags)
+	params.Add("host_tags", c.hostTags)
 	// Add Query Parameters to the URL
 	baseUrl.RawQuery = params.Encode() // Escape Query Parameters
 
