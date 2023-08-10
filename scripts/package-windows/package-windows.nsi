@@ -20,12 +20,13 @@
 ;Settings
   !define APPNAME "Middleware Windows Agent"
   !define APP_NAME_IN_INSTALLED_DIR "mw-windows-agent"
-  !define CONFIG_FILE_NAME_IN_INSTALLED_DIR "config.yaml"
+  !define CONFIG_FILE_NAME_IN_INSTALLED_DIR "agent-config.yaml"
   !define COMPANYNAME "Middleware Inc"
   !define DESCRIPTION "Middleware Windows Agent."
   !define DEVELOPER "Middleware Inc" #License Holder
   # Files Directory
-  ;!define FILE_DIR "windows" #Replace with the full path of install folder
+  !define BUILD_DIR "..\..\build" #Replace with the full path of install folder
+  !define REPO_ROOT_DIR "..\..\"
   !define LOGO_ICON_FILE "logo.ico"
   !define MUI_ICON "logo.ico"
   !define MUI_UNICON "logo.ico"
@@ -44,6 +45,8 @@
   # This is the size (in kB) of all the files copied into "Program Files"
   ;!define INSTALLSIZE 1118721
 
+  # Set compression method
+  SetCompressor lzma
 ;--------------------------------
 ;General
 
@@ -56,7 +59,7 @@
   InstallDir "$PROGRAMFILES\${APPNAME}"
 
   ;Get installation folder from registry if available
-  InstallDirRegKey HKCU "Software\${APPNAME}" ""
+  InstallDirRegKey HKLM "Software\${APPNAME}" ""
 
   ;Request application privileges for Windows Vista
   RequestExecutionLevel admin ;Require admin rights on NT6+ (When UAC is turned on)
@@ -81,7 +84,7 @@ Var StartMenuFolder
   Page custom pgPageCreate pgPageLeave
   !insertmacro MUI_PAGE_DIRECTORY
   ;Start Menu Folder Page Configuration
-  ;!define MUI_STARTMENUPAGE_REGISTRY_ROOT "HKCU" 
+  !define MUI_STARTMENUPAGE_REGISTRY_ROOT "HKLM" 
   !define MUI_STARTMENUPAGE_REGISTRY_KEY "Software\${APPNAME}" 
   !define MUI_STARTMENUPAGE_REGISTRY_VALUENAME "Start Menu Folder"
   
@@ -167,13 +170,21 @@ Function UpdateConfigFile
     StrCpy $FST_OCC all
     StrCpy $NR_OCC all
     StrCpy $REPLACEMENT_STR "api-key: $0"
-    StrCpy $FILE_TO_MODIFIED "$INSTDIR\config.yaml"
+    StrCpy $FILE_TO_MODIFIED "$INSTDIR\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}"
     !insertmacro ReplaceInFile $OLD_STR $FST_OCC $NR_OCC $REPLACEMENT_STR $FILE_TO_MODIFIED
 
-    StrCpy $OLD_STR 'target:'
+    StrCpy $OLD_STR "target:"
     StrCpy $FST_OCC all
     StrCpy $NR_OCC all
     StrCpy $REPLACEMENT_STR "target: $1"
+    !insertmacro ReplaceInFile $OLD_STR $FST_OCC $NR_OCC $REPLACEMENT_STR $FILE_TO_MODIFIED
+
+    # clear out host-tags in the config file while installation. Users can 
+    # always add them post installation.
+    StrCpy $OLD_STR "name:my-machine,env:production"
+    StrCpy $FST_OCC all
+    StrCpy $NR_OCC all
+    StrCpy $REPLACEMENT_STR ""
     !insertmacro ReplaceInFile $OLD_STR $FST_OCC $NR_OCC $REPLACEMENT_STR $FILE_TO_MODIFIED
 
 
@@ -189,15 +200,15 @@ Section "install"
     
   #Add your Files Here
   # Files add here should be removed by the uninstaller (see section "uninstall")
-  file "${APP_NAME_IN_INSTALLED_DIR}.exe"
+  file "${BUILD_DIR}\${APP_NAME_IN_INSTALLED_DIR}.exe"
   file "logo.ico"
-  file "${CONFIG_FILE_NAME_IN_INSTALLED_DIR}"
-  file /r "configyamls"
+  file "${REPO_ROOT_DIR}\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}"
+  file /r "${REPO_ROOT_DIR}\configyamls"
 
   Call UpdateConfigFile
   ;ExecWait 'sc create ${APP_NAME_IN_INSTALLED_DIR} error= "severe" displayname= "${APPNAME}" type= "own" start= "auto" binpath= "$INSTDIR\${APP_NAME_IN_INSTALLED_DIR}.exe start --config-file $INSTDIR\config.yaml"'
   ;ExecWait 'net start ${APP_NAME_IN_INSTALLED_DIR}'
-  SimpleSC::InstallService ${APP_NAME_IN_INSTALLED_DIR} "Middleware Windows Agent" "16" "2" "$\"$INSTDIR\${APP_NAME_IN_INSTALLED_DIR}.exe$\" start --config-file $\"$INSTDIR\config.yaml$\"" "" "" ""
+  SimpleSC::InstallService ${APP_NAME_IN_INSTALLED_DIR} "Middleware Windows Agent" "16" "2" "$\"$INSTDIR\${APP_NAME_IN_INSTALLED_DIR}.exe$\" start --config-file $\"$INSTDIR\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}$\"" "" "" ""
   Pop $0 ; returns an errorcode (<>0) otherwise success (0)
 
   SimpleSC::StartService "${APP_NAME_IN_INSTALLED_DIR}" "" 30
@@ -219,22 +230,22 @@ Section "install"
 ;  CreateShortCut "$DESKTOP\${APPNAME}.lnk" "$INSTDIR\${APP_NAME_IN_INSTALLED_DIR}.exe" "" "$INSTDIR\logo.ico"
 
   # Registry information for add/remove programs
-  WriteRegStr HKLM "Software\Microstft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayName" "${APPNAME} - ${DESCRIPTION}"
-  WriteRegStr HKLM "Software\Microstft\Windows\CurrentVersion\Uninstall\${APPNAME}" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
-  WriteRegStr HKLM "Software\Microstft\Windows\CurrentVersion\Uninstall\${APPNAME}" "QuitUninstallString" "$\"$INSTDIR\uninstall.exe$\" /S"
-  WriteRegStr HKLM "Software\Microstft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayIcon" "$\"$INSTDIR\logo.ico$\""
-  WriteRegStr HKLM "Software\Microstft\Windows\CurrentVersion\Uninstall\${APPNAME}" "Publisher" "$\"${COMPANYNAME}$\""
- ; WriteRegStr HKLM "Software\Microstft\Windows\CurrentVersion\Uninstall\${APPNAME}" "HelpLink" "$\"${HELPURL}$\""
- ; WriteRegStr HKLM "Software\Microstft\Windows\CurrentVersion;\Uninstall\${APPNAME}" "URLUpdateInfo" "$\"${UPDATEURL}$\""
-  WriteRegStr HKLM "Software\Microstft\Windows\CurrentVersion\Uninstall\${APPNAME}" "URLInfoAbout" "$\"${ABOUTURL}$\""
-  WriteRegStr HKLM "Software\Microstft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayVersion" "$\"${VERSIONMAJOR}.${VERSIONMINOR}.${VERSIONBUILD}.${BUILDNUMBER}$\""
-  WriteRegStr HKLM "Software\Microstft\Windows\CurrentVersion\Uninstall\${APPNAME}" "VersionMajor" ${VERSIONMAJOR}
-  WriteRegStr HKLM "Software\Microstft\Windows\CurrentVersion\Uninstall\${APPNAME}" "VersionMinor" ${VERSIONMINOR}
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayName" "${APPNAME} - ${DESCRIPTION}"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "QuitUninstallString" "$\"$INSTDIR\uninstall.exe$\" /S"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayIcon" "$\"$INSTDIR\logo.ico$\""
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "Publisher" "$\"${COMPANYNAME}$\""
+ ; WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "HelpLink" "$\"${HELPURL}$\""
+ ; WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion;\Uninstall\${APPNAME}" "URLUpdateInfo" "$\"${UPDATEURL}$\""
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "URLInfoAbout" "$\"${ABOUTURL}$\""
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayVersion" "$\"${VERSIONMAJOR}.${VERSIONMINOR}.${VERSIONBUILD}.${BUILDNUMBER}$\""
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "VersionMajor" ${VERSIONMAJOR}
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "VersionMinor" ${VERSIONMINOR}
   # There is no option for modifying or reparing the install
-  WriteRegDWORD HKLM "Software\Microstft\Windows\CurrentVersion\Uninstall\${APPNAME}" "NoModify" 1
-  WriteRegDWORD HKLM "Software\Microstft\Windows\CurrentVersion\Uninstall\${APPNAME}" "NoRepair" 1
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "NoModify" 1
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "NoRepair" 1
   # Set the INSTALLSIZE constant (!define at the top of this script) so Add/Remove Program can accurately report the size
-;  WriteRegDWORD HKLM "Software\Microstft\Windows\CurrentVersion\Uninstall\${APPNAME}" "EstimatedSize" ${INSTALLSIZE}
+;  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "EstimatedSize" ${INSTALLSIZE}
 SectionEnd
 
 ;--------------------------------
@@ -285,10 +296,10 @@ Section "uninstall"
   rmDir /r "$INSTDIR"
 
   #Delete installation folder from registry if available - this will only happen if it is empty
-  DeleteRegKey /ifempty HKCU "Software\${APPNAME}"
+  DeleteRegKey /ifempty HKLM "Software\${APPNAME}"
 
   # Remove uninstaller information from the registry
-  DeleteRegKey HKLM "Software\Microstft\Windows\CurrentVersion\Uninstall\${APPNAME}"
+  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}"
 SectionEnd
 
 ;--------------------------------

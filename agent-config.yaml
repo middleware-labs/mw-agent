@@ -1,10 +1,10 @@
 
 # api-key is your Middleware API Key obtained by logging 
 # into your Middleware account
-api-key: <your api key> 
+api-key: 
 
 # target is your unique Middleware account URL
-target: https://<your-unique-subdomain>.middleware.io
+target: 
 
 # Synthetic monitoring using the Middleware agent is disabled by default.
 # Set enable-synthetic-monitoring to true if you want this agent to be

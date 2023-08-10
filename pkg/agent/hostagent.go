@@ -257,12 +257,10 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	baseUrl := u.JoinPath(apiPathForYAML).JoinPath(c.apiKey)
 	params := url.Values{}
 	params.Add("config", configType)
-	//params.Add("platform", runtime.GOOS)
-	params.Add("platform", "linux")
+	params.Add("platform", runtime.GOOS)
 	params.Add("host_id", hostname)
 	// Add Query Parameters to the URL
 	baseUrl.RawQuery = params.Encode() // Escape Query Parameters
-
 	resp, err := http.Get(baseUrl.String())
 	if err != nil {
 		c.logger.Error("failed to call get configuration api", zap.Error(err))
@@ -285,7 +283,6 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 
 	// Unmarshal JSON response into ApiResponse struct
 	var apiResponse apiResponseForYAML
-	// fmt.Println("body: ", string(body))
 	if err := json.Unmarshal(body, &apiResponse); err != nil {
 		c.logger.Error("failed to unmarshal api response", zap.Error(err))
 		return err
