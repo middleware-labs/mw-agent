@@ -341,6 +341,14 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 		}
 	}
 
+	mysqlConfig := apiResponse.MysqlConfig
+	if c.checkDBConfigValidity(MySQL, mysqlConfig.Path) {
+		apiYAMLConfig, err = c.updateMysqlConfig(apiYAMLConfig, mysqlConfig)
+		if err != nil {
+			return err
+		}
+	}
+
 	apiYAMLBytes, err := yaml.Marshal(apiYAMLConfig)
 	if err != nil {
 		c.logger.Error("failed to marshal api data", zap.Error(err))
