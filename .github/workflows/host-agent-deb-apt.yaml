@@ -101,6 +101,7 @@ jobs:
 
     - name: Go Build
       run: |
+        go get -d -v ./... && go mod tidy
         if [ ${{ matrix.arch }} == "x64" ]; then
           go build -o $BINARY_SOURCE cmd/host-agent/main.go
         elif [ ${{ matrix.arch }} == "ARM" ]; then
