@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         arch:
-          - ARM
+          # - ARM
           - x64
 
     steps:
@@ -28,16 +28,15 @@ jobs:
         ssh-key: ${{ secrets.CHECK_AGENT_ACCESS }}
         submodules: 'recursive'
 
-    - name: Set architecture variables
+    - name: Set Architecture Variables
       run: |
+        echo "::set-env name=BINARY_SOURCE::release/mw-agent"
         if [ ${{ matrix.arch }} == "x64" ]; then
-          echo "::set-env name=ARCH::all"
-          echo "::set-env name=BINARY_SOURCE::release/mw-go-agent-host"
+          echo "::set-env name=ARCH::all"  
           echo "::set-env name=RELEASE_VERSION::$(echo "${{ github.event.inputs.release_version }}" | tr -d '\n')"
           echo "::set-env name=CONTROL_FILE::control"
         elif [ ${{ matrix.arch }} == "ARM" ]; then
           echo "::set-env name=ARCH::arm64"
-          echo "::set-env name=BINARY_SOURCE::release/mw-go-agent-host-arm"
           echo "::set-env name=RELEASE_VERSION::$(echo "${{ github.event.inputs.release_version }}" | tr -d '\n')arm64"
           echo "::set-env name=CONTROL_FILE::control"
         else
@@ -58,14 +57,14 @@ jobs:
       run: |
         mkdir -p example/mw-agent_$RELEASE_VERSION-1_all/usr/bin
         mkdir -p example/mw-agent_$RELEASE_VERSION-1_all/DEBIAN
-        mkdir -p example/repos/$RELEASE_VERSION/apt-repo/pool/main/
-        mkdir -p example/repos/$RELEASE_VERSION/apt-repo/dists/stable/main/binary-$ARCH
+        mkdir -p example/repos/apt-repo/pool/main/
+        mkdir -p example/repos/apt-repo/dists/stable/main/binary-$ARCH
         mkdir -p controlsetup
         touch controlsetup/control
 
         if [ ${{ matrix.arch }} == "x64" ]; then
           cat << EOF > controlsetup/control
-        Package: mw-go-agent-host
+        Package: mw-agent
         Version: ${RELEASE_VERSION}
         Maintainer: example <example@example.com>
         Depends: libc6
@@ -75,7 +74,7 @@ jobs:
         EOF
         elif [ ${{ matrix.arch }} == "ARM" ]; then
           cat << EOF > controlsetup/control
-        Package: mw-go-agent-host-arm
+        Package: mw-agent
         Version: ${RELEASE_VERSION}
         Maintainer: example <example@example.com>
         Depends: libc6
@@ -119,14 +118,14 @@ jobs:
 
     - name: Creating APT Repo structure & Adding DEB into it
       run: |
-          cp example/mw-agent_$RELEASE_VERSION-1_all.deb example/repos/$RELEASE_VERSION/apt-repo/pool/main/.
+          cp example/mw-agent_$RELEASE_VERSION-1_all.deb example/repos/apt-repo/pool/main/.
 
     - name: Building Packages along with compressed version
       run: |  
-          cd example/repos/$RELEASE_VERSION/apt-repo
+          cd example/repos/apt-repo
           dpkg-scanpackages --arch $ARCH pool/ > dists/stable/main/binary-$ARCH/Packages
-          cd ../../../../
-          cat example/repos/$RELEASE_VERSION/apt-repo/dists/stable/main/binary-$ARCH/Packages | gzip -9 > example/repos/$RELEASE_VERSION/apt-repo/dists/stable/main/binary-$ARCH/Packages.gz
+          cd ../../../
+          cat example/repos/apt-repo/dists/stable/main/binary-$ARCH/Packages | gzip -9 > example/repos/apt-repo/dists/stable/main/binary-$ARCH/Packages.gz
 
     - name: Generating Release
       run: |
@@ -164,9 +163,9 @@ jobs:
 
     - name: Run bash script
       run: |
-        cd example/repos/$RELEASE_VERSION/apt-repo/dists/stable/
-        ../../../../../generate-release.sh > Release
-        cd ../../../../../
+        cd example/repos/apt-repo/dists/stable/
+        ../../../../generate-release.sh > Release
+        cd ../../../../
         ls
 
     - name: Creating PGP Key Pairs
@@ -192,8 +191,8 @@ jobs:
       run: |
         export GNUPGHOME="$(mktemp -d example/pgpkeys-XXXXXX)"
         cat example/private-keys/pgp-key-$RELEASE_VERSION.private | gpg --import
-        cat example/repos/$RELEASE_VERSION/apt-repo/dists/stable/Release | gpg --default-key example -abs > example/repos/$RELEASE_VERSION/apt-repo/dists/stable/Release.gpg
-        cat example/repos/$RELEASE_VERSION/apt-repo/dists/stable/Release | gpg --default-key example -abs --clearsign > example/repos/$RELEASE_VERSION/apt-repo/dists/stable/InRelease
+        cat example/repos/apt-repo/dists/stable/Release | gpg --default-key example -abs > example/repos/apt-repo/dists/stable/Release.gpg
+        cat example/repos/apt-repo/dists/stable/Release | gpg --default-key example -abs --clearsign > example/repos/apt-repo/dists/stable/InRelease
 
   # upload-artifacts:
   #   runs-on: ubuntu-20.04
