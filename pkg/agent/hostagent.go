@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -214,7 +213,7 @@ func (c *HostAgent) updateMysqlConfig(config map[string]interface{},
 func (c *HostAgent) updateConfig(config map[string]interface{}, path string) (map[string]interface{}, error) {
 
 	// Read the YAML file
-	yamlData, err := ioutil.ReadFile(filepath.Join(c.otelConfigDirectory, path))
+	yamlData, err := os.ReadFile(path)
 	if err != nil {
 		return map[string]interface{}{}, err
 	}
