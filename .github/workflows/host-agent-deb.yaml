@@ -1,0 +1,113 @@
+name: Host Agent - DEB
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Release number for DEB package'
+        required: true
+
+env:
+  ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+  RELEASE_VERSION: ${{ github.event.inputs.release_version }}
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        arch:
+          - arm64
+          - amd64
+
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.GHCR_TOKEN }}
+        ssh-key: ${{ secrets.CHECK_AGENT_ACCESS }}
+        submodules: 'recursive'
+
+    - name: Set Architecture Variables
+      run: |
+        echo "::set-env name=BINARY_SOURCE::release/mw-agent"
+        echo "::set-env name=RELEASE_VERSION::$(echo "${{ github.event.inputs.release_version }}" | tr -d '\n')"
+        echo "::set-env name=CONTROL_FILE::control"
+        echo "::set-env name=ARCH::${{ matrix.arch }}"
+        echo "release-version"
+        echo ${{ env.RELEASE_VERSION  }}
+
+    # - uses: actions/cache@v3
+    #   with:
+    #     path: |
+    #       ~/.cache/go-build
+    #       ~/go/pkg/mod
+    #     key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+
+    # Reference : https://www.debian.org/doc/debian-policy/ch-controlfields.html
+    - name: Creating Required Folder Structure
+      run: |
+        mkdir -p example/apt-repo
+        mkdir -p example/mw-agent_${{ env.RELEASE_VERSION  }}-1_$ARCH/usr/bin
+        mkdir -p example/mw-agent_${{ env.RELEASE_VERSION  }}-1_$ARCH/DEBIAN
+        mkdir -p controlsetup
+        touch controlsetup/control
+
+        cat << EOF > controlsetup/control
+        Package: mw-agent
+        Version: ${{ env.RELEASE_VERSION  }}
+        Maintainer: middleware <dev@middleware.io>
+        Depends: libc6
+        Architecture: $ARCH
+        Homepage: https://middleware.io
+        Description: Middleware Agent
+        EOF
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.20.0
+
+    # Building with CGO_ENABLED=0 so that we can build static binary which is not dependent on any external libraries
+    # Building with -ldflags="-s -w" to reduce the size of binary
+    - name: Go Build
+      run: |
+        CGO_ENABLED=0 GOOS=linux GOARCH=${{ matrix.arch }} go build -ldflags="-s -w -X main.agentVersion=${RELEASE_VERSION}" -v -a -o $BINARY_SOURCE cmd/host-agent/main.go
+
+    - name: Copying Code Binary into target location
+      run: |
+          cp $BINARY_SOURCE example/mw-agent_${{ env.RELEASE_VERSION  }}-1_$ARCH/usr/bin/.
+
+    - name: Creating Control File
+      run: |
+          cp controlsetup/$CONTROL_FILE example/mw-agent_${{ env.RELEASE_VERSION  }}-1_$ARCH/DEBIAN/control
+
+    - name: Creating DEB package
+      run: |
+          dpkg --build example/mw-agent_${{ env.RELEASE_VERSION  }}-1_$ARCH
+          dpkg-deb --info example/mw-agent_${{ env.RELEASE_VERSION  }}-1_$ARCH.deb
+          dpkg-deb --contents example/mw-agent_${{ env.RELEASE_VERSION  }}-1_$ARCH.deb
+
+    - name: Publishing DEB with Github Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: |
+          Release ${{ github.ref }}
+        draft: true
+        prerelease: true
+
+    - name: Upload JAR as Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./example/mw-agent_${{ env.RELEASE_VERSION  }}-1_${{ matrix.arch }}.deb
+        asset_name: mw-agent_${{ env.RELEASE_VERSION  }}-1_${{ matrix.arch }}.deb
+        asset_content_type: application/x-deb
