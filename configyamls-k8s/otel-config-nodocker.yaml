@@ -99,6 +99,7 @@ receivers:
     insecure_skip_verify: true
     k8s_api_config:
       auth_type: serviceAccount
+    extra_metadata_labels: [container.id, k8s.volume.type]
   hostmetrics:
     collection_interval: 5s
     scrapers:
@@ -155,7 +156,7 @@ exporters:
   logging:
     loglevel: warn
   otlp:
-    endpoint: ${TARGET}
+    endpoint: ${MW_TARGET}
 processors:
   # filter/blanklog:
   #   logs: 
@@ -322,7 +323,7 @@ processors:
 service:
     telemetry:
       logs:
-        level: "warn"
+        level: "fatal"
       metrics:
         address: 0.0.0.0:8888
     #extensions:

@@ -1,5 +1,6 @@
 name: Build & Push Docker Image for Host Agent
 on:
+  workflow_dispatch:
   push:
     paths:
     - 'configyamls/all/otel-config.yaml'

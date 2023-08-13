@@ -13,6 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
@@ -36,7 +37,7 @@ func (c *HostAgent) GetFactories(ctx context.Context) (otelcol.Factories, error)
 	factories := otelcol.Factories{}
 	factories.Extensions, err = extension.MakeFactoryMap(
 		healthcheckextension.NewFactory(),
-	// frontend.NewAuthFactory(),
+		// frontend.NewAuthFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err
@@ -53,6 +54,7 @@ func (c *HostAgent) GetFactories(ctx context.Context) (otelcol.Factories, error)
 		windowseventlogreceiver.NewFactory(),
 		windowsperfcountersreceiver.NewFactory(),
 		mongodbreceiver.NewFactory(),
+		mysqlreceiver.NewFactory(),
 	}...)
 	if err != nil {
 		return otelcol.Factories{}, err

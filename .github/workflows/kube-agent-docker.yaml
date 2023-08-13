@@ -20,8 +20,10 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v3
         with:
+          token: ${{ secrets.GHCR_TOKEN }}
+          ssh-key: ${{ secrets.CHECK_AGENT_ACCESS }}
           submodules: 'recursive'
-
+        
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
@@ -49,5 +51,5 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: | 
-            ${{  github.event.inputs.tag || steps.meta.outputs.tags }}
+            ghcr.io/middleware-labs/mw-kube-agent:${{  github.event.inputs.tag || steps.meta.outputs.tags }}
             ghcr.io/middleware-labs/agent-kube-go:${{  github.event.inputs.tag || steps.meta.outputs.tags }}
