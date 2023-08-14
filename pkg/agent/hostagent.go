@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -214,7 +213,7 @@ func (c *HostAgent) updateMysqlConfig(config map[string]interface{},
 func (c *HostAgent) updateConfig(config map[string]interface{}, path string) (map[string]interface{}, error) {
 
 	// Read the YAML file
-	yamlData, err := ioutil.ReadFile(path)
+	yamlData, err := os.ReadFile(path)
 	if err != nil {
 		return map[string]interface{}{}, err
 	}
@@ -276,7 +275,6 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	params.Add("host_tags", c.hostTags)
 	// Add Query Parameters to the URL
 	baseUrl.RawQuery = params.Encode() // Escape Query Parameters
-
 	resp, err := http.Get(baseUrl.String())
 	if err != nil {
 		c.logger.Error("failed to call get configuration api", zap.Error(err))
@@ -299,7 +297,6 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 
 	// Unmarshal JSON response into ApiResponse struct
 	var apiResponse apiResponseForYAML
-	// fmt.Println("body: ", string(body))
 	if err := json.Unmarshal(body, &apiResponse); err != nil {
 		c.logger.Error("failed to unmarshal api response", zap.Error(err))
 		return err
