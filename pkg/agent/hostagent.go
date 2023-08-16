@@ -24,82 +24,18 @@ import (
 
 // HostAgent implements Agent interface for Hosts (e.g Linux)
 type HostAgent struct {
-	apiKey string
-	target string
-
-	enableSyntheticMonitoring bool
-	configCheckInterval       string
-
-	apiURLForConfigCheck string
-
+	Config
 	logger              *zap.Logger
-	dockerEndpoint      string
-	hostTags            string
 	otelConfigDirectory string
 }
 
 // HostOptions takes in various options for HostAgent
 type HostOptions func(h *HostAgent)
 
-// WithHostAgentApiKey sets api key for interacting with
-// the Middleware backend
-func WithHostAgentApiKey(key string) HostOptions {
-	return func(h *HostAgent) {
-		h.apiKey = key
-	}
-}
-
-// WithHostAgentTarget sets target URL for sending insights
-// to the Middlware backend.
-func WithHostAgentTarget(t string) HostOptions {
-	return func(h *HostAgent) {
-		h.target = t
-	}
-}
-
-// WithHostAgentEnableSyntheticMonitoring enables synthetic
-// monitoring to be performed from the agent.
-func WithHostAgentEnableSyntheticMonitoring(e bool) HostOptions {
-	return func(h *HostAgent) {
-		h.enableSyntheticMonitoring = e
-	}
-}
-
-// WithHostAgentConfigCheckInterval sets the duration for checking with
-// the Middleware backend for configuration update.
-func WithHostAgentConfigCheckInterval(c string) HostOptions {
-	return func(h *HostAgent) {
-		h.configCheckInterval = c
-	}
-}
-
-// WithHostAgentApiURLForConfigCheck sets the URL for the periodic
-// configuration check.
-func WithHostAgentApiURLForConfigCheck(u string) HostOptions {
-	return func(h *HostAgent) {
-		h.apiURLForConfigCheck = u
-	}
-}
-
 // WithHostAgentLogger sets the logger to be used with agent logs
 func WithHostAgentLogger(logger *zap.Logger) HostOptions {
 	return func(h *HostAgent) {
 		h.logger = logger
-	}
-}
-
-// WithHostAgentDockerEndpoint sets the endpoint for docker so that
-// the agent can figure out if it needs to send docker logs & metrics.
-func WithHostAgentDockerEndpoint(endpoint string) HostOptions {
-	return func(h *HostAgent) {
-		h.dockerEndpoint = endpoint
-	}
-}
-
-// WithHostAgentHostTags sets the tag for particular host
-func WithHostAgentHostTags(tags string) HostOptions {
-	return func(h *HostAgent) {
-		h.hostTags = tags
 	}
 }
 
@@ -112,17 +48,18 @@ func WithHostAgentOtelConfigDirectory(d string) HostOptions {
 }
 
 // NewHostAgent returns new agent for Kubernetes with given options.
-func NewHostAgent(opts ...HostOptions) *HostAgent {
-	var cfg HostAgent
+func NewHostAgent(cfg Config, opts ...HostOptions) *HostAgent {
+	var agent HostAgent
+	agent.Config = cfg
 	for _, apply := range opts {
-		apply(&cfg)
+		apply(&agent)
 	}
 
-	if cfg.logger == nil {
-		cfg.logger, _ = zap.NewProduction()
+	if agent.logger == nil {
+		agent.logger, _ = zap.NewProduction()
 	}
 
-	return &cfg
+	return &agent
 }
 
 var (
@@ -261,18 +198,18 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	hostname := getHostname()
 
 	// Call Webhook
-	u, err := url.Parse(c.apiURLForConfigCheck)
+	u, err := url.Parse(c.ApiURLForConfigCheck)
 	if err != nil {
 		return err
 	}
 
-	baseUrl := u.JoinPath(apiPathForYAML).JoinPath(c.apiKey)
+	baseUrl := u.JoinPath(apiPathForYAML).JoinPath(c.ApiKey)
 	params := url.Values{}
 	params.Add("config", configType)
 	//params.Add("platform", runtime.GOOS)
 	params.Add("platform", "linux")
 	params.Add("host_id", hostname)
-	params.Add("host_tags", c.hostTags)
+	params.Add("host_tags", c.HostTags)
 	// Add Query Parameters to the URL
 	baseUrl.RawQuery = params.Encode() // Escape Query Parameters
 	resp, err := http.Get(baseUrl.String())
@@ -364,7 +301,7 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 func (c *HostAgent) GetUpdatedYAMLPath() (string, error) {
 	configType := "docker"
 	yamlPath := yamlFile
-	dockerSocketPath := strings.Split(c.dockerEndpoint, "//")
+	dockerSocketPath := strings.Split(c.DockerEndpoint, "//")
 	if len(dockerSocketPath) != 2 || !isSocketFn(dockerSocketPath[1]) {
 		configType = "nodocker"
 		yamlPath = yamlFileNoDocker
@@ -407,13 +344,13 @@ func (c *HostAgent) callRestartStatusAPI() error {
 	// fmt.Println("Starting recursive restart check......")
 	// apiURLForRestart, _ := checkForConfigURLOverrides()
 	hostname := getHostname()
-	u, err := url.Parse(c.apiURLForConfigCheck)
+	u, err := url.Parse(c.ApiURLForConfigCheck)
 	if err != nil {
 		return err
 	}
 
 	baseUrl := u.JoinPath(apiPathForRestart)
-	baseUrl = baseUrl.JoinPath(c.apiKey)
+	baseUrl = baseUrl.JoinPath(c.ApiKey)
 	params := url.Values{}
 	params.Add("host_id", hostname)
 	params.Add("platform", runtime.GOOS)
@@ -456,7 +393,7 @@ func (c *HostAgent) callRestartStatusAPI() error {
 // has changed.
 func (c *HostAgent) ListenForConfigChanges(ctx context.Context) error {
 
-	restartInterval, err := time.ParseDuration(c.configCheckInterval)
+	restartInterval, err := time.ParseDuration(c.ConfigCheckInterval)
 	if err != nil {
 		return err
 	}
@@ -479,10 +416,10 @@ func (c *HostAgent) ListenForConfigChanges(ctx context.Context) error {
 }
 
 func (c *HostAgent) HasValidTags() bool {
-	if c.hostTags == "" {
+	if c.HostTags == "" {
 		return true
 	}
-	pairs := strings.Split(c.hostTags, ",")
+	pairs := strings.Split(c.HostTags, ",")
 	for _, pair := range pairs {
 		keyValue := strings.Split(pair, ":")
 		if len(keyValue) != 2 {
