@@ -11,10 +11,7 @@
 !include "nsDialogs.nsh"
 !include "MUI2.nsh"
 !include "LogicLib.nsh"
-!include "ReplaceInFile3.nsh"
 !addplugindir "Plugins"
-  
-
 
 ;--------------------------------
 ;Settings
@@ -166,28 +163,14 @@ Function PgPageLeave
 FunctionEnd
 
 Function UpdateConfigFile
-    StrCpy $OLD_STR "api-key:"
-    StrCpy $FST_OCC all
-    StrCpy $NR_OCC all
-    StrCpy $REPLACEMENT_STR "api-key: $0"
-    StrCpy $FILE_TO_MODIFIED "$INSTDIR\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}"
-    !insertmacro ReplaceInFile $OLD_STR $FST_OCC $NR_OCC $REPLACEMENT_STR $FILE_TO_MODIFIED
 
-    StrCpy $OLD_STR "target:"
-    StrCpy $FST_OCC all
-    StrCpy $NR_OCC all
-    StrCpy $REPLACEMENT_STR "target: $1"
-    !insertmacro ReplaceInFile $OLD_STR $FST_OCC $NR_OCC $REPLACEMENT_STR $FILE_TO_MODIFIED
-
-    # clear out host-tags in the config file while installation. Users can 
-    # always add them post installation.
-    StrCpy $OLD_STR "name:my-machine,env:production"
-    StrCpy $FST_OCC all
-    StrCpy $NR_OCC all
-    StrCpy $REPLACEMENT_STR ""
-    !insertmacro ReplaceInFile $OLD_STR $FST_OCC $NR_OCC $REPLACEMENT_STR $FILE_TO_MODIFIED
-
-
+    FileOpen $4 "$INSTDIR\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}" w
+    FileWrite $4 "api-key: $0 $\r$\n"
+    FileWrite $4 "target: $1 $\r$\n"
+    FileWrite $4 "enable-synthetic-monitoring: true $\r$\n"
+    FileWrite $4 "config-check-interval: $\"5m$\"$\r$\n"
+    FileWrite $4 "logfile: $\"mw-agent.log$\"$\r$\n"
+    FileClose $4
 FunctionEnd
 ;--------------------------------
 ;Installer section
