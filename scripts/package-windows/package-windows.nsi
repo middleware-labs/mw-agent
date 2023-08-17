@@ -12,7 +12,8 @@
 !include "MUI2.nsh"
 !include "LogicLib.nsh"
 !addplugindir "Plugins"
-
+!include "StrFunc.nsh"
+${StrRep}
 ;--------------------------------
 ;Settings
   !define APPNAME "Middleware Windows Agent"
@@ -27,7 +28,7 @@
   !define LOGO_ICON_FILE "logo.ico"
   !define MUI_ICON "logo.ico"
   !define MUI_UNICON "logo.ico"
-  !define LICENSE_TEXT_FILE "LICENSE.txt"
+  !define LICENSE_TEXT_FILE "${REPO_ROOT_DIR}\LICENSE"
   ;!define SPLASH_IMG_FILE "splash.bmp"
   ;!define HEADER_IMG_FILE "header.bmp"
   # These three must be integers
@@ -118,6 +119,7 @@ Var StartMenuFolder
 Var Dialog
 Var TextAPIKey
 Var TextTarget
+Var LogFilePath
 
 Function pgPageCreate
     !insertmacro MUI_HEADER_TEXT "Middleware Settings" "Please provide API Key and Target URL for your Middleware account"
@@ -169,7 +171,9 @@ Function UpdateConfigFile
     FileWrite $4 "target: $1 $\r$\n"
     FileWrite $4 "enable-synthetic-monitoring: true $\r$\n"
     FileWrite $4 "config-check-interval: $\"5m$\"$\r$\n"
-    FileWrite $4 "logfile: $\"mw-agent.log$\"$\r$\n"
+    Strcpy $LogFilePath "$INSTDIR\mw-agent.log"
+    ${StrRep} $R0 $LogFilePath "\" "\\"
+    FileWrite $4 "logfile: $\"$R0$\"$\r$\n"
     FileClose $4
 FunctionEnd
 ;--------------------------------
