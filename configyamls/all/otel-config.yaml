@@ -77,9 +77,6 @@ processors:
     - action: update
       key: agent.installation.time
       value: ${MW_AGENT_INSTALLATION_TIME}
-    - action: insert
-      key: mw.host.tags
-      value: ${MW_HOST_TAGS}
   resource/2:
     attributes:
     - action: upsert
@@ -99,6 +96,38 @@ processors:
     - action: upsert
       from_attribute: host.name
       key: host.id
+  resource/mongodb:
+    attributes:
+    - action: insert
+      from_attribute: mongodb.database.name
+      key: mw.db.name
+    - action: upsert
+      key: mw.db.name
+      value: mongodb
+  resource/mysql:
+    attributes:
+    - action: insert
+      from_attribute: mysql.instance.endpoint
+      key: mw.db.name
+    - action: upsert
+      key: mw.db.name
+      value: mysql
+  resource/sqlserver:
+    attributes:
+    - action: insert
+      from_attribute: sqlserver.database.name
+      key: mw.db.name
+    - action: upsert
+      key: mw.db.name
+      value: sqlserver
+  resource/postgresql:
+    attributes:
+    - action: insert
+      from_attribute: postgresql.database.name
+      key: mw.db.name
+    - action: upsert
+      key: mw.db.name
+      value: postgresql
   resourcedetection:
     detectors:
     - env
@@ -113,13 +142,9 @@ receivers:
     endpoint: unix:///var/run/docker.sock
     timeout: 20s
   filelog:
-    exclude:
-    - /var/log/mw-agent/apt-installation-*.log
-    - /var/log/mw-agent/rpm-installation-*.log
     include:
     - /var/log/**/*.log*
     - /var/lib/docker/container/**/*.log*
-    - $MW_LOG_PATHS
     include_file_name_resolved: true
     include_file_path: true
     include_file_path_resolved: true
@@ -184,12 +209,37 @@ receivers:
         avoid_selected_errors: true
         mute_process_name_error: true
       processes: {}
+  mongodb:
+    collection_interval: 60s
+    hosts:
+    - endpoint: localhost:27017
+    tls:
+      insecure: true
+      insecure_skip_verify: true
+  mysql:
+    collection_interval: 10s
+    endpoint: localhost:3306
+    password: password
+    username: root
+  sqlserver:
+    collection_interval: 10s
+#    endpoint: localhost:3306
+#    password: password
+#    username: root
   otlp:
     protocols:
       grpc:
         endpoint: 0.0.0.0:9319
       http:
         endpoint: 0.0.0.0:9320
+  postgresql:
+    collection_interval: 10s
+    endpoint: localhost:5432
+    password: postgres
+    tls:
+      insecure: true
+    transport: tcp
+    username: postgres
   prometheus:
     config:
       scrape_configs:
@@ -211,6 +261,7 @@ service:
       receivers:
       - otlp
       - fluentforward
+      - filelog
     metrics:
       exporters:
       - otlp/2
@@ -223,6 +274,46 @@ service:
       - docker_stats
       - otlp
       - prometheus
+    metrics/mongodb:
+      exporters:
+      - otlp/2
+      processors:
+      - resourcedetection
+      - resource
+      - resource/mongodb
+      - batch
+      receivers:
+      - mongodb
+    metrics/mysql:
+      exporters:
+      - otlp/2
+      processors:
+      - resourcedetection
+      - resource
+      - resource/mysql
+      - batch
+      receivers:
+      - mysql
+    metrics/sqlserver:
+      exporters:
+      - otlp/2
+      processors:
+      - resourcedetection
+      - resource
+      - resource/sqlserver
+      - batch
+      receivers:
+      - sqlserver
+    metrics/postgresql:
+      exporters:
+      - otlp/2
+      processors:
+      - resourcedetection
+      - resource
+      - resource/postgresql
+      - batch
+      receivers:
+      - postgresql
     traces:
       exporters:
       - otlp/2

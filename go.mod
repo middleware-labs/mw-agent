@@ -40,6 +40,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver v0.68.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.68.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.68.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver v0.68.0
 	github.com/prometheus/common v0.44.0
 	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli/v2 v2.25.7

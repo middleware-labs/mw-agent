@@ -115,6 +115,41 @@ func TestUpdateMysqlConfig(t *testing.T) {
 	assert.Contains(t, mysql, "password")
 }
 
+func TestUpdateSqlserverConfig(t *testing.T) {
+	// Define the initial config and sqlserverConfig
+	initialConfig := map[string]interface{}{
+		"receivers": map[string]interface{}{
+			"sqlserver": map[string]interface{}{
+				"endpoint": "example.com:5432",
+				"database": "mydb",
+				"user":     "myuser",
+				"password": "mypassword",
+			},
+		},
+	}
+
+	sqlserverConfig := sqlserverConfiguration{
+		Path: "db-config_test.yaml",
+	}
+
+	agent := NewHostAgent(WithHostAgentLogger(zap.NewNop()))
+	// Call the updateSqlserverConfig function
+	updatedConfig, err := agent.updateSqlserverConfig(initialConfig, sqlserverConfig)
+	assert.NoError(t, err)
+
+	// Assert that the updated config contains the expected values
+	assert.Contains(t, updatedConfig, "receivers")
+	receivers, ok := updatedConfig["receivers"].(map[string]interface{})
+	assert.True(t, ok)
+	assert.Contains(t, receivers, "sqlserver")
+	sqlserver, ok := receivers["sqlserver"].(map[string]interface{})
+	assert.True(t, ok)
+	assert.Contains(t, sqlserver, "endpoint")
+	assert.Contains(t, sqlserver, "database")
+	assert.Contains(t, sqlserver, "user")
+	assert.Contains(t, sqlserver, "password")
+}
+
 func TestListenForConfigChanges(t *testing.T) {
 	agent := NewHostAgent(WithHostAgentLogger(zap.NewNop()))
 	agent.configCheckInterval = "1s"
@@ -168,6 +203,7 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assert.Contains(t, factories.Receivers, component.Type("postgresql"))
 	assert.Contains(t, factories.Receivers, component.Type("mongodb"))
 	assert.Contains(t, factories.Receivers, component.Type("mysql"))
+	assert.Contains(t, factories.Receivers, component.Type("sqlserver"))
 
 	// check if factories contain expected exporters
 	assert.Len(t, factories.Exporters, 3)

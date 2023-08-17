@@ -145,6 +145,7 @@ const (
 	PostgreSQL DatabaseType = iota
 	MongoDB
 	MySQL
+	SQLServer
 )
 
 type pgdbConfiguration struct {
@@ -159,13 +160,18 @@ type mysqlConfiguration struct {
 	Path string `json:"path"`
 }
 
+type sqlserverConfiguration struct {
+	Path string `json:"path"`
+}
+
 type apiResponseForYAML struct {
-	Status        bool                 `json:"status"`
-	Config        configType           `json:"config"`
-	PgdbConfig    pgdbConfiguration    `json:"pgdb_config"`
-	MongodbConfig mongodbConfiguration `json:"mongodb_config"`
-	MysqlConfig   mysqlConfiguration   `json:"mysql_config"`
-	Message       string               `json:"message"`
+	Status          bool                   `json:"status"`
+	Config          configType             `json:"config"`
+	PgdbConfig      pgdbConfiguration      `json:"pgdb_config"`
+	MongodbConfig   mongodbConfiguration   `json:"mongodb_config"`
+	MysqlConfig     mysqlConfiguration     `json:"mysql_config"`
+	SqlserverConfig sqlserverConfiguration `json:"sqlserver_config"`
+	Message         string                 `json:"message"`
 }
 
 type apiResponseForRestart struct {
@@ -192,6 +198,8 @@ func (d DatabaseType) String() string {
 		return "mongodb"
 	case MySQL:
 		return "mysql"
+	case SQLServer:
+		return "sqlserver"
 	}
 	return "unknown"
 }
@@ -211,10 +219,15 @@ func (c *HostAgent) updateMysqlConfig(config map[string]interface{},
 	return c.updateConfig(config, mysqlConfig.Path)
 }
 
+func (c *HostAgent) updateSqlserverConfig(config map[string]interface{},
+	sqlserverConfig sqlserverConfiguration) (map[string]interface{}, error) {
+	return c.updateConfig(config, sqlserverConfig.Path)
+}
+
 func (c *HostAgent) updateConfig(config map[string]interface{}, path string) (map[string]interface{}, error) {
 
 	// Read the YAML file
-	yamlData, err := ioutil.ReadFile(filepath.Join(c.otelConfigDirectory, path))
+	yamlData, err := ioutil.ReadFile(path)
 	if err != nil {
 		return map[string]interface{}{}, err
 	}
@@ -344,6 +357,14 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	mysqlConfig := apiResponse.MysqlConfig
 	if c.checkDBConfigValidity(MySQL, mysqlConfig.Path) {
 		apiYAMLConfig, err = c.updateMysqlConfig(apiYAMLConfig, mysqlConfig)
+		if err != nil {
+			return err
+		}
+	}
+
+	sqlserverConfig := apiResponse.SqlserverConfig
+	if c.checkDBConfigValidity(SQLServer, sqlserverConfig.Path) {
+		apiYAMLConfig, err = c.updateSqlserverConfig(apiYAMLConfig, sqlserverConfig)
 		if err != nil {
 			return err
 		}

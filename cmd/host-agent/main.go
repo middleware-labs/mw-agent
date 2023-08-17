@@ -225,13 +225,13 @@ func app(logger *zap.Logger) *cli.App {
 						return agent.ErrInvalidHostTags
 					}
 
-					yamlPath, err := hostAgent.GetUpdatedYAMLPath()
+					/*yamlPath, err := hostAgent.GetUpdatedYAMLPath()
 					if err != nil {
 						logger.Error("error getting config file path", zap.Error(err))
 						return err
-					}
+					}*/
 
-					// yamlPath := "./configyamls/all/otel-config.yaml"
+					yamlPath := "./configyamls/all/otel-config.yaml"
 					logger.Info("yaml path loaded", zap.String("path", yamlPath))
 
 					configProvider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{
