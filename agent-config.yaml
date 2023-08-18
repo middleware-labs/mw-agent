@@ -1,10 +1,10 @@
 
 # api-key is your Middleware API Key obtained by logging 
 # into your Middleware account
-api-key: <your api key> 
+api-key: 
 
 # target is your unique Middleware account URL
-target: https://<your-unique-subdomain>.middleware.io
+target:
 
 # Synthetic monitoring using the Middleware agent is disabled by default.
 # Set enable-synthetic-monitoring to true if you want this agent to be
@@ -20,3 +20,10 @@ config-check-interval: "5m"
 # The tags required to identify / categorize the host in the Middleware UI.
 # The tags are comma separated key:value pairs.
 host-tags: "name:my-machine,env:production"
+
+# log file to store agent logs in a given file. If left empty,
+# the logs will be directed to stdout & stderr. 
+# For Windows, this path needs to use double backslashes as a file separator 
+# instead of a single backslash. 
+# E.g. C:\\Program Files (x86)\\Middleware Windows Agent\\mw-agent.log
+logfile: "mw-agent.log"

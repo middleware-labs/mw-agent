@@ -27,7 +27,7 @@ func TestUpdatepgdbConfig(t *testing.T) {
 		Path: "db-config_test.yaml",
 	}
 
-	agent := NewHostAgent(WithHostAgentLogger(zap.NewNop()))
+	agent := NewHostAgent(Config{}, WithHostAgentLogger(zap.NewNop()))
 	// Call the updatepgdbConfig function
 	updatedConfig, err := agent.updatepgdbConfig(initialConfig, pgdbConfig)
 	assert.NoError(t, err)
@@ -62,7 +62,7 @@ func TestUpdateMongodbConfig(t *testing.T) {
 		Path: "db-config_test.yaml",
 	}
 
-	agent := NewHostAgent(WithHostAgentLogger(zap.NewNop()))
+	agent := NewHostAgent(Config{}, WithHostAgentLogger(zap.NewNop()))
 
 	updatedConfig, err := agent.updateMongodbConfig(initialConfig, mongodbConfig)
 	assert.NoError(t, err)
@@ -97,7 +97,8 @@ func TestUpdateMysqlConfig(t *testing.T) {
 		Path: "db-config_test.yaml",
 	}
 
-	agent := NewHostAgent(WithHostAgentLogger(zap.NewNop()))
+	cfg := Config{}
+	agent := NewHostAgent(cfg, WithHostAgentLogger(zap.NewNop()))
 	// Call the updateMysqlConfig function
 	updatedConfig, err := agent.updateMysqlConfig(initialConfig, mysqlConfig)
 	assert.NoError(t, err)
@@ -151,8 +152,10 @@ func TestUpdateSqlserverConfig(t *testing.T) {
 }
 
 func TestListenForConfigChanges(t *testing.T) {
-	agent := NewHostAgent(WithHostAgentLogger(zap.NewNop()))
-	agent.configCheckInterval = "1s"
+	cfg := Config{
+		ConfigCheckInterval: "1s",
+	}
+	agent := NewHostAgent(cfg, WithHostAgentLogger(zap.NewNop()))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -177,7 +180,7 @@ func TestListenForConfigChanges(t *testing.T) {
 }
 
 func TestHostAgentGetFactories(t *testing.T) {
-	agent := NewHostAgent(WithHostAgentLogger(zap.NewNop()))
+	agent := NewHostAgent(Config{}, WithHostAgentLogger(zap.NewNop()))
 
 	factories, err := agent.GetFactories(context.Background())
 	assert.NoError(t, err)
@@ -241,7 +244,9 @@ func TestHostAgentHasValidTags(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		agent := NewHostAgent(WithHostAgentHostTags(tc.tags))
+		agent := NewHostAgent(Config{
+			HostTags: tc.tags,
+		})
 
 		isValid := agent.HasValidTags()
 		if isValid != tc.isValid {

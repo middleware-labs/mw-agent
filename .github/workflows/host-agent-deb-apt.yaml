@@ -1,4 +1,4 @@
-name: Build And Push APT Package for Ubuntu
+name: Host Agent - DEB - APT
 
 on:
   workflow_dispatch:
@@ -6,14 +6,6 @@ on:
       release_version:
         description: 'Release number for DEB + APT package'
         required: true
-  # push:
-  #   paths-ignore:
-  #     - 'README.md'
-  #     - '.github/**'
-  #     - 'configyamls/**'
-  #   branches:
-  #    - 'master'
-  #    - 'workflow-experiments'
 
 env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true
@@ -46,12 +38,14 @@ jobs:
         elif [ ${{ matrix.arch }} == "ARM" ]; then
           echo "::set-env name=ARCH::arm64"
           echo "::set-env name=BINARY_SOURCE::release/mw-go-agent-host-arm"
-          echo "::set-env name=RELEASE_VERSION::$(echo "${{ github.event.inputs.release_version }}" | tr -d '\n')"
+          echo "::set-env name=RELEASE_VERSION::$(echo "${{ github.event.inputs.release_version }}" | tr -d '\n')arm64"
           echo "::set-env name=CONTROL_FILE::control"
         else
           echo "Unsupported architecture"
           exit 1
         fi
+        echo "release-version"
+        echo $RELEASE_VERSION
 
     - uses: actions/cache@v3
       with:
@@ -82,7 +76,7 @@ jobs:
         elif [ ${{ matrix.arch }} == "ARM" ]; then
           cat << EOF > controlsetup/control
         Package: mw-go-agent-host-arm
-        Version: ${RELEASE_VERSION}arm64
+        Version: ${RELEASE_VERSION}
         Maintainer: example <example@example.com>
         Depends: libc6
         Architecture: arm64
@@ -203,9 +197,16 @@ jobs:
         cat example/repos/$RELEASE_VERSION/apt-repo/dists/stable/Release | gpg --default-key example -abs > example/repos/$RELEASE_VERSION/apt-repo/dists/stable/Release.gpg
         cat example/repos/$RELEASE_VERSION/apt-repo/dists/stable/Release | gpg --default-key example -abs --clearsign > example/repos/$RELEASE_VERSION/apt-repo/dists/stable/InRelease
 
-    - name: Acquire lock
-      run: flock upload.lock -c "echo Lock acquired"
+  # upload-artifacts:
+  #   runs-on: ubuntu-20.04
+  #   needs: build
+  #   strategy:
+  #     matrix:
+  #       arch:
+  #         - ARM
+  #         - x64
 
+  #   steps:
     - name: Remove extra files & Upload to Github Pages (install.middleware.io)
       run: |
         mkdir -p example/scripts
@@ -229,8 +230,3 @@ jobs:
         git add .
         git commit -m "install.middleware.io updated"
         git push origin master
-    
-    - name: Release lock
-      run: flock upload.lock -c "echo Lock released"
-    - name: Delay
-      run: sleep 10
