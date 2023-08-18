@@ -33,61 +33,12 @@ import (
 
 // KubeAgent implements Agent interface for Kubernetes
 type KubeAgent struct {
-	apiKey string
-	target string
-
-	enableSytheticMonitoring bool
-	configCheckInterval      string
-
-	apiURLForConfigCheck string
-
-	logger         *zap.Logger
-	dockerEndpoint string
+	KubeConfig
+	logger *zap.Logger
 }
 
 // KubeOptions takes in various options for KubeAgent
 type KubeOptions func(h *KubeAgent)
-
-// WithKubeAgentApiKey sets api key for interacting with
-// the Middleware backend
-func WithKubeAgentApiKey(key string) KubeOptions {
-	return func(h *KubeAgent) {
-		h.apiKey = key
-	}
-}
-
-// WithKubeAgentTarget sets target URL for sending insights
-// to the Middlware backend.
-func WithKubeAgentTarget(t string) KubeOptions {
-	return func(h *KubeAgent) {
-		h.target = t
-	}
-}
-
-// WithKubeAgentEnableSyntheticMonitoring enables synthetic
-// monitoring to be performed from the agent.
-// Note: This is currently not supported in KubeAgent
-func WithKubeAgentEnableSyntheticMonitoring(e bool) KubeOptions {
-	return func(h *KubeAgent) {
-		h.enableSytheticMonitoring = e
-	}
-}
-
-// WithKubeAgentConfigCheckInterval sets the duration for checking with
-// the Middleware backend for configuration update.
-func WithKubeAgentConfigCheckInterval(c string) KubeOptions {
-	return func(h *KubeAgent) {
-		h.configCheckInterval = c
-	}
-}
-
-// WithKubeAgentApiURLForConfigCheck sets the URL for the periodic
-// configuration check.
-func WithKubeAgentApiURLForConfigCheck(u string) KubeOptions {
-	return func(h *KubeAgent) {
-		h.apiURLForConfigCheck = u
-	}
-}
 
 // WithKubeAgentLogger sets the logger to be used with agent logs
 func WithKubeAgentLogger(logger *zap.Logger) KubeOptions {
@@ -96,32 +47,25 @@ func WithKubeAgentLogger(logger *zap.Logger) KubeOptions {
 	}
 }
 
-// WithKubeAgentDockerEndpoint sets the endpoint for docker so that
-// the agent can figure out if it needs to send docker logs & metrics.
-func WithKubeAgentDockerEndpoint(endpoint string) KubeOptions {
-	return func(h *KubeAgent) {
-		h.dockerEndpoint = endpoint
-	}
-}
-
 // NewKubeAgent returns new agent for Kubernetes with given options.
-func NewKubeAgent(opts ...KubeOptions) *KubeAgent {
-	var cfg KubeAgent
+func NewKubeAgent(cfg KubeConfig, opts ...KubeOptions) *KubeAgent {
+	var agent KubeAgent
+	agent.KubeConfig = cfg
 	for _, apply := range opts {
-		apply(&cfg)
+		apply(&agent)
 	}
 
-	if cfg.logger == nil {
-		cfg.logger, _ = zap.NewProduction()
+	if agent.logger == nil {
+		agent.logger, _ = zap.NewProduction()
 	}
 
-	return &cfg
+	return &agent
 }
 
 // GetUpdatedYAMLPath gets the correct otel configuration file.
 func (k *KubeAgent) GetUpdatedYAMLPath() (string, error) {
 	yamlPath := "/app/otel-config.yaml"
-	dockerSocketPath := strings.Split(k.dockerEndpoint, "//")
+	dockerSocketPath := strings.Split(k.DockerEndpoint, "//")
 
 	if len(dockerSocketPath) != 2 || !isSocketFn(dockerSocketPath[1]) {
 		yamlPath = "/app/otel-config-nodocker.yaml"
@@ -131,7 +75,7 @@ func (k *KubeAgent) GetUpdatedYAMLPath() (string, error) {
 }
 
 // GetFactories get otel factories for KubeAgent
-func (k *KubeAgent) GetFactories(ctx context.Context) (otelcol.Factories, error) {
+func (k *KubeAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 	var err error
 	factories := otelcol.Factories{}
 	factories.Extensions, err = extension.MakeFactoryMap(

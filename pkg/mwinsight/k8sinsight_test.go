@@ -3,7 +3,7 @@ package mwinsight
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -110,7 +110,7 @@ func TestAnalyze(t *testing.T) {
 			insight := NewK8sInsight(
 				WithK8sInsightK8sClient(k8sClient),
 				WithK8sInsightBackend(BackendTypeOpenAI),
-				WithK8sInsightApiKey("1234"),
+				WithK8sInsightAPIKey("1234"),
 				WithK8sInsightTarget("https://test.middleware.io"),
 				WithK8sInsightK8sNameSpace(test.namespace),
 			)
@@ -160,7 +160,7 @@ func TestSend(t *testing.T) {
 				assert.Equal(t, "POST", r.Method)
 
 				// Read the request body
-				body, err := ioutil.ReadAll(r.Body)
+				body, err := io.ReadAll(r.Body)
 				assert.NoError(t, err)
 
 				// Assert the request body contains the expected data
@@ -185,7 +185,7 @@ func TestSend(t *testing.T) {
 				assert.Equal(t, "POST", r.Method)
 
 				// Read the request body
-				body, err := ioutil.ReadAll(r.Body)
+				body, err := io.ReadAll(r.Body)
 				assert.NoError(t, err)
 
 				// Assert the request body contains the expected data
@@ -211,7 +211,7 @@ func TestSend(t *testing.T) {
 			}
 			insight := NewK8sInsight(
 				WithK8sInsightBackend(BackendTypeOpenAI),
-				WithK8sInsightApiKey(test.apiKey),
+				WithK8sInsightAPIKey(test.apiKey),
 				WithK8sInsightTarget(serverURL),
 				WithK8sInsightLogger(logger),
 			)

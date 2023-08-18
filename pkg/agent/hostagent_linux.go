@@ -30,7 +30,7 @@ import (
 )
 
 // GetFactories get otel factories for HostAgent
-func (c *HostAgent) GetFactories(ctx context.Context) (otelcol.Factories, error) {
+func (c *HostAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 	var err error
 	factories := otelcol.Factories{}
 	factories.Extensions, err = extension.MakeFactoryMap(
