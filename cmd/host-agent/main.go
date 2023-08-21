@@ -14,7 +14,7 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/kardianos/service"
-	"github.com/urfave/cli/v2"
+	cli "github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
 
 	"go.opentelemetry.io/collector/component"
@@ -38,12 +38,14 @@ type program struct {
 // on Linux, Windows, MacOS & BSD
 func (p *program) Start(s service.Service) error {
 	// Start should not block. Do the actual work async.
+	p.logger.Info("starting service", zap.Stringer("name", s))
 	go p.run()
 	return nil
 }
 
 func (p *program) Stop(s service.Service) error {
 	// Stop should not block. Return with a few seconds.
+	p.logger.Info("stopping service", zap.Stringer("name", s))
 	return nil
 }
 
@@ -53,13 +55,13 @@ func (p *program) run() {
 	}
 }
 
-func getFlags(cfg *agent.Config) []cli.Flag {
+func getFlags(cfg *agent.HostConfig) []cli.Flag {
 	return []cli.Flag{
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "api-key",
 			EnvVars:     []string{"MW_API_KEY"},
 			Usage:       "Middleware API key for your account.",
-			Destination: &cfg.ApiKey,
+			Destination: &cfg.APIKey,
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "target",
@@ -91,7 +93,7 @@ func getFlags(cfg *agent.Config) []cli.Flag {
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "api-url-for-config-check",
 			EnvVars:     []string{"MW_API_URL_FOR_CONFIG_CHECK"},
-			Destination: &cfg.ApiURLForConfigCheck,
+			Destination: &cfg.APIURLForConfigCheck,
 			DefaultText: "https://app.middleware.io",
 			Value:       "https://app.middleware.io",
 			Hidden:      true,
@@ -136,9 +138,8 @@ func getFlags(cfg *agent.Config) []cli.Flag {
 }
 
 func main() {
-	var cfg agent.Config
+	var cfg agent.HostConfig
 	flags := getFlags(&cfg)
-
 	zapEncoderCfg := zapcore.EncoderConfig{
 		MessageKey: "message",
 
@@ -154,7 +155,10 @@ func main() {
 	zapCfg := zap.NewProductionConfig()
 	zapCfg.EncoderConfig = zapEncoderCfg
 	logger, _ := zapCfg.Build()
-	defer logger.Sync()
+	defer func() {
+		_ = logger.Sync()
+	}()
+
 	app := &cli.App{
 		Name:  "mw-agent",
 		Usage: "Middleware host agent",
@@ -206,7 +210,11 @@ func main() {
 
 					// Listen to the config changes provided by Middleware API
 					if cfg.ConfigCheckInterval != "0" {
-						hostAgent.ListenForConfigChanges(ctx)
+						err = hostAgent.ListenForConfigChanges(ctx)
+						if err != nil {
+							logger.Info("error for listening for config changes", zap.Error(err))
+							return err
+						}
 					}
 
 					if cfg.EnableSyntheticMonitoring {
@@ -226,7 +234,7 @@ func main() {
 
 					// Set MW_TARGET & MW_API_KEY so that envprovider can fill those in the otel config files
 					os.Setenv("MW_TARGET", target)
-					os.Setenv("MW_API_KEY", cfg.ApiKey)
+					os.Setenv("MW_API_KEY", cfg.APIKey)
 
 					// TODO: check if on Windows, socket scheme is different than "unix"
 					os.Setenv("MW_DOCKER_ENDPOINT", cfg.DockerEndpoint)
@@ -312,11 +320,6 @@ func main() {
 					if err != nil {
 						logger.Error("error after running the service", zap.Error(err))
 					}
-					/*if err := collector.Run(context.Background()); err != nil {
-						logger.Error("collector server run finished with error", zap.Error(err))
-						return err
-					}*/
-
 					return nil
 				},
 			},

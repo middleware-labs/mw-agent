@@ -27,7 +27,7 @@ func TestUpdatepgdbConfig(t *testing.T) {
 		Path: "db-config_test.yaml",
 	}
 
-	agent := NewHostAgent(Config{}, WithHostAgentLogger(zap.NewNop()))
+	agent := NewHostAgent(HostConfig{}, WithHostAgentLogger(zap.NewNop()))
 	// Call the updatepgdbConfig function
 	updatedConfig, err := agent.updatepgdbConfig(initialConfig, pgdbConfig)
 	assert.NoError(t, err)
@@ -62,7 +62,7 @@ func TestUpdateMongodbConfig(t *testing.T) {
 		Path: "db-config_test.yaml",
 	}
 
-	agent := NewHostAgent(Config{}, WithHostAgentLogger(zap.NewNop()))
+	agent := NewHostAgent(HostConfig{}, WithHostAgentLogger(zap.NewNop()))
 
 	updatedConfig, err := agent.updateMongodbConfig(initialConfig, mongodbConfig)
 	assert.NoError(t, err)
@@ -97,7 +97,7 @@ func TestUpdateMysqlConfig(t *testing.T) {
 		Path: "db-config_test.yaml",
 	}
 
-	cfg := Config{}
+	cfg := HostConfig{}
 	agent := NewHostAgent(cfg, WithHostAgentLogger(zap.NewNop()))
 	// Call the updateMysqlConfig function
 	updatedConfig, err := agent.updateMysqlConfig(initialConfig, mysqlConfig)
@@ -117,9 +117,8 @@ func TestUpdateMysqlConfig(t *testing.T) {
 }
 
 func TestListenForConfigChanges(t *testing.T) {
-	cfg := Config{
-		ConfigCheckInterval: "1s",
-	}
+	cfg := HostConfig{}
+	cfg.ConfigCheckInterval = "1s"
 	agent := NewHostAgent(cfg, WithHostAgentLogger(zap.NewNop()))
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -145,7 +144,7 @@ func TestListenForConfigChanges(t *testing.T) {
 }
 
 func TestHostAgentGetFactories(t *testing.T) {
-	agent := NewHostAgent(Config{}, WithHostAgentLogger(zap.NewNop()))
+	agent := NewHostAgent(HostConfig{}, WithHostAgentLogger(zap.NewNop()))
 
 	factories, err := agent.GetFactories(context.Background())
 	assert.NoError(t, err)
@@ -208,7 +207,7 @@ func TestHostAgentHasValidTags(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		agent := NewHostAgent(Config{
+		agent := NewHostAgent(HostConfig{
 			HostTags: tc.tags,
 		})
 

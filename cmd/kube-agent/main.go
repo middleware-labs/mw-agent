@@ -24,89 +24,55 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
-func main() {
-
-	logger, _ := zap.NewProduction()
-	defer logger.Sync()
-
-	_, exists := os.LookupEnv("MW_ISSET_AGENT_INSTALLATION_TIME")
-	if exists {
-		logger.Info("MW_ISSET_AGENT_INSTALLATION_TIME env variable exists")
-		if os.Getenv("MW_ISSET_AGENT_INSTALLATION_TIME") != "true" {
-			os.Setenv("MW_ISSET_AGENT_INSTALLATION_TIME", "true")
-			os.Setenv("MW_AGENT_INSTALLATION_TIME", strconv.FormatInt(time.Now().UnixMilli(), 10))
-		}
-	} else {
-		logger.Info("MW_ISSET_AGENT_INSTALLATION_TIME env variable does not exists")
-		/*cmd := exec.Command("echo MW_ISSET_AGENT_INSTALLATION_TIME=true > /etc/environment")
-		stdout, err := cmd.Output()
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-		// Print the output
-		*/
-		os.Setenv("MW_ISSET_AGENT_INSTALLATION_TIME", "true")
-		os.Setenv("MW_AGENT_INSTALLATION_TIME", strconv.FormatInt(time.Now().UnixMilli(), 10))
-	}
-
-	if err := app(logger).Run(os.Args); err != nil {
-		logger.Fatal("could not run application", zap.Error(err))
-	}
-}
-
-func app(logger *zap.Logger) *cli.App {
-
-	// configure flags
-	var apiKey, target, configCheckInterval, apiURLForConfigCheck string
-	var insightRefreshDuration, dockerEndpoint string
-	var enableSyntheticMonitoring bool
-	flags := []cli.Flag{
+func getFlags(cfg *agent.KubeConfig) []cli.Flag {
+	return []cli.Flag{
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "api-key",
 			EnvVars:     []string{"MW_API_KEY"},
 			Usage:       "Middleware API key for your account.",
-			Destination: &apiKey,
+			Destination: &cfg.APIKey,
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "target",
 			EnvVars:     []string{"MW_TARGET", "TARGET"},
 			Usage:       "Middleware target for your account.",
-			Destination: &target,
+			Destination: &cfg.Target,
 		}),
 		altsrc.NewBoolFlag(&cli.BoolFlag{
 			Name:        "enable-synthetic-monitoring",
 			EnvVars:     []string{"MW_ENABLE_SYNTHETIC_MONITORING"},
-			Destination: &enableSyntheticMonitoring,
+			Destination: &cfg.EnableSyntheticMonitoring,
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:    "config-check-interval",
 			EnvVars: []string{"MW_CONFIG_CHECK_INTERVAL"},
 			Usage: "Duration string to periodically check for configuration updates." +
 				"Setting the value to 0 disables this feature.",
-			Destination: &configCheckInterval,
+			Destination: &cfg.ConfigCheckInterval,
 			DefaultText: "60s",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:        "docker-socket-endpoint",
+			Name:        "docker-endpoint",
 			EnvVars:     []string{"MW_DOCKER_ENDPOINT"},
 			Usage:       "Set the endpoint for Docker socket if different from default",
-			Destination: &dockerEndpoint,
+			Destination: &cfg.DockerEndpoint,
 			DefaultText: "unix:///var/run/docker.sock",
 			Value:       "unix:///var/run/docker.sock",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "api-url-for-config-check",
 			EnvVars:     []string{"MW_API_URL_FOR_CONFIG_CHECK"},
-			Destination: &apiURLForConfigCheck,
+			Destination: &cfg.APIURLForConfigCheck,
 			DefaultText: "https://app.middleware.io",
 			Hidden:      true,
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:        "mw-insight-refresh-duration",
+			Name:        "insight-refresh-duration",
 			EnvVars:     []string{"MW_INSIGHT_REFRESH_DURATION"},
-			Destination: &insightRefreshDuration,
+			Destination: &cfg.InsightRefreshDuration,
 			DefaultText: "24h",
 			Value:       "24h",
 			Hidden:      true,
@@ -126,8 +92,50 @@ func app(logger *zap.Logger) *cli.App {
 			}(),
 		},
 	}
+}
 
-	return &cli.App{
+func setAgentInstallationTime(logger *zap.Logger) {
+	_, exists := os.LookupEnv("MW_ISSET_AGENT_INSTALLATION_TIME")
+	if exists {
+		logger.Info("MW_ISSET_AGENT_INSTALLATION_TIME env variable exists")
+		if os.Getenv("MW_ISSET_AGENT_INSTALLATION_TIME") != "true" {
+			os.Setenv("MW_ISSET_AGENT_INSTALLATION_TIME", "true")
+			os.Setenv("MW_AGENT_INSTALLATION_TIME",
+				strconv.FormatInt(time.Now().UnixMilli(), 10))
+		}
+	} else {
+		logger.Info("MW_ISSET_AGENT_INSTALLATION_TIME env variable does not exists")
+		os.Setenv("MW_ISSET_AGENT_INSTALLATION_TIME", "true")
+		os.Setenv("MW_AGENT_INSTALLATION_TIME",
+			strconv.FormatInt(time.Now().UnixMilli(), 10))
+	}
+}
+
+func main() {
+	var cfg agent.KubeConfig
+	flags := getFlags(&cfg)
+	zapEncoderCfg := zapcore.EncoderConfig{
+		MessageKey: "message",
+
+		LevelKey:    "level",
+		EncodeLevel: zapcore.CapitalLevelEncoder,
+
+		TimeKey:    "time",
+		EncodeTime: zapcore.ISO8601TimeEncoder,
+
+		CallerKey:    "caller",
+		EncodeCaller: zapcore.ShortCallerEncoder,
+	}
+	zapCfg := zap.NewProductionConfig()
+	zapCfg.EncoderConfig = zapEncoderCfg
+	logger, _ := zapCfg.Build()
+	defer func() {
+		_ = logger.Sync()
+	}()
+
+	setAgentInstallationTime(logger)
+
+	app := &cli.App{
 		Name:  "mw-agent",
 		Usage: "Middleware Kubernetes agent",
 		Commands: []*cli.Command{
@@ -144,25 +152,16 @@ func app(logger *zap.Logger) *cli.App {
 						wg.Wait()
 					}()
 
-					kubeAgent := agent.NewKubeAgent(
-						agent.WithKubeAgentApiKey(apiKey),
-						agent.WithKubeAgentTarget(target),
-						agent.WithKubeAgentEnableSyntheticMonitoring(
-							enableSyntheticMonitoring),
-						agent.WithKubeAgentConfigCheckInterval(
-							configCheckInterval),
-						agent.WithKubeAgentApiURLForConfigCheck(
-							apiURLForConfigCheck),
+					kubeAgent := agent.NewKubeAgent(cfg,
 						agent.WithKubeAgentLogger(logger),
-						agent.WithKubeAgentDockerEndpoint(dockerEndpoint),
 					)
 
 					// Set MW_TARGET & MW_API_KEY so that envprovider can fill those in the otel config files
-					os.Setenv("MW_TARGET", target)
-					os.Setenv("MW_API_KEY", apiKey)
+					os.Setenv("MW_TARGET", cfg.Target)
+					os.Setenv("MW_API_KEY", cfg.APIKey)
 
 					// Set MW_DOCKER_ENDPOINT env variable to be used by otel collector
-					os.Setenv("MW_DOCKER_ENDPOINT", dockerEndpoint)
+					os.Setenv("MW_DOCKER_ENDPOINT", cfg.DockerEndpoint)
 
 					yamlPath, err := kubeAgent.GetUpdatedYAMLPath()
 					if err != nil {
@@ -177,22 +176,17 @@ func app(logger *zap.Logger) *cli.App {
 					}
 
 					k8sInsight := mwinsight.NewK8sInsight(
-						mwinsight.WithK8sInsightApiKey(apiKey),
-						mwinsight.WithK8sInsightTarget(target),
+						mwinsight.WithK8sInsightAPIKey(cfg.APIKey),
+						mwinsight.WithK8sInsightTarget(cfg.Target),
 						mwinsight.WithK8sInsightK8sClient(k8sClient),
 						mwinsight.WithK8sInsightBackend(mwinsight.BackendTypeOpenAI),
 					)
 
 					logger.Info("starting host agent with config",
-						zap.String("api-key", apiKey),
-						zap.String("target", target),
-						zap.String("config-check-interval", configCheckInterval),
-						zap.String("api-url-for-config-check", apiURLForConfigCheck),
-						zap.String("yaml path", yamlPath),
-						zap.String("docker-endpoint", dockerEndpoint))
+						zap.Stringer("config", cfg))
 
 					// start daily insight analysis
-					duration, err := time.ParseDuration(insightRefreshDuration)
+					duration, err := time.ParseDuration(cfg.InsightRefreshDuration)
 					if err != nil {
 						logger.Error("error in parsing duration", zap.Error(err))
 						return err
@@ -270,10 +264,7 @@ func app(logger *zap.Logger) *cli.App {
 
 					settings := otelcol.CollectorSettings{
 						DisableGracefulShutdown: true,
-						LoggingOptions:          []zap.Option{
-							// zap.Development(),
-							// zap.IncreaseLevel(zap.DebugLevel),
-						},
+						LoggingOptions:          []zap.Option{},
 						BuildInfo: component.BuildInfo{
 							Command:     "otelcontribcol",
 							Description: "OpenTelemetry Collector Contrib",
@@ -291,5 +282,9 @@ func app(logger *zap.Logger) *cli.App {
 				},
 			},
 		},
+	}
+
+	if err := app.Run(os.Args); err != nil {
+		logger.Fatal("could not run application", zap.Error(err))
 	}
 }

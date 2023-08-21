@@ -17,31 +17,58 @@ type Agent interface {
 	ListenForConfigChanges(ctx context.Context) error
 }
 
-// Config stores general configuration for all agent types
-type Config struct {
-	ApiKey                    string
+// BaseConfig stores general configuration for all agent types
+type BaseConfig struct {
+	APIKey                    string
 	Target                    string
-	ConfigCheckInterval       string
-	ApiURLForConfigCheck      string
-	HostTags                  string
-	DockerEndpoint            string
 	EnableSyntheticMonitoring bool
-	Logfile                   string
-	LogfileSize               int
+	ConfigCheckInterval       string
+	DockerEndpoint            string
+	APIURLForConfigCheck      string
 }
 
-// String() implements stringer interface for Config
-func (c Config) String() string {
+// String() implements stringer interface for BaseConfig
+func (c BaseConfig) String() string {
 	var s string
-	s += fmt.Sprintf("api-key: %s, ", c.ApiKey)
+	s += fmt.Sprintf("api-key: %s, ", c.APIKey)
 	s += fmt.Sprintf("target: %s, ", c.Target)
-	s += fmt.Sprintf("config-check-interval: %s, ", c.ConfigCheckInterval)
-	s += fmt.Sprintf("api-url-for-config-check: %s, ", c.ApiURLForConfigCheck)
-	s += fmt.Sprintf("host-tags: %s, ", c.HostTags)
-	s += fmt.Sprintf("docker-endpoint: %s, ", c.DockerEndpoint)
 	s += fmt.Sprintf("enable-synthetic-monitoring: %t, ", c.EnableSyntheticMonitoring)
-	s += fmt.Sprintf("logfile: %s, ", c.Logfile)
-	s += fmt.Sprintf("logfile-size: %d", c.LogfileSize)
+	s += fmt.Sprintf("config-check-interval: %s, ", c.ConfigCheckInterval)
+	s += fmt.Sprintf("docker-endpoint: %s, ", c.DockerEndpoint)
+	s += fmt.Sprintf("api-url-for-config-check: %s, ", c.APIURLForConfigCheck)
+
+	return s
+}
+
+// HostConfig stores configuration for all the host agent
+type HostConfig struct {
+	BaseConfig
+
+	HostTags    string
+	Logfile     string
+	LogfileSize int
+}
+
+// String() implements stringer interface for HostConfig
+func (h HostConfig) String() string {
+	s := h.BaseConfig.String()
+	s += fmt.Sprintf("host-tags: %s, ", h.HostTags)
+	s += fmt.Sprintf("logfile: %s, ", h.Logfile)
+	s += fmt.Sprintf("logfile-size: %d", h.LogfileSize)
+	return s
+}
+
+// KubeConfig stores configuration for all the host agent
+type KubeConfig struct {
+	BaseConfig
+	InsightRefreshDuration string
+}
+
+// String() implements stringer interface for KubeConfig
+func (k KubeConfig) String() string {
+	s := k.BaseConfig.String()
+	s += fmt.Sprintf("insight-refresh-duration: %s",
+		k.InsightRefreshDuration)
 	return s
 }
 
@@ -53,7 +80,7 @@ func isSocket(path string) bool {
 	return fileInfo.Mode().Type() == fs.ModeSocket
 }
 
-var isSocketFn func(path string) bool = isSocket
+var isSocketFn = isSocket
 
 func getHostname() string {
 	hostname, err := os.Hostname()

@@ -16,9 +16,10 @@ func setIsSocketMock(b bool) {
 }
 
 func TestGetUpdatedYAMLPath(t *testing.T) {
-	agent := NewKubeAgent(
-		WithKubeAgentLogger(zap.NewNop()),
-		WithKubeAgentDockerEndpoint("unix:///var/run/docker.sock"))
+	var cfg KubeConfig
+	cfg.DockerEndpoint = "unix:///var/run/docker.sock"
+	agent := NewKubeAgent(cfg,
+		WithKubeAgentLogger(zap.NewNop()))
 
 	// Test when docker socket is found
 	yamlPath, err := agent.GetUpdatedYAMLPath()
@@ -39,7 +40,7 @@ func TestGetUpdatedYAMLPath(t *testing.T) {
 }
 
 func TestKubeAgentGetFactories(t *testing.T) {
-	agent := NewKubeAgent()
+	agent := NewKubeAgent(KubeConfig{})
 
 	factories, err := agent.GetFactories(context.Background())
 	assert.NoError(t, err)

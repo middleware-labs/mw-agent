@@ -19,12 +19,12 @@ import (
 	//	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
 
 	"go.uber.org/zap"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // HostAgent implements Agent interface for Hosts (e.g Linux)
 type HostAgent struct {
-	Config
+	HostConfig
 	logger              *zap.Logger
 	otelConfigDirectory string
 }
@@ -48,9 +48,9 @@ func WithHostAgentOtelConfigDirectory(d string) HostOptions {
 }
 
 // NewHostAgent returns new agent for Kubernetes with given options.
-func NewHostAgent(cfg Config, opts ...HostOptions) *HostAgent {
+func NewHostAgent(cfg HostConfig, opts ...HostOptions) *HostAgent {
 	var agent HostAgent
-	agent.Config = cfg
+	agent.HostConfig = cfg
 	for _, apply := range opts {
 		apply(&agent)
 	}
@@ -198,21 +198,20 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	hostname := getHostname()
 
 	// Call Webhook
-	u, err := url.Parse(c.ApiURLForConfigCheck)
+	u, err := url.Parse(c.APIURLForConfigCheck)
 	if err != nil {
 		return err
 	}
 
-	baseUrl := u.JoinPath(apiPathForYAML).JoinPath(c.ApiKey)
+	baseURL := u.JoinPath(apiPathForYAML).JoinPath(c.APIKey)
 	params := url.Values{}
 	params.Add("config", configType)
-	//params.Add("platform", runtime.GOOS)
-	params.Add("platform", "linux")
+	params.Add("platform", runtime.GOOS)
 	params.Add("host_id", hostname)
 	params.Add("host_tags", c.HostTags)
 	// Add Query Parameters to the URL
-	baseUrl.RawQuery = params.Encode() // Escape Query Parameters
-	resp, err := http.Get(baseUrl.String())
+	baseURL.RawQuery = params.Encode() // Escape Query Parameters
+	resp, err := http.Get(baseURL.String())
 	if err != nil {
 		c.logger.Error("failed to call get configuration api", zap.Error(err))
 		return err
@@ -251,12 +250,11 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 			zap.Int("config docker len", len(apiResponse.Config.Docker)),
 			zap.Int("config no docker len", len(apiResponse.Config.NoDocker)))
 		return ErrInvalidResponse
-	} else {
-		if configType == "docker" {
-			apiYAMLConfig = apiResponse.Config.Docker
-		} else {
-			apiYAMLConfig = apiResponse.Config.NoDocker
-		}
+	}
+
+	apiYAMLConfig = apiResponse.Config.NoDocker
+	if configType == "docker" {
+		apiYAMLConfig = apiResponse.Config.Docker
 	}
 
 	pgdbConfig := apiResponse.PgdbConfig
@@ -321,12 +319,11 @@ func (c *HostAgent) checkDBConfigValidity(dbType DatabaseType, configPath string
 		if _, err := os.Stat(configPath); os.IsNotExist(err) {
 			c.logger.Warn(fmt.Sprintf("%v config file not found", dbType), zap.String("path", configPath))
 			return false
-		} else {
-			return true
 		}
-	} else {
-		return false
+
+		return true
 	}
+	return false
 }
 
 func restartHostAgent() error {
@@ -344,23 +341,23 @@ func (c *HostAgent) callRestartStatusAPI() error {
 	// fmt.Println("Starting recursive restart check......")
 	// apiURLForRestart, _ := checkForConfigURLOverrides()
 	hostname := getHostname()
-	u, err := url.Parse(c.ApiURLForConfigCheck)
+	u, err := url.Parse(c.APIURLForConfigCheck)
 	if err != nil {
 		return err
 	}
 
-	baseUrl := u.JoinPath(apiPathForRestart)
-	baseUrl = baseUrl.JoinPath(c.ApiKey)
+	baseURL := u.JoinPath(apiPathForRestart)
+	baseURL = baseURL.JoinPath(c.APIKey)
 	params := url.Values{}
 	params.Add("host_id", hostname)
 	params.Add("platform", runtime.GOOS)
 
 	// Add Query Parameters to the URL
-	baseUrl.RawQuery = params.Encode() // Escape Query Parameters
+	baseURL.RawQuery = params.Encode() // Escape Query Parameters
 
-	resp, err := http.Get(baseUrl.String())
+	resp, err := http.Get(baseURL.String())
 	if err != nil {
-		c.logger.Error("failed to call Restart-API", zap.String("url", baseUrl.String()), zap.Error(err))
+		c.logger.Error("failed to call Restart-API", zap.String("url", baseURL.String()), zap.Error(err))
 		return err
 	}
 
@@ -407,7 +404,11 @@ func (c *HostAgent) ListenForConfigChanges(ctx context.Context) error {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				c.callRestartStatusAPI()
+				err = c.callRestartStatusAPI()
+				if err != nil {
+					c.logger.Info("error restarting agent on config change",
+						zap.Error(err))
+				}
 			}
 		}
 	}()

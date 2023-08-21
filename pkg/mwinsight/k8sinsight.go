@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 
@@ -47,7 +46,7 @@ type K8sInsightOptionFunc func(k *K8sInsight)
 
 // WithK8sInsightApiKey sets the unique api key for calling
 // Middleware APIs.
-func WithK8sInsightApiKey(s string) K8sInsightOptionFunc {
+func WithK8sInsightAPIKey(s string) K8sInsightOptionFunc {
 	return func(k *K8sInsight) {
 		k.apiKey = s
 	}
@@ -161,71 +160,6 @@ func (k *K8sInsight) Analyze(ctx context.Context) (
 	return analysisChan, nil
 }
 
-// TODO delete this method once getPayloadToSend() is verified
-func (k *K8sInsight) getPayloadToSendRaw(ctx context.Context,
-	message string, analysis analyzer.Analysis) []byte {
-
-	return []byte(`{
-			"resource_logs": [
-			  {
-				"resource": {
-				  "attributes": [
-					{
-					  "key": "mw.account_key",
-					  "value": {
-						"string_value": "` + k.apiKey + `"
-					  }
-					},
-					{
-					  "key": "mw.resource_type",
-					  "value": {
-						"string_value": "custom"
-					  }
-					},
-					{
-					  "key": "service.name",
-					  "value": {
-						"string_value": "` + analysis.Name + `"
-					  }
-					}
-				  ]
-				},
-				"scope_logs": [
-					{
-					  "log_records": [
-						  {
-							  "attributes": [
-								{
-								  "key": "component",
-								  "value": {
-									"string_value": "` + analysis.Name + `"
-								  }
-								},
-								{
-									"key": "parent",
-									"value": {
-									  "string_value": "` + analysis.ParentObject + `"
-									}
-								  }
-							  ],
-							  "body": {
-								  "string_value": "` + message + `"
-								 
-							  },
-							  "severity_number": 17,
-							  "severity_text": "ERROR",
-							  "time_unix_nano": ` + strconv.FormatInt(time.Now().UnixNano(), 10) + `,
-							  "observed_time_unix_nano": ` + strconv.FormatInt(time.Now().UnixNano(), 10) + `
-						  }
-					  ]   
-					}
-				 ]
-			  }
-			]
-		  } 
-		  `)
-}
-
 // getPayloadToSend creates otlp log payload to send to
 // the Middleware backend
 func (k *K8sInsight) getPayloadToSend(ctx context.Context,
@@ -272,7 +206,7 @@ func (k *K8sInsight) getPayloadToSend(ctx context.Context,
 }
 
 // Send method sends a given byte slice with insight information to the Middleware backend
-func (k *K8sInsight) Send(ctx context.Context, data []byte) error {
+func (k *K8sInsight) Send(_ context.Context, data []byte) error {
 
 	request, err := http.NewRequest("POST", k.target+"/v1/logs", bytes.NewBuffer(data))
 	if err != nil {
