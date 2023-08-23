@@ -16,6 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -49,6 +50,7 @@ func (c *HostAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 		hostmetricsreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
 		postgresqlreceiver.NewFactory(),
+		redisreceiver.NewFactory(),
 		//windowseventlogreceiver.NewFactory(),
 		//windowsperfcountersreceiver.NewFactory(),
 		mongodbreceiver.NewFactory(),
