@@ -81,6 +81,7 @@ func getFlags(cfg *agent.HostConfig) []cli.Flag {
 				"Setting the value to 0 disables this feature.",
 			Destination: &cfg.ConfigCheckInterval,
 			DefaultText: "60s",
+			Value:       "60s",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "docker-endpoint",
