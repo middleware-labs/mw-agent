@@ -58,5 +58,6 @@ jobs:
           file: DockerfileLinux
           push: true
           platforms: linux/amd64,linux/arm64
+          build-args: AGENT_VERSION=${{  github.event.inputs.tag || steps.meta.outputs.tags }}
           tags: | 
             ghcr.io/middleware-labs/mw-host-agent:${{  github.event.inputs.tag || steps.meta.outputs.tags }}

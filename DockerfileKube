@@ -5,7 +5,11 @@ RUN update-ca-certificates
 COPY . .
 ENV CGO_ENABLED=0
 RUN go get -d -v ./... && go mod tidy
-RUN CGO_ENABLED=0 go build -ldflags "-s -w" -o /tmp/mw-agent cmd/kube-agent/main.go
+
+ARG AGENT_VERSION
+ENV AGENT_VERSION=$AGENT_VERSION
+
+RUN CGO_ENABLED=0 go build -ldflags "-s -w -X main.agentVersion=${AGENT_VERSION}" -o /tmp/mw-agent cmd/kube-agent/main.go
 
 FROM busybox:glibc as prod
 WORKDIR /app
