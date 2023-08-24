@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -27,6 +28,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+var agentVersion = "0.0.1"
 
 type program struct {
 	logger    *zap.Logger
@@ -203,6 +206,7 @@ func main() {
 					hostAgent := agent.NewHostAgent(
 						cfg,
 						agent.WithHostAgentLogger(logger),
+						agent.WithHostAgentVersion(agentVersion),
 						agent.WithHostAgentOtelConfigDirectory(installDir),
 					)
 
@@ -321,6 +325,14 @@ func main() {
 					if err != nil {
 						logger.Error("error after running the service", zap.Error(err))
 					}
+					return nil
+				},
+			},
+			{
+				Name:  "version",
+				Usage: "Returns the current agent version",
+				Action: func(c *cli.Context) error {
+					fmt.Println("Middleware Agent Version", agentVersion)
 					return nil
 				},
 			},

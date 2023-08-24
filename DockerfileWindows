@@ -2,9 +2,13 @@ FROM golang:1.16-windowsservercore-ltsc2019 as base
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 WORKDIR /app
 COPY . .
-ENV CGO_ENABLED=1
+ENV CGO_ENABLED=0
 RUN go get -d -v ./... && go mod tidy
-RUN CGO_ENABLED=1 go build -o /tmp/api-server.exe ./*.go
+
+ARG AGENT_VERSION
+ENV AGENT_VERSION=$AGENT_VERSION
+
+RUN CGO_ENABLED=0 go build -ldflags "-s -w -X main.agentVersion=${AGENT_VERSION}" -o /tmp/api-server.exe ./*.go
 
 FROM mcr.microsoft.com/windows/nanoserver:ltsc2022 as prod
 RUN mkdir -p /var/log
