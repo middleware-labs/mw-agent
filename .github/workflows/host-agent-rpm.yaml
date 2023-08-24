@@ -152,8 +152,12 @@ jobs:
     # Building with -ldflags="-s -w" to reduce the size of binary
     - name: Go Build
       run: |
-        CGO_ENABLED=0 GOOS=linux GOARCH=$ARCH  go build -ldflags="-s -w" -v -a -o ~/rpmbuild/SOURCES/$BINARY_NAME-$RELEASE_VERSION/$BINARY_NAME cmd/host-agent/main.go
-
+        if [ ${{ matrix.arch }} == "x64" ]; then
+          CGO_ENABLED=0 go build -ldflags="-s -w" -v -a -o ~/rpmbuild/SOURCES/$BINARY_NAME-$RELEASE_VERSION/$BINARY_NAME cmd/host-agent/main.go
+        elif [ ${{ matrix.arch }} == "ARM" ]; then
+          CGO_ENABLED=0 GOOS=linux GOARCH=$ARCH  go build -ldflags="-s -w" -v -a -o ~/rpmbuild/SOURCES/$BINARY_NAME-$RELEASE_VERSION/$BINARY_NAME cmd/host-agent/main.go
+        fi
+        
     - name: Tar Building
       run: |
         cd ~/rpmbuild/SOURCES
