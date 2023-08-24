@@ -84,30 +84,18 @@ const (
 	Redis
 )
 
-type pgdbConfiguration struct {
-	Path string `json:"path"`
-}
-
-type mongodbConfiguration struct {
-	Path string `json:"path"`
-}
-
-type mysqlConfiguration struct {
-	Path string `json:"path"`
-}
-
-type redisConfiguration struct {
+type dbConfiguration struct {
 	Path string `json:"path"`
 }
 
 type apiResponseForYAML struct {
-	Status        bool                 `json:"status"`
-	Config        configType           `json:"config"`
-	PgdbConfig    pgdbConfiguration    `json:"pgdb_config"`
-	MongodbConfig mongodbConfiguration `json:"mongodb_config"`
-	MysqlConfig   mysqlConfiguration   `json:"mysql_config"`
-	RedisConfig   redisConfiguration   `json:"redis_config"`
-	Message       string               `json:"message"`
+	Status        bool            `json:"status"`
+	Config        configType      `json:"config"`
+	PgdbConfig    dbConfiguration `json:"pgdb_config"`
+	MongodbConfig dbConfiguration `json:"mongodb_config"`
+	MysqlConfig   dbConfiguration `json:"mysql_config"`
+	RedisConfig   dbConfiguration `json:"redis_config"`
+	Message       string          `json:"message"`
 }
 
 type apiResponseForRestart struct {
@@ -138,26 +126,6 @@ func (d DatabaseType) String() string {
 		return "redis"
 	}
 	return "unknown"
-}
-
-func (c *HostAgent) updatepgdbConfig(config map[string]interface{},
-	pgdbConfig pgdbConfiguration) (map[string]interface{}, error) {
-	return c.updateConfig(config, pgdbConfig.Path)
-}
-
-func (c *HostAgent) updateMongodbConfig(config map[string]interface{},
-	mongodbConfig mongodbConfiguration) (map[string]interface{}, error) {
-	return c.updateConfig(config, mongodbConfig.Path)
-}
-
-func (c *HostAgent) updateMysqlConfig(config map[string]interface{},
-	mysqlConfig mysqlConfiguration) (map[string]interface{}, error) {
-	return c.updateConfig(config, mysqlConfig.Path)
-}
-
-func (c *HostAgent) updateRedisConfig(config map[string]interface{},
-	redisConfig redisConfiguration) (map[string]interface{}, error) {
-	return c.updateConfig(config, redisConfig.Path)
 }
 
 func (c *HostAgent) updateConfig(config map[string]interface{}, path string) (map[string]interface{}, error) {
@@ -270,35 +238,19 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 		apiYAMLConfig = apiResponse.Config.Docker
 	}
 
-	pgdbConfig := apiResponse.PgdbConfig
-	if c.checkDBConfigValidity(PostgreSQL, pgdbConfig.Path) {
-		apiYAMLConfig, err = c.updatepgdbConfig(apiYAMLConfig, pgdbConfig)
-		if err != nil {
-			return err
-		}
+	dbConfigs := map[DatabaseType]dbConfiguration{
+		PostgreSQL: apiResponse.PgdbConfig,
+		MongoDB:    apiResponse.MongodbConfig,
+		MySQL:      apiResponse.MysqlConfig,
+		Redis:      apiResponse.RedisConfig,
 	}
 
-	mongodbConfig := apiResponse.MongodbConfig
-	if c.checkDBConfigValidity(MongoDB, mongodbConfig.Path) {
-		apiYAMLConfig, err = c.updateMongodbConfig(apiYAMLConfig, mongodbConfig)
-		if err != nil {
-			return err
-		}
-	}
-
-	mysqlConfig := apiResponse.MysqlConfig
-	if c.checkDBConfigValidity(MySQL, mysqlConfig.Path) {
-		apiYAMLConfig, err = c.updateMysqlConfig(apiYAMLConfig, mysqlConfig)
-		if err != nil {
-			return err
-		}
-	}
-
-	redisConfig := apiResponse.RedisConfig
-	if c.checkDBConfigValidity(Redis, redisConfig.Path) {
-		apiYAMLConfig, err = c.updateRedisConfig(apiYAMLConfig, redisConfig)
-		if err != nil {
-			return err
+	for dbType, dbConfig := range dbConfigs {
+		if c.checkDBConfigValidity(dbType, dbConfig.Path) {
+			apiYAMLConfig, err = c.updateConfig(apiYAMLConfig, dbConfig.Path)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

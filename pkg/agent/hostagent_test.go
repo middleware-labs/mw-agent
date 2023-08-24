@@ -23,13 +23,13 @@ func TestUpdatepgdbConfig(t *testing.T) {
 		},
 	}
 
-	pgdbConfig := pgdbConfiguration{
+	pgdbConfig := dbConfiguration{
 		Path: "db-config_test.yaml",
 	}
 
 	agent := NewHostAgent(HostConfig{}, WithHostAgentLogger(zap.NewNop()))
 	// Call the updatepgdbConfig function
-	updatedConfig, err := agent.updatepgdbConfig(initialConfig, pgdbConfig)
+	updatedConfig, err := agent.updateConfig(initialConfig, pgdbConfig.Path)
 	assert.NoError(t, err)
 
 	// Assert that the updated config contains the expected values
@@ -58,13 +58,13 @@ func TestUpdateMongodbConfig(t *testing.T) {
 		},
 	}
 
-	mongodbConfig := mongodbConfiguration{
+	mongodbConfig := dbConfiguration{
 		Path: "db-config_test.yaml",
 	}
 
 	agent := NewHostAgent(HostConfig{}, WithHostAgentLogger(zap.NewNop()))
 
-	updatedConfig, err := agent.updateMongodbConfig(initialConfig, mongodbConfig)
+	updatedConfig, err := agent.updateConfig(initialConfig, mongodbConfig.Path)
 	assert.NoError(t, err)
 
 	// Assert that the updated config contains the expected values
@@ -93,14 +93,14 @@ func TestUpdateMysqlConfig(t *testing.T) {
 		},
 	}
 
-	mysqlConfig := mysqlConfiguration{
+	mysqlConfig := dbConfiguration{
 		Path: "db-config_test.yaml",
 	}
 
 	cfg := HostConfig{}
 	agent := NewHostAgent(cfg, WithHostAgentLogger(zap.NewNop()))
 	// Call the updateMysqlConfig function
-	updatedConfig, err := agent.updateMysqlConfig(initialConfig, mysqlConfig)
+	updatedConfig, err := agent.updateConfig(initialConfig, mysqlConfig.Path)
 	assert.NoError(t, err)
 
 	// Assert that the updated config contains the expected values
@@ -127,14 +127,14 @@ func TestUpdateRedisConfig(t *testing.T) {
 		},
 	}
 
-	redisConfig := redisConfiguration{
+	redisConfig := dbConfiguration{
 		Path: "db-config_test.yaml",
 	}
 
 	cfg := HostConfig{}
 	agent := NewHostAgent(cfg, WithHostAgentLogger(zap.NewNop()))
 	// Call the updateRedisConfig function
-	updatedConfig, err := agent.updateRedisConfig(initialConfig, redisConfig)
+	updatedConfig, err := agent.updateConfig(initialConfig, redisConfig.Path)
 	assert.NoError(t, err)
 
 	// Assert that the updated config contains the expected values
