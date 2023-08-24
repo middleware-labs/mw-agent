@@ -50,11 +50,11 @@ func (c *HostAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 		hostmetricsreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
 		postgresqlreceiver.NewFactory(),
-		redisreceiver.NewFactory(),
 		//windowseventlogreceiver.NewFactory(),
 		//windowsperfcountersreceiver.NewFactory(),
 		mongodbreceiver.NewFactory(),
 		mysqlreceiver.NewFactory(),
+		redisreceiver.NewFactory(),
 	}...)
 	if err != nil {
 		return otelcol.Factories{}, err

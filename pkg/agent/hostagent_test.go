@@ -23,13 +23,13 @@ func TestUpdatepgdbConfig(t *testing.T) {
 		},
 	}
 
-	pgdbConfig := pgdbConfiguration{
+	pgdbConfig := dbConfiguration{
 		Path: "db-config_test.yaml",
 	}
 
 	agent := NewHostAgent(HostConfig{}, WithHostAgentLogger(zap.NewNop()))
 	// Call the updatepgdbConfig function
-	updatedConfig, err := agent.updatepgdbConfig(initialConfig, pgdbConfig)
+	updatedConfig, err := agent.updateConfig(initialConfig, pgdbConfig.Path)
 	assert.NoError(t, err)
 
 	// Assert that the updated config contains the expected values
@@ -58,13 +58,13 @@ func TestUpdateMongodbConfig(t *testing.T) {
 		},
 	}
 
-	mongodbConfig := mongodbConfiguration{
+	mongodbConfig := dbConfiguration{
 		Path: "db-config_test.yaml",
 	}
 
 	agent := NewHostAgent(HostConfig{}, WithHostAgentLogger(zap.NewNop()))
 
-	updatedConfig, err := agent.updateMongodbConfig(initialConfig, mongodbConfig)
+	updatedConfig, err := agent.updateConfig(initialConfig, mongodbConfig.Path)
 	assert.NoError(t, err)
 
 	// Assert that the updated config contains the expected values
@@ -93,14 +93,14 @@ func TestUpdateMysqlConfig(t *testing.T) {
 		},
 	}
 
-	mysqlConfig := mysqlConfiguration{
+	mysqlConfig := dbConfiguration{
 		Path: "db-config_test.yaml",
 	}
 
 	cfg := HostConfig{}
 	agent := NewHostAgent(cfg, WithHostAgentLogger(zap.NewNop()))
 	// Call the updateMysqlConfig function
-	updatedConfig, err := agent.updateMysqlConfig(initialConfig, mysqlConfig)
+	updatedConfig, err := agent.updateConfig(initialConfig, mysqlConfig.Path)
 	assert.NoError(t, err)
 
 	// Assert that the updated config contains the expected values
@@ -114,6 +114,38 @@ func TestUpdateMysqlConfig(t *testing.T) {
 	assert.Contains(t, mysql, "database")
 	assert.Contains(t, mysql, "user")
 	assert.Contains(t, mysql, "password")
+}
+
+func TestUpdateRedisConfig(t *testing.T) {
+	// Define the initial config and redisConfig
+	initialConfig := map[string]interface{}{
+		"receivers": map[string]interface{}{
+			"redis": map[string]interface{}{
+				"endpoint": "localhost:7379",
+				"password": "mypassword",
+			},
+		},
+	}
+
+	redisConfig := dbConfiguration{
+		Path: "db-config_test.yaml",
+	}
+
+	cfg := HostConfig{}
+	agent := NewHostAgent(cfg, WithHostAgentLogger(zap.NewNop()))
+	// Call the updateRedisConfig function
+	updatedConfig, err := agent.updateConfig(initialConfig, redisConfig.Path)
+	assert.NoError(t, err)
+
+	// Assert that the updated config contains the expected values
+	assert.Contains(t, updatedConfig, "receivers")
+	receivers, ok := updatedConfig["receivers"].(map[string]interface{})
+	assert.True(t, ok)
+	assert.Contains(t, receivers, "redis")
+	redis, ok := receivers["redis"].(map[string]interface{})
+	assert.True(t, ok)
+	assert.Contains(t, redis, "endpoint")
+	assert.Contains(t, redis, "password")
 }
 
 func TestListenForConfigChanges(t *testing.T) {
@@ -170,6 +202,7 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assert.Contains(t, factories.Receivers, component.Type("postgresql"))
 	assert.Contains(t, factories.Receivers, component.Type("mongodb"))
 	assert.Contains(t, factories.Receivers, component.Type("mysql"))
+	assert.Contains(t, factories.Receivers, component.Type("redis"))
 
 	// check if factories contain expected exporters
 	assert.Len(t, factories.Exporters, 3)
