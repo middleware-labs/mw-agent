@@ -116,6 +116,38 @@ func TestUpdateMysqlConfig(t *testing.T) {
 	assert.Contains(t, mysql, "password")
 }
 
+func TestUpdateRedisConfig(t *testing.T) {
+	// Define the initial config and redisConfig
+	initialConfig := map[string]interface{}{
+		"receivers": map[string]interface{}{
+			"redis": map[string]interface{}{
+				"endpoint": "localhost:7379",
+				"password": "mypassword",
+			},
+		},
+	}
+
+	redisConfig := redisConfiguration{
+		Path: "db-config_test.yaml",
+	}
+
+	cfg := HostConfig{}
+	agent := NewHostAgent(cfg, WithHostAgentLogger(zap.NewNop()))
+	// Call the updateRedisConfig function
+	updatedConfig, err := agent.updateRedisConfig(initialConfig, redisConfig)
+	assert.NoError(t, err)
+
+	// Assert that the updated config contains the expected values
+	assert.Contains(t, updatedConfig, "receivers")
+	receivers, ok := updatedConfig["receivers"].(map[string]interface{})
+	assert.True(t, ok)
+	assert.Contains(t, receivers, "redis")
+	redis, ok := receivers["redis"].(map[string]interface{})
+	assert.True(t, ok)
+	assert.Contains(t, redis, "endpoint")
+	assert.Contains(t, redis, "password")
+}
+
 func TestListenForConfigChanges(t *testing.T) {
 	cfg := HostConfig{}
 	cfg.ConfigCheckInterval = "1s"
@@ -170,6 +202,7 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assert.Contains(t, factories.Receivers, component.Type("postgresql"))
 	assert.Contains(t, factories.Receivers, component.Type("mongodb"))
 	assert.Contains(t, factories.Receivers, component.Type("mysql"))
+	assert.Contains(t, factories.Receivers, component.Type("redis"))
 
 	// check if factories contain expected exporters
 	assert.Len(t, factories.Exporters, 3)

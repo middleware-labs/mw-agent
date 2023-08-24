@@ -81,6 +81,7 @@ const (
 	PostgreSQL DatabaseType = iota
 	MongoDB
 	MySQL
+	Redis
 )
 
 type pgdbConfiguration struct {
@@ -95,12 +96,17 @@ type mysqlConfiguration struct {
 	Path string `json:"path"`
 }
 
+type redisConfiguration struct {
+	Path string `json:"path"`
+}
+
 type apiResponseForYAML struct {
 	Status        bool                 `json:"status"`
 	Config        configType           `json:"config"`
 	PgdbConfig    pgdbConfiguration    `json:"pgdb_config"`
 	MongodbConfig mongodbConfiguration `json:"mongodb_config"`
 	MysqlConfig   mysqlConfiguration   `json:"mysql_config"`
+	RedisConfig   redisConfiguration   `json:"redis_config"`
 	Message       string               `json:"message"`
 }
 
@@ -128,6 +134,8 @@ func (d DatabaseType) String() string {
 		return "mongodb"
 	case MySQL:
 		return "mysql"
+	case Redis:
+		return "redis"
 	}
 	return "unknown"
 }
@@ -145,6 +153,11 @@ func (c *HostAgent) updateMongodbConfig(config map[string]interface{},
 func (c *HostAgent) updateMysqlConfig(config map[string]interface{},
 	mysqlConfig mysqlConfiguration) (map[string]interface{}, error) {
 	return c.updateConfig(config, mysqlConfig.Path)
+}
+
+func (c *HostAgent) updateRedisConfig(config map[string]interface{},
+	redisConfig redisConfiguration) (map[string]interface{}, error) {
+	return c.updateConfig(config, redisConfig.Path)
 }
 
 func (c *HostAgent) updateConfig(config map[string]interface{}, path string) (map[string]interface{}, error) {
@@ -276,6 +289,14 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	mysqlConfig := apiResponse.MysqlConfig
 	if c.checkDBConfigValidity(MySQL, mysqlConfig.Path) {
 		apiYAMLConfig, err = c.updateMysqlConfig(apiYAMLConfig, mysqlConfig)
+		if err != nil {
+			return err
+		}
+	}
+
+	redisConfig := apiResponse.RedisConfig
+	if c.checkDBConfigValidity(Redis, redisConfig.Path) {
+		apiYAMLConfig, err = c.updateRedisConfig(apiYAMLConfig, redisConfig)
 		if err != nil {
 			return err
 		}
