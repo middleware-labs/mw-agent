@@ -86,11 +86,11 @@ jobs:
         %build
         
         %install
-        mkdir -p %{buildroot}/usr/bin/mw-go-agent-host
-        cp -rfa ~/rpmbuild/BUILD/mw-go-agent-host-$RELEASE_VERSION/* %{buildroot}/usr/bin/mw-go-agent-host
+        mkdir -p %{buildroot}/usr/bin
+        cp -rfa ~/rpmbuild/BUILD/mw-go-agent-host-$RELEASE_VERSION/* %{buildroot}/usr/bin
         
         %files
-        /usr/bin/mw-go-agent-host/*
+        /usr/bin/*
         EOF
         elif [ ${{ matrix.arch }} == "ARM" ]; then
           cat << EOF > installables/rpmessentials/test-arm.spec
