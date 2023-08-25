@@ -1,4 +1,4 @@
-name: Build & Push Docker Image for K8s Agent
+name: Kube Agent - Docker
 
 on:
   workflow_dispatch:
@@ -50,6 +50,7 @@ jobs:
           file: DockerfileKube
           push: true
           platforms: linux/amd64,linux/arm64
+          build-args: AGENT_VERSION=${{  github.event.inputs.tag || steps.meta.outputs.tags }}
           tags: | 
             ghcr.io/middleware-labs/mw-kube-agent:${{  github.event.inputs.tag || steps.meta.outputs.tags }}
             ghcr.io/middleware-labs/agent-kube-go:${{  github.event.inputs.tag || steps.meta.outputs.tags }}

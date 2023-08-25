@@ -27,10 +27,17 @@ type HostAgent struct {
 	HostConfig
 	logger              *zap.Logger
 	otelConfigDirectory string
+	Version             string
 }
 
 // HostOptions takes in various options for HostAgent
 type HostOptions func(h *HostAgent)
+
+func WithHostAgentVersion(v string) HostOptions {
+	return func(h *HostAgent) {
+		h.Version = v
+	}
+}
 
 // WithHostAgentLogger sets the logger to be used with agent logs
 func WithHostAgentLogger(logger *zap.Logger) HostOptions {
@@ -190,6 +197,7 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	params.Add("platform", runtime.GOOS)
 	params.Add("host_id", hostname)
 	params.Add("host_tags", c.HostTags)
+	params.Add("agent_version", c.Version)
 	// Add Query Parameters to the URL
 	baseURL.RawQuery = params.Encode() // Escape Query Parameters
 	resp, err := http.Get(baseURL.String())
@@ -324,6 +332,7 @@ func (c *HostAgent) callRestartStatusAPI() error {
 	params := url.Values{}
 	params.Add("host_id", hostname)
 	params.Add("platform", runtime.GOOS)
+	params.Add("agent_version", c.Version)
 
 	// Add Query Parameters to the URL
 	baseURL.RawQuery = params.Encode() // Escape Query Parameters
