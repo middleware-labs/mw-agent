@@ -22,6 +22,8 @@ ${StrRep}
   !define COMPANYNAME "Middleware Inc"
   !define DESCRIPTION "Middleware Windows Agent."
   !define DEVELOPER "Middleware Inc" #License Holder
+
+  !define BUILDNUMBER "0"
   # Files Directory
   !define BUILD_DIR "..\..\build" #Replace with the full path of install folder
   !define REPO_ROOT_DIR "..\..\"
@@ -32,10 +34,6 @@ ${StrRep}
   ;!define SPLASH_IMG_FILE "splash.bmp"
   ;!define HEADER_IMG_FILE "header.bmp"
   # These three must be integers
-  !define VERSIONMAJOR 1	#Major release Number
-  !define VERSIONMINOR 1	#Minor release Number
-  !define VERSIONBUILD 1	#Maintenance release Number (bugfixes only)
-  !define BUILDNUMBER 1		#Source control revision number
   # These will be displayed by the "Click here for support information" link in "Add/Remove Programs"
   # It is possible to use "mailto:" links in here to open email client
   !define HELPURL "https://middleware.io/contact-us/"
@@ -51,7 +49,7 @@ ${StrRep}
   ;Name and file
   Name "${APPNAME}"
   Icon "logo.ico"
-  OutFile "mw-windows-agent-setup.exe"
+  OutFile "mw-windows-agent-${VERSION}-setup.exe"
 
   ;Default installation folder
   InstallDir "$PROGRAMFILES\${APPNAME}"
@@ -225,9 +223,8 @@ Section "install"
  ; WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "HelpLink" "$\"${HELPURL}$\""
  ; WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion;\Uninstall\${APPNAME}" "URLUpdateInfo" "$\"${UPDATEURL}$\""
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "URLInfoAbout" "$\"${ABOUTURL}$\""
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayVersion" "$\"${VERSIONMAJOR}.${VERSIONMINOR}.${VERSIONBUILD}.${BUILDNUMBER}$\""
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "VersionMajor" ${VERSIONMAJOR}
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "VersionMinor" ${VERSIONMINOR}
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayVersion" "$\"${VERSION}.${BUILDNUMBER}$\""
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "Version" ${VERSION}.${BUILDNUMBER}
   # There is no option for modifying or reparing the install
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "NoModify" 1
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "NoRepair" 1
@@ -238,15 +235,15 @@ SectionEnd
 ;--------------------------------
 ;Version Information
 
-  VIProductVersion "${VERSIONMAJOR}.${VERSIONMINOR}.${VERSIONBUILD}.${BUILDNUMBER}"
+  VIProductVersion "${VERSION}.${BUILDNUMBER}"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductName" "${APPNAME}"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "Comments" "${DESCRIPTION}"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "CompanyName" "${COMPANYNAME}"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalTrademarks" "${APPNAME} is a trademark of ${COMPANYNAME}"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "${DEVELOPER} | ${COMPANYNAME}"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "FileDescription" "${APPNAME}"
-  VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "${VERSIONMAJOR}.${VERSIONMINOR}.${VERSIONBUILD}"
-  VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductVersion" "${VERSIONMAJOR}.${VERSIONMINOR}.${VERSIONBUILD}.${BUILDNUMBER}"
+  VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "${VERSION}.${BUILDNUMBER}"
+  VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductVersion" "${VERSION}.{BUILDNUMBER}"
 
 ;--------------------------------
 ;Verify Uninstall
@@ -280,9 +277,10 @@ Section "uninstall"
   Pop $0 ; returns an errorcode (<>0) otherwise success (0)
 
   ################################################################################################################
+  #Delete installation folder from registry if available - this will only happen if it is empty
   rmDir /r "$INSTDIR"
 
-  #Delete installation folder from registry if available - this will only happen if it is empty
+
   DeleteRegKey /ifempty HKLM "Software\${APPNAME}"
 
   # Remove uninstaller information from the registry
