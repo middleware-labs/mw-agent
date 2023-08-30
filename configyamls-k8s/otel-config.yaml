@@ -271,6 +271,8 @@ processors:
         from_attribute: k8s.node.name
   resourcedetection:
     detectors: [ env, system, docker ]
+    system:
+      hostname_sources: ["os"]
     timeout: 2s
     override: false
   #  memory_limiter:

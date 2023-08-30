@@ -258,6 +258,8 @@ processors:
 
   resourcedetection:
     detectors: [ env, system, docker ]
+    system:
+      hostname_sources: ["os"]
     timeout: 2s
     override: false
   #  memory_limiter:
