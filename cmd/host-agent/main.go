@@ -192,7 +192,11 @@ func main() {
 						logger = zap.New(core)
 					}
 
-					logger.Info("starting host agent with config", zap.Stringer("config", cfg))
+					infraPlatform := agent.InfraPlatformInstance
+					awsEnv := os.Getenv("AWS_EXECUTION_ENV")
+					if awsEnv == "AWS_ECS_EC2" {
+						infraPlatform = agent.InfraPlatformECSEC2
+					}
 
 					execPath, err := os.Executable()
 					if err != nil {
@@ -203,11 +207,16 @@ func main() {
 					logger.Info("starting host agent", zap.String("agent location", execPath))
 					installDir := filepath.Dir(execPath)
 
+					logger.Info("host agent config", zap.Stringer("config", cfg),
+						zap.String("version", agentVersion),
+						zap.Stringer("infra-platform", infraPlatform))
+
 					hostAgent := agent.NewHostAgent(
 						cfg,
 						agent.WithHostAgentLogger(logger),
 						agent.WithHostAgentVersion(agentVersion),
 						agent.WithHostAgentOtelConfigDirectory(installDir),
+						agent.WithHostAgentInfraPlatform(infraPlatform),
 					)
 
 					ctx, cancel := context.WithCancel(c.Context)
@@ -258,7 +267,7 @@ func main() {
 						return err
 					}
 
-					// yamlPath := "./configyamls/all/otel-config.yaml"
+					// yamlPath := filepath.Join(installDir, "./configyamls/nodocker/otel-config.yaml")
 					logger.Info("yaml path loaded", zap.String("path", yamlPath))
 
 					configProvider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{

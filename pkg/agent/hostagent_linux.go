@@ -8,6 +8,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
@@ -17,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
+
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -42,7 +44,7 @@ func (c *HostAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 		return otelcol.Factories{}, err
 	}
 
-	factories.Receivers, err = receiver.MakeFactoryMap([]receiver.Factory{
+	receiverfactories := []receiver.Factory{
 		otlpreceiver.NewFactory(),
 		fluentforwardreceiver.NewFactory(),
 		filelogreceiver.NewFactory(),
@@ -55,7 +57,16 @@ func (c *HostAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 		mongodbreceiver.NewFactory(),
 		mysqlreceiver.NewFactory(),
 		redisreceiver.NewFactory(),
-	}...)
+	}
+
+	// if the host agent is running on ECS EC2, add
+	// relevant factories
+	if c.InfraPlatform == InfraPlatformECSEC2 {
+		receiverfactories = append(receiverfactories,
+			awsecscontainermetricsreceiver.NewFactory())
+	}
+
+	factories.Receivers, err = receiver.MakeFactoryMap(receiverfactories...)
 	if err != nil {
 		return otelcol.Factories{}, err
 	}

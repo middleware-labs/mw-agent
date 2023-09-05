@@ -33,6 +33,7 @@ type HostAgent struct {
 // HostOptions takes in various options for HostAgent
 type HostOptions func(h *HostAgent)
 
+// WithHostAgentVersion sets the agent version
 func WithHostAgentVersion(v string) HostOptions {
 	return func(h *HostAgent) {
 		h.Version = v
@@ -51,6 +52,14 @@ func WithHostAgentLogger(logger *zap.Logger) HostOptions {
 func WithHostAgentOtelConfigDirectory(d string) HostOptions {
 	return func(h *HostAgent) {
 		h.otelConfigDirectory = d
+	}
+}
+
+// WithHostAgentIsECSEC2 sets whether the agent is running on
+// AWS ECS with EC2 infrastructure
+func WithHostAgentInfraPlatform(p InfraPlatform) HostOptions {
+	return func(h *HostAgent) {
+		h.InfraPlatform = p
 	}
 }
 
@@ -198,6 +207,7 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	params.Add("host_id", hostname)
 	params.Add("host_tags", c.HostTags)
 	params.Add("agent_version", c.Version)
+	params.Add("infra_platform", string(c.InfraPlatform))
 	// Add Query Parameters to the URL
 	baseURL.RawQuery = params.Encode() // Escape Query Parameters
 	resp, err := http.Get(baseURL.String())

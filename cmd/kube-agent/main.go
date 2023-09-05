@@ -156,6 +156,9 @@ func main() {
 						agent.WithKubeAgentLogger(logger),
 					)
 
+					// Set the infra platform to kubernetes for now since we don't need to differentiate between
+					// vanilla kubernetes and managed kubernetes.
+					cfg.InfraPlatform = agent.InfraPlatformKubernetes
 					// Set MW_TARGET & MW_API_KEY so that envprovider can fill those in the otel config files
 					os.Setenv("MW_TARGET", cfg.Target)
 					os.Setenv("MW_API_KEY", cfg.APIKey)
