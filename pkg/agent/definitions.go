@@ -17,6 +17,30 @@ type Agent interface {
 	ListenForConfigChanges(ctx context.Context) error
 }
 
+// InfraPlatform defines the agent's infrastructure platform
+type InfraPlatform uint16
+
+var (
+	// InfraPlatformInstance is for bare metal or VM platform
+	InfraPlatformInstance InfraPlatform = 0
+	// InfraPlatformKubernetes is for Kubernetes platform
+	InfraPlatformKubernetes InfraPlatform = 1
+	// InfraPlatformECSEC2 is for AWS ECS EC2 platform
+	InfraPlatformECSEC2 InfraPlatform = 2
+)
+
+func (p InfraPlatform) String() string {
+	switch p {
+	case InfraPlatformInstance:
+		return "instance"
+	case InfraPlatformKubernetes:
+		return "kubernetes"
+	case InfraPlatformECSEC2:
+		return "ecsec2"
+	}
+	return "unknown"
+}
+
 // BaseConfig stores general configuration for all agent types
 type BaseConfig struct {
 	APIKey                    string
@@ -25,6 +49,7 @@ type BaseConfig struct {
 	ConfigCheckInterval       string
 	DockerEndpoint            string
 	APIURLForConfigCheck      string
+	InfraPlatform             InfraPlatform
 }
 
 // String() implements stringer interface for BaseConfig
@@ -36,7 +61,7 @@ func (c BaseConfig) String() string {
 	s += fmt.Sprintf("config-check-interval: %s, ", c.ConfigCheckInterval)
 	s += fmt.Sprintf("docker-endpoint: %s, ", c.DockerEndpoint)
 	s += fmt.Sprintf("api-url-for-config-check: %s, ", c.APIURLForConfigCheck)
-
+	s += fmt.Sprintf("infra-platform: %s, ", c.InfraPlatform)
 	return s
 }
 
