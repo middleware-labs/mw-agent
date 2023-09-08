@@ -207,9 +207,10 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	params.Add("host_id", hostname)
 	params.Add("host_tags", c.HostTags)
 	params.Add("agent_version", c.Version)
-	params.Add("infra_platform", string(c.InfraPlatform))
+	params.Add("infra_platform", fmt.Sprint(c.InfraPlatform))
 	// Add Query Parameters to the URL
 	baseURL.RawQuery = params.Encode() // Escape Query Parameters
+
 	resp, err := http.Get(baseURL.String())
 	if err != nil {
 		c.logger.Error("failed to call get configuration api", zap.Error(err))
@@ -286,7 +287,7 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	return nil
 }
 
-// GetUpdatedYAMLPath gets the correct otel configuration file.
+// GetUpdatedYAMLPath gets the correct otel configuration file
 func (c *HostAgent) GetUpdatedYAMLPath() (string, error) {
 	configType := "docker"
 	yamlPath := yamlFile
@@ -343,6 +344,7 @@ func (c *HostAgent) callRestartStatusAPI() error {
 	params.Add("host_id", hostname)
 	params.Add("platform", runtime.GOOS)
 	params.Add("agent_version", c.Version)
+	params.Add("infra_platform", fmt.Sprint(c.InfraPlatform))
 
 	// Add Query Parameters to the URL
 	baseURL.RawQuery = params.Encode() // Escape Query Parameters
