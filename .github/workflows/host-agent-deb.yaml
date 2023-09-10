@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         arch:
-          - arm64
+          # - arm64
           - amd64
 
     steps:
@@ -116,6 +116,7 @@ jobs:
           dpkg --build example/mw-agent_$RELEASE_VERSION-1_${{ matrix.arch }}
           dpkg-deb --info example/mw-agent_$RELEASE_VERSION-1_${{ matrix.arch }}.deb
           dpkg-deb --contents example/mw-agent_$RELEASE_VERSION-1_${{ matrix.arch }}.deb
+          ls -l example
 
     - name: Publishing DEB with Github Release
       id: create_release
@@ -130,13 +131,13 @@ jobs:
         draft: true
         prerelease: true
 
-    - name: Upload JAR as Release Asset
+    - name: Upload DEB as Release Asset
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./example/mw-agent_$RELEASE_VERSION-1_${{ matrix.arch }}.deb
+        asset_path: example/mw-agent_$RELEASE_VERSION-1_${{ matrix.arch }}.deb
         asset_name: mw-agent_$RELEASE_VERSION-1_${{ matrix.arch }}.deb
         asset_content_type: application/x-deb
 
