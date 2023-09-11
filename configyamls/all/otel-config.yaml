@@ -131,12 +131,17 @@ receivers:
     - id: systemd_err
       if: body matches "ts=.+ caller=.+ level=.+ msg=.+ name=systemd duration_seconds=.+
         err=.+"
-      output: backup_unresolved_body
+      output: extract_metadata_from_filepath
       parse_from: body
       regex: ts=(?P<systemd_err_ts>.+) caller=(?P<systemd_err_caller>.+) level=(?P<level>.+)
         msg=(?P<systemd_err_msg>.+) name=(?P<name>.+) duration_seconds=(?P<systemd_err_duration_seconds>.+)
         err="(?P<regex_resolved_body>.+)"
       type: regex_parser
+    - type: regex_parser
+      id: extract_metadata_from_filepath
+      regex: '^/var/lib/docker/containers/(?P<docker_container_id>[^_]+)/.*log$'
+      parse_from: attributes["log.file.path"]
+      output: backup_unresolved_body
     - from: body
       id: backup_unresolved_body
       if: attributes.regex_resolved_body != nil
