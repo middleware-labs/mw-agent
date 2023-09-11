@@ -95,6 +95,7 @@ processors:
     resourcedetection:
         detectors:
             - env
+            - ec2
             - system
             - docker
         timeout: 5s

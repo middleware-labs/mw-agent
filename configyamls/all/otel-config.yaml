@@ -99,6 +99,7 @@ processors:
   resourcedetection:
     detectors:
     - env
+    - ec2
     - system
     - docker
     override: false
