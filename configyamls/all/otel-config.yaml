@@ -115,7 +115,7 @@ receivers:
     - /var/log/mw-agent/rpm-installation-*.log
     include:
     - /var/log/**/*.log*
-    - /var/lib/docker/container/**/*.log*
+    - /var/lib/docker/containers/**/*.log*
     - $MW_LOG_PATHS
     include_file_name_resolved: true
     include_file_path: true
