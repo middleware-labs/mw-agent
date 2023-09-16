@@ -50,6 +50,7 @@ type BaseConfig struct {
 	DockerEndpoint            string
 	APIURLForConfigCheck      string
 	InfraPlatform             InfraPlatform
+	SidecarType               string
 }
 
 // String() implements stringer interface for BaseConfig

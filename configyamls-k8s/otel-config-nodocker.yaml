@@ -137,6 +137,10 @@ receivers:
           scrape_interval: 5s
           static_configs:
             - targets: ["0.0.0.0:8888"]
+        - job_name: "side-car"
+          scrape_interval: 5s
+          static_configs:
+            - targets: ["0.0.0.0:8889"]
   
   k8s_events:
     auth_type: serviceAccount
@@ -158,6 +162,11 @@ exporters:
   otlp:
     endpoint: ${MW_TARGET}
 processors:
+  resource/prometheus:
+    attributes:
+    - action: insert
+      key: is.prometheus
+      value: "true"
   # filter/blanklog:
   #   logs: 
   #     exclude:
@@ -175,7 +184,7 @@ processors:
         - k8s.pod.name
         - k8s.pod.uid
         - k8s.deployment.name
-        - k8s.cluster.name
+        # - k8s.cluster.name
         - k8s.namespace.name
         - k8s.node.name
         - k8s.pod.start_time
@@ -337,14 +346,36 @@ service:
         receivers: [ otlp ]
         processors: [ resourcedetection,resource, resource/cluster, attributes/traces, batch, batch/2 ]
         exporters: [  otlp ]
-      logs:
-        receivers: [fluentforward, k8s_events, otlp, filelog ]
+      logs/fluentforward:
+        receivers: [fluentforward ]
         processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, batch, batch/2 ]
         exporters: [ otlp ]
-      metrics:
-        receivers: [ prometheus, otlp, k8s_cluster, kubeletstats ]
-        processors: [ resourcedetection, resource, k8sattributes, resource/cluster, batch, batch/2]
+      logs/k8s_events:
+        receivers: [k8s_events ]
+        processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, batch, batch/2 ]
         exporters: [ otlp ]
+      logs/otlp:
+        receivers: [otlp ]
+        processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, batch, batch/2 ]
+        exporters: [ otlp ]
+      logs/filelog:
+        receivers: [filelog ]
+        processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, batch, batch/2 ]
+        exporters: [ otlp ]
+      metrics/prometheus:
+        receivers: [  prometheus  ]
+        processors: [ resourcedetection, resource, k8sattributes, resource/cluster, resource/prometheus, batch, batch/2]
+        exporters: [ otlp ]
+      metrics/otlp:
+        receivers: [  otlp  ]
+        processors: [ resourcedetection, resource, k8sattributes, resource/cluster,  batch, batch/2]
+        exporters: [ otlp ]
+      metrics/k8s_cluster:
+        receivers: [  k8s_cluster  ]
+        processors: [ resourcedetection, resource, k8sattributes, resource/cluster,  batch, batch/2]
+        exporters: [ otlp ]
+      metrics/kubeletstats:
+        receivers: [  kubeletstats  ]
       metrics/hostmetrics:
         receivers: [ hostmetrics ]
         processors: [ resourcedetection, resource, resource/hostmetrics, resource/cluster, k8sattributes, batch, batch/2]

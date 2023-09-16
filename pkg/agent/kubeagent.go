@@ -2,6 +2,8 @@ package agent
 
 import (
 	"context"
+	"errors"
+	"os"
 	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
@@ -29,6 +31,11 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.uber.org/zap"
+	yaml "gopkg.in/yaml.v2"
+)
+
+var (
+	ErrParsingConfig = errors.New("error parsing config")
 )
 
 // KubeAgent implements Agent interface for Kubernetes
@@ -125,4 +132,79 @@ func (k *KubeAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 	}
 
 	return factories, nil
+}
+
+func (k *KubeAgent) HandleSidecarReceivers(path string) error {
+	// Read the YAML file
+	data, err := os.ReadFile(path)
+	if err != nil {
+		k.logger.Error("Error reading YAML file:", zap.Error(err))
+		return err
+	}
+
+	// Unmarshal YAML into a map[string]interface{}
+	var configMap map[string]interface{}
+	err = yaml.Unmarshal(data, &configMap)
+	if err != nil {
+		k.logger.Error("Error unmarshaling YAML:", zap.Error(err))
+		return err
+
+	}
+
+	// Check if "pipelines" key exists and is a map
+	service, ok := configMap["service"].(map[interface{}]interface{})
+	if !ok {
+		k.logger.Error("Error: 'service' key not found or is not a map")
+		return ErrParsingConfig
+	}
+
+	// Check if "pipelines" key exists and is a map
+	pipelines, ok := service["pipelines"].(map[interface{}]interface{})
+	if !ok {
+		k.logger.Error("Error: 'pipelines' key not found or is not a map")
+		return ErrParsingConfig
+	}
+
+	// Create a new map for filtered pipelines
+	filteredPipelines := make(map[interface{}]interface{})
+
+	// Iterate through the pipelines and filter based on "otlp" in "receivers"
+	for name, pipeline := range pipelines {
+		pipelineMap, ok := pipeline.(map[interface{}]interface{})
+		if !ok {
+			continue // Skip pipelines that are not maps
+		}
+
+		receivers, ok := pipelineMap["receivers"].([]interface{})
+		if !ok {
+			continue // Skip pipelines without a "receivers" key or if it's not an array
+		}
+
+		// Check if sidecar type is present in the "receivers" array
+		for _, receiver := range receivers {
+			if receiver == "prometheus" {
+				filteredPipelines[name] = pipeline
+				break
+			}
+		}
+	}
+
+	// Update the config map with the filtered pipelines
+	service["pipelines"] = filteredPipelines
+
+	// Marshal the updated map back to YAML
+	updatedYAML, err := yaml.Marshal(&configMap)
+	if err != nil {
+		k.logger.Error("Error marshaling YAML:", zap.Error(err))
+		return err
+	}
+
+	// Write the updated YAML to a file or print it to the console
+	err = os.WriteFile(path, updatedYAML, 0644)
+	if err != nil {
+		k.logger.Error("Error writing YAML file:", zap.Error(err))
+		return err
+	}
+
+	return nil
 }

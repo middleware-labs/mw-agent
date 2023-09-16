@@ -77,6 +77,14 @@ func getFlags(cfg *agent.KubeConfig) []cli.Flag {
 			Value:       "24h",
 			Hidden:      true,
 		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "sidecar-type",
+			EnvVars:     []string{"MW_SIDECAR_TYPE"},
+			Destination: &cfg.SidecarType,
+			DefaultText: "",
+			Value:       "",
+			Hidden:      true,
+		}),
 
 		&cli.StringFlag{
 			Name:    "config-file",
@@ -170,6 +178,10 @@ func main() {
 					if err != nil {
 						logger.Error("error getting config file path", zap.Error(err))
 						return err
+					}
+
+					if cfg.SidecarType != "" {
+						kubeAgent.HandleSidecarReceivers(yamlPath)
 					}
 
 					k8sClient, err := kubernetes.NewClient("", "")
