@@ -9,10 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/k8sgpt-ai/k8sgpt/pkg/kubernetes"
-
 	"github.com/middleware-labs/mw-agent/pkg/agent"
-	"github.com/middleware-labs/mw-agent/pkg/mwinsight"
 	"github.com/prometheus/common/version"
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
@@ -172,73 +169,75 @@ func main() {
 						return err
 					}
 
-					k8sClient, err := kubernetes.NewClient("", "")
-					if err != nil {
-						logger.Error("error creating k8s client", zap.Error(err))
-						return err
-					}
+					kubeAgent.UpdatePrometheusScrapeConfigs(yamlPath)
 
-					k8sInsight := mwinsight.NewK8sInsight(
-						mwinsight.WithK8sInsightAPIKey(cfg.APIKey),
-						mwinsight.WithK8sInsightTarget(cfg.Target),
-						mwinsight.WithK8sInsightK8sClient(k8sClient),
-						mwinsight.WithK8sInsightBackend(mwinsight.BackendTypeOpenAI),
-					)
+					// k8sClient, err := kubernetes.NewClient("", "")
+					// if err != nil {
+					// 	logger.Error("error creating k8s client", zap.Error(err))
+					// 	return err
+					// }
+
+					// k8sInsight := mwinsight.NewK8sInsight(
+					// 	mwinsight.WithK8sInsightAPIKey(cfg.APIKey),
+					// 	mwinsight.WithK8sInsightTarget(cfg.Target),
+					// 	mwinsight.WithK8sInsightK8sClient(k8sClient),
+					// 	mwinsight.WithK8sInsightBackend(mwinsight.BackendTypeOpenAI),
+					// )
 
 					logger.Info("starting host agent with config",
 						zap.Stringer("config", cfg))
 
 					// start daily insight analysis
-					duration, err := time.ParseDuration(cfg.InsightRefreshDuration)
-					if err != nil {
-						logger.Error("error in parsing duration", zap.Error(err))
-						return err
-					}
+					// duration, err := time.ParseDuration(cfg.InsightRefreshDuration)
+					// if err != nil {
+					// 	logger.Error("error in parsing duration", zap.Error(err))
+					// 	return err
+					// }
 
-					wg.Add(1)
-					go func(ctx context.Context, duration time.Duration, wg *sync.WaitGroup) {
-						defer wg.Done()
+					// wg.Add(1)
+					// go func(ctx context.Context, duration time.Duration, wg *sync.WaitGroup) {
+					// 	defer wg.Done()
 
-						// define analysis function that can be reused first time when
-						// the agent is run and periodically
-						analysisFunc := func() {
-							// save current timestamp in the context so that all results of analysis
-							// have the same time
-							ctx = context.WithValue(ctx, mwinsight.TimeStampCtxKey,
-								time.Now())
-							analysisChan, err := k8sInsight.Analyze(ctx)
-							if err != nil {
-								logger.Error("error in mwinsight analysis", zap.Error(err))
-								return
-							}
+					// 	// define analysis function that can be reused first time when
+					// 	// the agent is run and periodically
+					// 	analysisFunc := func() {
+					// 		// save current timestamp in the context so that all results of analysis
+					// 		// have the same time
+					// 		ctx = context.WithValue(ctx, mwinsight.TimeStampCtxKey,
+					// 			time.Now())
+					// 		analysisChan, err := k8sInsight.Analyze(ctx)
+					// 		if err != nil {
+					// 			logger.Error("error in mwinsight analysis", zap.Error(err))
+					// 			return
+					// 		}
 
-							var sendWg sync.WaitGroup
-							for result := range analysisChan {
-								sendWg.Add(1)
-								go func(result []byte) {
-									defer sendWg.Done()
-									er := k8sInsight.Send(ctx, result)
-									if er != nil {
-										logger.Error("error sending insight data to mw backend", zap.Error(err))
-									}
-								}(result)
-							}
+					// 		var sendWg sync.WaitGroup
+					// 		for result := range analysisChan {
+					// 			sendWg.Add(1)
+					// 			go func(result []byte) {
+					// 				defer sendWg.Done()
+					// 				er := k8sInsight.Send(ctx, result)
+					// 				if er != nil {
+					// 					logger.Error("error sending insight data to mw backend", zap.Error(err))
+					// 				}
+					// 			}(result)
+					// 		}
 
-							sendWg.Wait()
-						}
+					// 		sendWg.Wait()
+					// 	}
 
-						// run the analysis for the first time after agent
-						// start
-						analysisFunc()
-						select {
-						case <-ctx.Done():
-							return
-						case <-time.Tick(duration):
-							// run analysis periodically
-							analysisFunc()
-						}
+					// 	// run the analysis for the first time after agent
+					// 	// start
+					// 	analysisFunc()
+					// 	select {
+					// 	case <-ctx.Done():
+					// 		return
+					// 	case <-time.Tick(duration):
+					// 		// run analysis periodically
+					// 		analysisFunc()
+					// 	}
 
-					}(ctx, duration, &wg)
+					// }(ctx, duration, &wg)
 
 					configProvider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{
 						ResolverSettings: confmap.ResolverSettings{

@@ -5,23 +5,23 @@ go 1.20
 // replace checkagent => github.com/middleware-labs/check-agent v0.0.0-20230411103956-f67eb953ba5e
 replace checkagent => ./check-agent
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.0.0-20230904104547-880e7aa3d5b9
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.0.0-20230918092733-46edb9b1e697
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.0.0-20230904104547-880e7aa3d5b9
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.0.0-20230918092733-46edb9b1e697
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.0.0-20230904104547-880e7aa3d5b9
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.0.0-20230918092733-46edb9b1e697
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.0.0-20230904104547-880e7aa3d5b9
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.0.0-20230918092733-46edb9b1e697
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.0.0-20230904104547-880e7aa3d5b9
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.0.0-20230918092733-46edb9b1e697
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.0.0-20230904104547-880e7aa3d5b9
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.0.0-20230918092733-46edb9b1e697
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.0.0-20230904104547-880e7aa3d5b9
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.0.0-20230918092733-46edb9b1e697
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.0.0-20230904104547-880e7aa3d5b9
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.0.0-20230918092733-46edb9b1e697
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.0.0-20230904104547-880e7aa3d5b9
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.0.0-20230918092733-46edb9b1e697
 
 require (
 	// checkagent v0.0.0-00010101000000-000000000000
