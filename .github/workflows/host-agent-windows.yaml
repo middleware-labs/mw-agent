@@ -16,7 +16,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [ 'ubuntu-20.04']
+        os: [ 'ubuntu-22.04']
 
     steps:
     - name: Checkout Repo
@@ -28,7 +28,7 @@ jobs:
 
     - name: Install makensis
       run: sudo apt update && sudo apt install -y nsis nsis-pluginapi
-      if: ${{ matrix.os == 'ubuntu-20.04' }}
+      if: ${{ matrix.os == 'ubuntu-22.04' }}
 
     - name: Build MW Agent for Windows
       run: |
