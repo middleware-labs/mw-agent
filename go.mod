@@ -5,23 +5,23 @@ go 1.20
 // replace checkagent => github.com/middleware-labs/check-agent v0.0.0-20230411103956-f67eb953ba5e
 replace checkagent => ./check-agent
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.0.0-20230904104547-880e7aa3d5b9
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.81.1-0.20230918092733-46edb9b1e697
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.0.0-20230904104547-880e7aa3d5b9
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.81.1-0.20230918092733-46edb9b1e697
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.0.0-20230904104547-880e7aa3d5b9
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.81.1-0.20230918092733-46edb9b1e697
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.0.0-20230904104547-880e7aa3d5b9
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.81.1-0.20230918092733-46edb9b1e697
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.0.0-20230904104547-880e7aa3d5b9
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.81.1-0.20230918092733-46edb9b1e697
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.0.0-20230904104547-880e7aa3d5b9
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.81.1-0.20230918092733-46edb9b1e697
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.0.0-20230904104547-880e7aa3d5b9
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.81.1-0.20230918092733-46edb9b1e697
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.0.0-20230904104547-880e7aa3d5b9
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.81.1-0.20230918092733-46edb9b1e697
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.0.0-20230904104547-880e7aa3d5b9
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.81.1-0.20230918092733-46edb9b1e697
 
 require (
 	// checkagent v0.0.0-00010101000000-000000000000
@@ -190,6 +190,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
+	github.com/middleware-labs/synthetics-agent v0.0.0-20230807065245-dd07d90d8ed5 // indirect
 	github.com/miekg/dns v1.1.53 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
@@ -242,7 +243,7 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.15 // indirect
 	github.com/shirou/gopsutil/v3 v3.23.7 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
-	github.com/sirupsen/logrus v1.9.0 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/afero v1.9.5 // indirect
 	github.com/spf13/cast v1.5.1 // indirect
 	github.com/spf13/cobra v1.7.0 // indirect
