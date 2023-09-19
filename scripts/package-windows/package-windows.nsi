@@ -16,12 +16,12 @@
 ${StrRep}
 ;--------------------------------
 ;Settings
-  !define APPNAME "Middleware Windows Agent"
+  !define APPNAME "Middleware Agent"
   !define APP_NAME_IN_INSTALLED_DIR "mw-windows-agent"
   !define CONFIG_FILE_NAME_IN_INSTALLED_DIR "agent-config.yaml"
   !define COMPANYNAME "Middleware Inc"
-  !define DESCRIPTION "Middleware Windows Agent."
-  !define DEVELOPER "Middleware Inc" #License Holder
+  !define DESCRIPTION "Middleware Agent for Microsoft Windows"
+  !define DEVELOPER "Middleware Lab Inc" #License Holder
 
   !define BUILDNUMBER "0"
   # Files Directory
@@ -52,7 +52,7 @@ ${StrRep}
   OutFile "mw-windows-agent-${VERSION}-setup.exe"
 
   ;Default installation folder
-  InstallDir "$PROGRAMFILES\${APPNAME}"
+  InstallDir "$PROGRAMFILES64\${APPNAME}"
 
   ;Get installation folder from registry if available
   InstallDirRegKey HKLM "Software\${APPNAME}" ""
@@ -119,6 +119,11 @@ Var TextAPIKey
 Var TextTarget
 Var LogFilePath
 
+Function onManualInstallClick
+    pop $R9
+    ExecShell "open" "https://app.middleware.io/installation#infrastructures/windows" 
+FunctionEnd
+
 Function pgPageCreate
     !insertmacro MUI_HEADER_TEXT "Middleware Settings" "Please provide API Key and Target URL for your Middleware account"
 
@@ -132,20 +137,26 @@ Function pgPageCreate
     ${NSD_CreateGroupBox} 5% 10u 90% 70u "Middleware Account Details"
     Pop $0
 
-        ${NSD_CreateLabel} 10% 26u 30% 14u "API Key (MW_API_KEY) :"
+        ${NSD_CreateLabel} 10% 26u 30% 13u "API Key (MW_API_KEY)     :"
         Pop $0
 
         ${NSD_CreateText} 40% 24u 50% 14u ""
         Pop $TextAPIKey
 
-        ${NSD_CreateLabel} 10% 55u 30% 14u "Target (MW_TARGET)   :"
+        ${NSD_CreateLabel} 10% 55u 30% 13u "Target URL (MW_TARGET) :"
         Pop $0
 
         ${NSD_CreateText} 40% 53u 50% 14u ""
         Pop $TextTarget
     
-    ${NSD_CreateLabel} 5% 86u 90% 34u "API key and Target can be found in the installation section of your Middleware account."
+    ${NSD_CreateLabel} 5% 86u 90% 34u "API Key and Target URL can be found in the installation section of your Middleware account."
     Pop $0
+
+    ${NSD_CreateLink}  5% 120u 90% 34u "Click here to access your API Key and Target URL."
+    Pop $R9
+
+    ${NSD_OnClick} $R9 onManualInstallClick
+
     nsDialogs::Show
 FunctionEnd
 
