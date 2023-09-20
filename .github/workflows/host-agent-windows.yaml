@@ -32,7 +32,7 @@ jobs:
 
     - name: Build MW Agent for Windows
       run: |
-        GOOS=windows CGO_ENABLED=0 go build -o build/mw-windows-agent.exe cmd/host-agent/main.go
+        GOOS=windows CGO_ENABLED=0 go build -ldflags "-s -w -X main.agentVersion=${{ github.event.inputs.release_version }}" -o build/mw-windows-agent.exe cmd/host-agent/main.go
         makensis -DVERSION=${{ github.event.inputs.release_version }} scripts/package-windows/package-windows.nsi
        
     - name: Install jsign Tool For Microsoft Authenticode
