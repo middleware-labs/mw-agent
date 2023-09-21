@@ -204,7 +204,7 @@ Section "install"
   Call UpdateConfigFile
   ;ExecWait 'sc create ${APP_NAME_IN_INSTALLED_DIR} error= "severe" displayname= "${APPNAME}" type= "own" start= "auto" binpath= "$INSTDIR\${APP_NAME_IN_INSTALLED_DIR}.exe start --config-file $INSTDIR\config.yaml"'
   ;ExecWait 'net start ${APP_NAME_IN_INSTALLED_DIR}'
-  SimpleSC::InstallService ${APP_NAME_IN_INSTALLED_DIR} "Middleware Windows Agent" "16" "2" "$\"$INSTDIR\${APP_NAME_IN_INSTALLED_DIR}.exe$\" start --config-file $\"$INSTDIR\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}$\"" "" "" ""
+  SimpleSC::InstallService ${APP_NAME_IN_INSTALLED_DIR} "Middleware Agent" "16" "2" "$\"$INSTDIR\${APP_NAME_IN_INSTALLED_DIR}.exe$\" start --config-file $\"$INSTDIR\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}$\"" "" "" ""
   Pop $0 ; returns an errorcode (<>0) otherwise success (0)
 
   SimpleSC::StartService "${APP_NAME_IN_INSTALLED_DIR}" "" 30
