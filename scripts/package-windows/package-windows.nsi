@@ -254,7 +254,7 @@ SectionEnd
   VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "${DEVELOPER} | ${COMPANYNAME}"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "FileDescription" "${APPNAME}"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "${VERSION}.${BUILDNUMBER}"
-  VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductVersion" "${VERSION}.{BUILDNUMBER}"
+  VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductVersion" "${VERSION}.${BUILDNUMBER}"
 
 ;--------------------------------
 ;Verify Uninstall
