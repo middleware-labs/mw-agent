@@ -214,6 +214,7 @@ service:
       receivers:
       - otlp
       - fluentforward
+      - filelog
     metrics:
       exporters:
       - otlp/2
@@ -222,7 +223,6 @@ service:
       - resource
       - batch
       receivers:
-      - hostmetrics
       - docker_stats
       - otlp
       - prometheus

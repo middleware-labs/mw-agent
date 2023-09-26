@@ -4,12 +4,12 @@
 api-key: 
 
 # target is your unique Middleware account URL
-target:
+target: 
 
 # Synthetic monitoring using the Middleware agent is disabled by default.
 # Set enable-synthetic-monitoring to true if you want this agent to be
 # able to perform synthetic tests.
-enable-synthetic-monitoring: true
+enable-synthetic-monitoring: false
 
 # The duration for the agent to check for configuration changes from the
 # backend. We recommend to keep this change to 5 minutes or higher. Keeping 
@@ -26,4 +26,13 @@ host-tags: "name:my-machine,env:production"
 # For Windows, this path needs to use double backslashes as a file separator 
 # instead of a single backslash. 
 # E.g. C:\\Program Files (x86)\\Middleware Windows Agent\\mw-agent.log
-logfile: "mw-agent.log"
+#logfile: "mw-agent.log"
+
+# agent-features provides feature flags to enable or disable features.
+# The list of agent-features that can be enabled or disabled is given below
+#
+# infra-monitoring: By setting this flag to false, you can disable infrastructure
+# monitoring from this agent. infra-monitoring is set to true by default.
+
+agent-features:
+  infra-monitoring: false
