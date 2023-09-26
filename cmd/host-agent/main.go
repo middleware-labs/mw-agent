@@ -125,6 +125,14 @@ func getFlags(cfg *agent.HostConfig) []cli.Flag {
 			Value:       1, // default value is 1MB
 		}),
 
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "agent-features.infra-monitoring",
+			Usage:       "Flag to enable or disable infrastructure monitoring",
+			EnvVars:     []string{"MW_AGENT_FEATURES_INFRA_MONITORING"},
+			Destination: &cfg.AgentFeatures.InfraMonitoring,
+			Value:       true, // infra monitoring is enabled by default
+		}),
+
 		&cli.StringFlag{
 			Name:    "config-file",
 			EnvVars: []string{"MW_CONFIG_FILE"},
@@ -281,13 +289,13 @@ func main() {
 						return agent.ErrInvalidHostTags
 					}
 
-					yamlPath, err := hostAgent.GetUpdatedYAMLPath()
+					/*yamlPath, err := hostAgent.GetUpdatedYAMLPath()
 					if err != nil {
 						logger.Error("error getting config file path", zap.Error(err))
 						return err
-					}
+					}*/
 
-					// yamlPath := filepath.Join(installDir, "./configyamls/nodocker/otel-config.yaml")
+					yamlPath := filepath.Join(installDir, "./configyamls/nodocker/otel-config.yaml")
 					logger.Info("yaml path loaded", zap.String("path", yamlPath))
 
 					configProvider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{

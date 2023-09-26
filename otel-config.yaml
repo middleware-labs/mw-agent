@@ -223,7 +223,6 @@ service:
       - resource/hostid
       - batch
       receivers:
-      - hostmetrics
       - docker_stats
       - otlp
       - prometheus
