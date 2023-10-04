@@ -7,21 +7,20 @@ processors:
     #             bodies:
     #             - \n
     #             - {}\n
-    resource:
+    resource/metrics:
         attributes:
             - key: mw.account_key
               action: upsert
               value: ${MW_API_KEY}
-            - key: host.id
-              action: upsert
-              from_attribute: host.name
+            - action: delete
+              key: host.name
             - key: agent.installation.time
               action: insert
               from_attribute: host.name
             - key: agent.installation.time
               action: update
               value: ${MW_AGENT_INSTALLATION_TIME}
-    resource/2:
+    resource/logs:
         attributes:
             - key: mw.account_key
               action: upsert
@@ -29,14 +28,17 @@ processors:
             - key: service.name
               action: insert
               value: middleware-logs
-            - key: host.id
-              action: upsert
-              from_attribute: host.name
-    resource/3:
+            - action: delete
+              key: host.name
+    resource/traces:
         attributes:
             - key: mw.account_key
               action: upsert
               value: ${MW_API_KEY}
+            - action: delete
+              key: host.name
+    resource/hostid:
+        attributes:
             - key: host.id
               action: upsert
               from_attribute: host.name
@@ -203,8 +205,9 @@ service:
       exporters:
       - otlp/2
       processors:
+      - resource/logs
       - resourcedetection
-      - resource/2
+      - resource/hostid
       - attributes/logs
       - batch
       receivers:
@@ -214,8 +217,9 @@ service:
       exporters:
       - otlp/2
       processors:
+      - resource/metrics
       - resourcedetection
-      - resource
+      - resource/hostid
       - batch
       receivers:
       - hostmetrics
@@ -225,8 +229,9 @@ service:
       exporters:
       - otlp/2
       processors:
+      - resource/traces
       - resourcedetection
-      - resource/3
+      - resource/hostid
       - attributes/traces
       - batch
       receivers:
