@@ -63,21 +63,20 @@ processors:
       from_attribute: faas.trigger
       key: mw.service.name.derived
   batch: null
-  resource:
+  resource/metrics:
     attributes:
     - action: upsert
       key: mw.account_key
       value: ${MW_API_KEY}
-    - action: upsert
-      from_attribute: host.name
-      key: host.id
+    - action: delete
+      key: host.name
     - action: insert
       from_attribute: host.name
       key: agent.installation.time
     - action: update
       key: agent.installation.time
       value: ${MW_AGENT_INSTALLATION_TIME}
-  resource/2:
+  resource/logs:
     attributes:
     - action: upsert
       key: mw.account_key
@@ -85,17 +84,20 @@ processors:
     - action: insert
       key: service.name
       value: middleware-logs
-    - action: upsert
-      from_attribute: host.name
-      key: host.id
-  resource/3:
+    - action: delete
+      key: host.name
+  resource/traces:
     attributes:
     - action: upsert
       key: mw.account_key
       value: ${MW_API_KEY}
-    - action: upsert
-      from_attribute: host.name
-      key: host.id
+    - action: delete
+      key: host.name
+  resource/hostid:
+    attributes:
+        - key: host.id
+          action: upsert
+          from_attribute: host.name
   resourcedetection:
     detectors:
     - env
@@ -207,8 +209,9 @@ service:
       exporters:
       - otlp/2
       processors:
+      - resource/logs
       - resourcedetection
-      - resource/2
+      - resource/hostid
       - attributes/logs
       - batch
       receivers:
@@ -218,8 +221,9 @@ service:
       exporters:
       - otlp/2
       processors:
+      - resource/metrics
       - resourcedetection
-      - resource
+      - resource/hostid
       - batch
       receivers:
       - hostmetrics
@@ -230,8 +234,9 @@ service:
       exporters:
       - otlp/2
       processors:
+      - resource/traces
       - resourcedetection
-      - resource/3
+      - resource/hostid
       - attributes/traces
       - batch
       receivers:
