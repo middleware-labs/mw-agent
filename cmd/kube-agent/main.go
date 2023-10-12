@@ -74,6 +74,14 @@ func getFlags(cfg *agent.KubeConfig) []cli.Flag {
 			Value:       "24h",
 			Hidden:      true,
 		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "otel-log-level",
+			EnvVars:     []string{"MW_OTEL_LOG_LEVEL"},
+			Destination: &cfg.OtelLogLevel,
+			DefaultText: "fatal",
+			Value:       "fatal",
+			Hidden:      true,
+		}),
 
 		&cli.StringFlag{
 			Name:    "config-file",

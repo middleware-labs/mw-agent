@@ -39,7 +39,7 @@ processors:
 service:
     telemetry:
       logs:
-        level: "fatal"
+        level: ${MW_OTEL_LOG_LEVEL}
     pipelines:
       metrics/prometheus:
         receivers: [ prometheus ]

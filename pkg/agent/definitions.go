@@ -50,6 +50,7 @@ type BaseConfig struct {
 	DockerEndpoint            string
 	APIURLForConfigCheck      string
 	InfraPlatform             InfraPlatform
+	OtelLogLevel              string
 }
 
 // String() implements stringer interface for BaseConfig
@@ -62,6 +63,7 @@ func (c BaseConfig) String() string {
 	s += fmt.Sprintf("docker-endpoint: %s, ", c.DockerEndpoint)
 	s += fmt.Sprintf("api-url-for-config-check: %s, ", c.APIURLForConfigCheck)
 	s += fmt.Sprintf("infra-platform: %s, ", c.InfraPlatform)
+	s += fmt.Sprintf("otel-log-level: %s, ", c.OtelLogLevel)
 	return s
 }
 
