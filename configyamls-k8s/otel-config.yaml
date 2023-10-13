@@ -40,6 +40,8 @@ service:
     telemetry:
       logs:
         level: ${MW_OTEL_LOG_LEVEL}
+      metrics:
+        level: none
     pipelines:
       metrics/prometheus:
         receivers: [ prometheus ]
