@@ -223,7 +223,7 @@ func main() {
 					defer cancel()
 
 					// Listen to the config changes provided by Middleware API
-					if cfg.ConfigCheckInterval != "0" {
+					if false {
 						err = hostAgent.ListenForConfigChanges(ctx)
 						if err != nil {
 							logger.Info("error for listening for config changes", zap.Error(err))
@@ -261,13 +261,13 @@ func main() {
 						return agent.ErrInvalidHostTags
 					}
 
-					yamlPath, err := hostAgent.GetUpdatedYAMLPath()
-					if err != nil {
-						logger.Error("error getting config file path", zap.Error(err))
-						return err
-					}
+					// yamlPath, err := hostAgent.GetUpdatedYAMLPath()
+					// if err != nil {
+					// 	logger.Error("error getting config file path", zap.Error(err))
+					// 	return err
+					// }
 
-					// yamlPath := filepath.Join(installDir, "./configyamls/nodocker/otel-config.yaml")
+					yamlPath := filepath.Join(installDir, "./configyamls/all/otel-config.yaml")
 					logger.Info("yaml path loaded", zap.String("path", yamlPath))
 
 					configProvider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{
@@ -340,6 +340,14 @@ func main() {
 			{
 				Name:  "version",
 				Usage: "Returns the current agent version",
+				Action: func(c *cli.Context) error {
+					fmt.Println("Middleware Agent Version", agentVersion)
+					return nil
+				},
+			},
+			{
+				Name:  "target",
+				Usage: "Returns the current target",
 				Action: func(c *cli.Context) error {
 					fmt.Println("Middleware Agent Version", agentVersion)
 					return nil

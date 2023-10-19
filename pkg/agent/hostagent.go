@@ -273,16 +273,16 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 		}
 	}
 
-	apiYAMLBytes, err := yaml.Marshal(apiYAMLConfig)
-	if err != nil {
-		c.logger.Error("failed to marshal api data", zap.Error(err))
-		return err
-	}
+	// apiYAMLBytes, err := yaml.Marshal(apiYAMLConfig)
+	// if err != nil {
+	// 	c.logger.Error("failed to marshal api data", zap.Error(err))
+	// 	return err
+	// }
 
-	if err := os.WriteFile(yamlPath, apiYAMLBytes, 0644); err != nil {
-		c.logger.Error("failed to write new configuration data to file", zap.Error(err))
-		return err
-	}
+	// if err := os.WriteFile(yamlPath, apiYAMLBytes, 0644); err != nil {
+	// 	c.logger.Error("failed to write new configuration data to file", zap.Error(err))
+	// 	return err
+	// }
 
 	return nil
 }
