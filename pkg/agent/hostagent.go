@@ -17,7 +17,10 @@ import (
 
 	//	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
 	//	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
-
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	otelPipelines "go.opentelemetry.io/collector/service/pipelines"
 	"go.uber.org/zap"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -126,8 +129,8 @@ var (
 )
 
 const (
-	yamlFile         = "configyamls/all/otel-config.yaml"
-	yamlFileNoDocker = "configyamls/nodocker/otel-config.yaml"
+	yamlFile = "configyamls/nodocker/otel-config.yaml"
+	// yamlFileNoDocker = "configyamls/nodocker/otel-config.yaml"
 )
 
 func (d DatabaseType) String() string {
@@ -273,6 +276,53 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 		}
 	}
 
+	// Adding docker_stats settings in the config, if docker endpoint is valid
+	dockerSocketPath := strings.Split(c.DockerEndpoint, "//")
+
+	if len(dockerSocketPath) == 2 && isSocketFn(dockerSocketPath[1]) {
+
+		if rec, o := apiYAMLConfig["receivers"].(map[string]interface{}); o {
+			rec["docker_stats"] = dockerstatsreceiver.Config{
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					CollectionInterval: 5 * time.Second,
+					Timeout:            20 * time.Second,
+				},
+
+				Endpoint: c.DockerEndpoint,
+			}
+			apiYAMLConfig["receivers"] = rec
+
+		} else {
+			c.logger.Error("failed to parse receivers config")
+		}
+
+		if service, o := apiYAMLConfig["service"].(map[string]interface{}); o {
+			if pipelines, o := service["pipelines"].(map[string]interface{}); o {
+				newConfig := otelPipelines.PipelineConfig{
+					Receivers: []component.ID{
+						component.NewID("docker_stats"),
+					},
+					Processors: []component.ID{
+						component.NewID("resourcedetection"),
+						component.NewID("resource"),
+						component.NewID("batch"),
+					},
+					Exporters: []component.ID{
+						component.NewID("otlp/2"),
+					},
+				}
+				pipelines["metrics/docker_stats"] = newConfig
+				service["pipelines"] = pipelines
+			} else {
+				c.logger.Error("failed to parse pipelines config")
+			}
+			apiYAMLConfig["service"] = service
+		} else {
+			c.logger.Error("failed to parse services config")
+		}
+
+	}
+
 	apiYAMLBytes, err := yaml.Marshal(apiYAMLConfig)
 	if err != nil {
 		c.logger.Error("failed to marshal api data", zap.Error(err))
@@ -289,13 +339,8 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 
 // GetUpdatedYAMLPath gets the correct otel configuration file
 func (c *HostAgent) GetUpdatedYAMLPath() (string, error) {
-	configType := "docker"
+	configType := "nodocker"
 	yamlPath := yamlFile
-	dockerSocketPath := strings.Split(c.DockerEndpoint, "//")
-	if len(dockerSocketPath) != 2 || !isSocketFn(dockerSocketPath[1]) {
-		configType = "nodocker"
-		yamlPath = yamlFileNoDocker
-	}
 
 	absYamlPath := filepath.Join(c.otelConfigDirectory, yamlPath)
 	if err := c.updateYAML(configType, absYamlPath); err != nil {
