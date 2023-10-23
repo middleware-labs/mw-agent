@@ -84,10 +84,8 @@ jobs:
 
     - name: Add YAML Files
       run: |
-          mkdir -p example/mw-agent_$RELEASE_VERSION-1_$ARCH/usr/bin/configyamls/all
-          mkdir -p example/mw-agent_$RELEASE_VERSION-1_$ARCH/usr/bin/configyamls/nodocker
-          cp configyamls/all/otel-config.yaml example/mw-agent_$RELEASE_VERSION-1_$ARCH/usr/bin/configyamls/all/
-          cp configyamls/nodocker/otel-config.yaml example/mw-agent_$RELEASE_VERSION-1_$ARCH/usr/bin/configyamls/nodocker/
+          mkdir -p example/mw-agent_$RELEASE_VERSION-1_$ARCH/etc/mw-agent
+          cp otel-config.yaml example/mw-agent_$RELEASE_VERSION-1_$ARCH/etc/mw-agent/
     
     - name: Creating DEB package
       run: |
