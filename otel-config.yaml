@@ -63,19 +63,24 @@ processors:
       from_attribute: faas.trigger
       key: mw.service.name.derived
   batch: null
-  resource/metrics:
+  resource:
     attributes:
     - action: upsert
       key: mw.account_key
       value: ${MW_API_KEY}
-    - action: delete
-      key: host.name
     - action: insert
       from_attribute: host.name
       key: agent.installation.time
     - action: update
       key: agent.installation.time
       value: ${MW_AGENT_INSTALLATION_TIME}
+    - action: delete
+      key: host.name
+  resource/hostid:
+    attributes:
+    - action: upsert
+      from_attribute: host.name
+      key: host.id
   resource/logs:
     attributes:
     - action: upsert
@@ -93,11 +98,6 @@ processors:
       value: ${MW_API_KEY}
     - action: delete
       key: host.name
-  resource/hostid:
-    attributes:
-        - key: host.id
-          action: upsert
-          from_attribute: host.name
   resourcedetection:
     detectors:
     - env
@@ -113,13 +113,9 @@ receivers:
     endpoint: unix:///var/run/docker.sock
     timeout: 20s
   filelog:
-    exclude:
-    - /var/log/mw-agent/apt-installation-*.log
-    - /var/log/mw-agent/rpm-installation-*.log
     include:
     - /var/log/**/*.log*
     - /var/lib/docker/containers/**/*.log*
-    - $MW_LOG_PATHS
     include_file_name_resolved: true
     include_file_path: true
     include_file_path_resolved: true
@@ -140,11 +136,11 @@ receivers:
         msg=(?P<systemd_err_msg>.+) name=(?P<name>.+) duration_seconds=(?P<systemd_err_duration_seconds>.+)
         err="(?P<regex_resolved_body>.+)"
       type: regex_parser
-    - type: regex_parser
-      id: extract_metadata_from_filepath
-      regex: '^/var/lib/docker/containers/(?P<docker_container_id>[^_]+)/.*log$'
-      parse_from: attributes["log.file.path"]
+    - id: extract_metadata_from_filepath
       output: backup_unresolved_body
+      parse_from: attributes["log.file.path"]
+      regex: ^/var/lib/docker/containers/(?P<docker_container_id>[^_]+)/.*log$
+      type: regex_parser
     - from: body
       id: backup_unresolved_body
       if: attributes.regex_resolved_body != nil
@@ -217,11 +213,12 @@ service:
       receivers:
       - otlp
       - fluentforward
+      - filelog
     metrics:
       exporters:
       - otlp/2
       processors:
-      - resource/metrics
+      - resource
       - resourcedetection
       - resource/hostid
       - batch
