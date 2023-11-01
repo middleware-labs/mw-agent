@@ -18,8 +18,8 @@ jobs:
       fail-fast: false
       matrix:
         arch:
-          # - ARM
           - x64
+          - aarch64
 
     steps:
     - name: Checkout Repo
@@ -197,9 +197,3 @@ jobs:
       run: flock upload.lock -c "echo Lock released"
     - name: Delay
       run: sleep 10
-
-      # i386: 32-bit x86 architecture
-      # x86_64: 64-bit x86 architecture
-      # armv7hl: 32-bit ARM architecture
-      # aarch64: 64-bit ARM architecture
-      # ppc64: 64-bit PowerPC architecture
