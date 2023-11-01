@@ -6,23 +6,9 @@ on:
       release_version:
         description: 'Release number for RPM package'
         required: true
-  # push:
-  #   paths-ignore:
-  #     - 'README.md'
-  #     - '.github/**'
-  #     - 'configyamls/**'
-  #   branches:
-  #    - 'master'
-  #    - 'workflow-experiments'
 
 env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-  
-# env:
-#   ARCH: arm64
-#   BINARY_SOURCE: release/mw-agent
-#   BINARY_NAME: mw-agent
-#   RELEASE_VERSION: 0.0.15-aws-arm64
 
 jobs:
   build:
@@ -185,49 +171,24 @@ jobs:
     - name: Acquire lock
       run: flock upload.lock -c "echo Lock acquired"
 
-    - name: Upload artifacts to Github Pages (install.middleware.io)
+    - name: Upload artifacts to Github Pages (yum.middleware.io)
       run: |
-        git clone https://.:${{ secrets.GHCR_TOKEN }}@github.com/middleware-labs/install.middleware.io.git
-        # gpg --import install.middleware.io/gpg-keys/mw-agent-apt-private.key
-        # gpg --import install.middleware.io/gpg-keys/mw-agent-apt-public.key
-        # gpg --list-keys
-        # gpg --list-secret-keys
-
-        # mkdir -p ~/example/packages/
-        # if [ ${{ matrix.arch }} == "x64" ]; then
-        #   cp -r ~/rpmbuild/RPMS/x86_64/$BINARY_NAME-$RELEASE_VERSION-1.x86_64.rpm ~/example/packages/.
-        # elif [ ${{ matrix.arch }} == "ARM" ]; then
-        #   cp -r ~/rpmbuild/RPMS/aarch64/$BINARY_NAME-$RELEASE_VERSION-1.aarch64.rpm ~/example/packages/.
-        # else
-        #   echo "Unsupported architecture"
-        #   exit 1
-        # fi
-        # rpm --addsign ~/example/packages/*.rpm
-        # cd ~/example/packages/
-        # createrepo .
-        # ls
-        # cd ../..
-        # gpg --detach-sign --armor repodata/repomd.xml
-
-
-        
+        git clone https://.:${{ secrets.GHCR_TOKEN }}@github.com/middleware-labs/yum.middleware.io.git    
         mkdir -p install.middleware.io/rpms
-
         if [ ${{ matrix.arch }} == "x64" ]; then
-          cp -r ~/rpmbuild/RPMS/x86_64/$BINARY_NAME-$RELEASE_VERSION-1.x86_64.rpm install.middleware.io/rpms/
+          cp -r ~/rpmbuild/RPMS/x86_64/$BINARY_NAME-$RELEASE_VERSION-1.x86_64.rpm yum.middleware.io/x86_64/Packages/
         elif [ ${{ matrix.arch }} == "ARM" ]; then
-          cp -r ~/rpmbuild/RPMS/aarch64/$BINARY_NAME-$RELEASE_VERSION-1.aarch64.rpm install.middleware.io/rpms/
+          cp -r ~/rpmbuild/RPMS/aarch64/$BINARY_NAME-$RELEASE_VERSION-1.aarch64.rpm install.middleware.io/aarch64/Packages/
         else
           echo "Unsupported architecture"
           exit 1
         fi
-
         
-        cd install.middleware.io
+        cd yum.middleware.io
         git config --global user.email "keval@middleware.io"
         git config --global user.name "bhogayatakb"
         git add .
-        git commit -m "RPM added to install.middleware.io"
+        git commit -m "RPM added to yum.middleware.io"
         git fetch origin master
         git merge origin/master
         git push origin master
