@@ -174,11 +174,10 @@ jobs:
     - name: Upload artifacts to Github Pages (yum.middleware.io)
       run: |
         git clone https://.:${{ secrets.GHCR_TOKEN }}@github.com/middleware-labs/yum.middleware.io.git    
-        mkdir -p install.middleware.io/rpms
         if [ ${{ matrix.arch }} == "x64" ]; then
           cp -r ~/rpmbuild/RPMS/x86_64/$BINARY_NAME-$RELEASE_VERSION-1.x86_64.rpm yum.middleware.io/x86_64/Packages/
         elif [ ${{ matrix.arch }} == "aarch64" ]; then
-          cp -r ~/rpmbuild/RPMS/aarch64/$BINARY_NAME-$RELEASE_VERSION-1.aarch64.rpm install.middleware.io/aarch64/Packages/
+          cp -r ~/rpmbuild/RPMS/aarch64/$BINARY_NAME-$RELEASE_VERSION-1.aarch64.rpm yum.middleware.io/aarch64/Packages/
         else
           echo "Unsupported architecture"
           exit 1
