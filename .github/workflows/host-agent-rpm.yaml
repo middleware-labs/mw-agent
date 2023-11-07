@@ -6,23 +6,9 @@ on:
       release_version:
         description: 'Release number for RPM package'
         required: true
-  # push:
-  #   paths-ignore:
-  #     - 'README.md'
-  #     - '.github/**'
-  #     - 'configyamls/**'
-  #   branches:
-  #    - 'master'
-  #    - 'workflow-experiments'
 
 env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-  
-# env:
-#   ARCH: arm64
-#   BINARY_SOURCE: release/mw-go-agent-host-arm
-#   BINARY_NAME: mw-go-agent-host-arm
-#   RELEASE_VERSION: 0.0.15-aws-arm64
 
 jobs:
   build:
@@ -32,8 +18,8 @@ jobs:
       fail-fast: false
       matrix:
         arch:
-          - ARM
           - x64
+          - aarch64
 
     steps:
     - name: Checkout Repo
@@ -47,16 +33,16 @@ jobs:
       run: |
         if [ ${{ matrix.arch }} == "x64" ]; then
           echo "::set-env name=ARCH::all"
-          echo "::set-env name=BINARY_SOURCE::release/mw-go-agent-host"
+          echo "::set-env name=BINARY_SOURCE::release/mw-agent"
           echo "::set-env name=RELEASE_VERSION::$(echo "${{ github.event.inputs.release_version }}" | tr -d '\n')"
-          echo "::set-env name=BINARY_NAME::mw-go-agent-host"
+          echo "::set-env name=BINARY_NAME::mw-agent"
           echo "::set-env name=SPEC_FILE::test.spec"
-        elif [ ${{ matrix.arch }} == "ARM" ]; then
-          echo "::set-env name=ARCH::arm64"
-          echo "::set-env name=BINARY_SOURCE::release/mw-go-agent-host-arm"
+        elif [ ${{ matrix.arch }} == "aarch64" ]; then
+          echo "::set-env name=ARCH::aarch64"
+          echo "::set-env name=BINARY_SOURCE::release/mw-agent"
           echo "::set-env name=RELEASE_VERSION::$(echo "${{ github.event.inputs.release_version }}" | tr -d '\n')"
-          echo "::set-env name=BINARY_NAME::mw-go-agent-host-arm"
-          echo "::set-env name=SPEC_FILE::test-arm.spec"
+          echo "::set-env name=BINARY_NAME::mw-agent"
+          echo "::set-env name=SPEC_FILE::test-aarch64.spec"
         else
           echo "Unsupported architecture"
           exit 1
@@ -68,13 +54,13 @@ jobs:
         touch installables/rpmessentials/$SPEC_FILE
         if [ ${{ matrix.arch }} == "x64" ]; then
           cat << EOF > installables/rpmessentials/test.spec
-        Name: mw-go-agent-host
+        Name: mw-agent
         Version: $RELEASE_VERSION
         Release: 1
         Summary: My Package Summary
         License: GPL
         Group: Development/Tools
-        Source0: mw-go-agent-host_$RELEASE_VERSION-1_all.tar.gz
+        Source0: mw-agent_$RELEASE_VERSION-1_all.tar.gz
         
         
         %description
@@ -86,21 +72,21 @@ jobs:
         %build
         
         %install
-        mkdir -p %{buildroot}/usr/bin/mw-go-agent-host
-        cp -rfa ~/rpmbuild/BUILD/mw-go-agent-host-$RELEASE_VERSION/* %{buildroot}/usr/bin/mw-go-agent-host
+        mkdir -p %{buildroot}/usr/bin/mw-agent
+        cp -rfa ~/rpmbuild/BUILD/mw-agent-$RELEASE_VERSION/* %{buildroot}/usr/bin/mw-agent
         
         %files
-        /usr/bin/mw-go-agent-host/*
+        /usr/bin/mw-agent/*
         EOF
-        elif [ ${{ matrix.arch }} == "ARM" ]; then
-          cat << EOF > installables/rpmessentials/test-arm.spec
-        Name: mw-go-agent-host-arm
+        elif [ ${{ matrix.arch }} == "aarch64" ]; then
+          cat << EOF > installables/rpmessentials/test-aarch64.spec
+        Name: mw-agent
         Version: $RELEASE_VERSION
         Release: 1
         Summary: My Package Summary
         License: GPL
         Group: Development/Tools
-        Source0: mw-go-agent-host-arm_$RELEASE_VERSION-1_arm64.tar.gz
+        Source0: mw-agent_$RELEASE_VERSION-1_aarch64.tar.gz
         
         
         %description
@@ -112,11 +98,11 @@ jobs:
         %build
         
         %install
-        mkdir -p %{buildroot}/usr/bin/mw-go-agent-host-arm
-        cp -rfa ~/rpmbuild/BUILD/mw-go-agent-host-arm-$RELEASE_VERSION/* %{buildroot}/usr/bin/mw-go-agent-host-arm
+        mkdir -p %{buildroot}/usr/bin/mw-agent
+        cp -rfa ~/rpmbuild/BUILD/mw-agent-$RELEASE_VERSION/* %{buildroot}/usr/bin/mw-agent
         
         %files
-        /usr/bin/mw-go-agent-host-arm/*
+        /usr/bin/mw-agent/*
         EOF
         else
           echo "Unsupported architecture"
@@ -154,8 +140,8 @@ jobs:
       run: |
         if [ ${{ matrix.arch }} == "x64" ]; then
           CGO_ENABLED=0 go build -ldflags="-s -w -X main.agentVersion=${RELEASE_VERSION}" -v -a -o ~/rpmbuild/SOURCES/$BINARY_NAME-$RELEASE_VERSION/$BINARY_NAME cmd/host-agent/main.go
-        elif [ ${{ matrix.arch }} == "ARM" ]; then
-          CGO_ENABLED=0 GOOS=linux GOARCH=$ARCH  go build -ldflags="-s -w -X main.agentVersion=${RELEASE_VERSION}" -v -a -o ~/rpmbuild/SOURCES/$BINARY_NAME-$RELEASE_VERSION/$BINARY_NAME cmd/host-agent/main.go
+        elif [ ${{ matrix.arch }} == "aarch64" ]; then
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w -X main.agentVersion=${RELEASE_VERSION}" -v -a -o ~/rpmbuild/SOURCES/$BINARY_NAME-$RELEASE_VERSION/$BINARY_NAME cmd/host-agent/main.go
         fi
         
     - name: Tar Building
@@ -175,7 +161,7 @@ jobs:
 
         if [ ${{ matrix.arch }} == "x64" ]; then
           rpmbuild -ba ~/rpmbuild/SPECS/$SPEC_FILE
-        elif [ ${{ matrix.arch }} == "ARM" ]; then
+        elif [ ${{ matrix.arch }} == "aarch64" ]; then
           rpmbuild -ba --target=aarch64 ~/rpmbuild/SPECS/$SPEC_FILE
         else
           echo "Unsupported architecture"
@@ -185,27 +171,23 @@ jobs:
     - name: Acquire lock
       run: flock upload.lock -c "echo Lock acquired"
 
-    - name: Upload artifacts to Github Pages (install.middleware.io)
+    - name: Upload artifacts to Github Pages (yum.middleware.io)
       run: |
-
-        git clone https://.:${{ secrets.GHCR_TOKEN }}@github.com/middleware-labs/install.middleware.io.git
-        mkdir -p install.middleware.io/rpms
-
+        git clone https://.:${{ secrets.GHCR_TOKEN }}@github.com/middleware-labs/yum.middleware.io.git    
         if [ ${{ matrix.arch }} == "x64" ]; then
-          cp -r ~/rpmbuild/RPMS/x86_64/$BINARY_NAME-$RELEASE_VERSION-1.x86_64.rpm install.middleware.io/rpms/
-        elif [ ${{ matrix.arch }} == "ARM" ]; then
-          cp -r ~/rpmbuild/RPMS/aarch64/$BINARY_NAME-$RELEASE_VERSION-1.aarch64.rpm install.middleware.io/rpms/
+          cp -r ~/rpmbuild/RPMS/x86_64/$BINARY_NAME-$RELEASE_VERSION-1.x86_64.rpm yum.middleware.io/x86_64/Packages/
+        elif [ ${{ matrix.arch }} == "aarch64" ]; then
+          cp -r ~/rpmbuild/RPMS/aarch64/$BINARY_NAME-$RELEASE_VERSION-1.aarch64.rpm yum.middleware.io/aarch64/Packages/
         else
           echo "Unsupported architecture"
           exit 1
         fi
-
         
-        cd install.middleware.io
+        cd yum.middleware.io
         git config --global user.email "keval@middleware.io"
         git config --global user.name "bhogayatakb"
         git add .
-        git commit -m "RPM added to install.middleware.io"
+        git commit -m "RPM added to yum.middleware.io"
         git fetch origin master
         git merge origin/master
         git push origin master
@@ -214,9 +196,3 @@ jobs:
       run: flock upload.lock -c "echo Lock released"
     - name: Delay
       run: sleep 10
-
-      # i386: 32-bit x86 architecture
-      # x86_64: 64-bit x86 architecture
-      # armv7hl: 32-bit ARM architecture
-      # aarch64: 64-bit ARM architecture
-      # ppc64: 64-bit PowerPC architecture
