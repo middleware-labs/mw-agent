@@ -21,7 +21,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prome
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.81.1-0.20230918092733-46edb9b1e697
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.81.1-0.20230918092733-46edb9b1e697
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.81.1-0.20231107161233-a90bf8664418
 
 require (
 	// checkagent v0.0.0-00010101000000-000000000000
@@ -77,6 +77,8 @@ require (
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.84.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
+
+require github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver v0.84.0
 
 require (
 	cloud.google.com/go/compute v1.23.0 // indirect

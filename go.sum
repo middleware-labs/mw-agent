@@ -559,8 +559,8 @@ github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5
 github.com/matttproud/golang_protobuf_extensions v1.0.4 h1:mmDVorXM7PCGKw94cs5zkfA9PSy5pEvNWRP0ET0TIVo=
 github.com/matttproud/golang_protobuf_extensions v1.0.4/go.mod h1:BSXmuO+STAnVfrANrmjBb36TMTDstsz7MSK+HVaYKv4=
 github.com/maxatome/go-testdeep v1.12.0 h1:Ql7Go8Tg0C1D/uMMX59LAoYK7LffeJQ6X2T04nTH68g=
-github.com/middleware-labs/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.81.1-0.20230918092733-46edb9b1e697 h1:E8BGVXJePl4cXcxD5KPP0hempDyJhGZplwdgqMcrZnY=
-github.com/middleware-labs/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.81.1-0.20230918092733-46edb9b1e697/go.mod h1:4XvEwcWJGIjfuFZz64dY1vpseVJlQHt21/olsAPi4/U=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.81.1-0.20231107161233-a90bf8664418 h1:w/DYv0fWmKhP2jPKrhRN1t77fmj/k5ZwOttcIvc7Jy4=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.81.1-0.20231107161233-a90bf8664418/go.mod h1:4XvEwcWJGIjfuFZz64dY1vpseVJlQHt21/olsAPi4/U=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.81.1-0.20230918092733-46edb9b1e697 h1:CxOsSMf9GN7iazUHpq1KBZoP1Cjh+ZyqwbpIQ3bdjhY=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.81.1-0.20230918092733-46edb9b1e697/go.mod h1:NBWFw+wXQ8IzRG+k+Yx5cd3qkkgqvI/OFmPZSgcRWOA=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.81.1-0.20230918092733-46edb9b1e697 h1:H1WAEqKCngavabdDTsYizcQwmBkWfJv2LBP9ji00edo=
@@ -695,6 +695,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedete
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.84.0/go.mod h1:CXioiwzuR9YaxCtT+bobWx3aeNd6KTlFpIWlnNpfriI=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.84.0 h1:63ocfTOX403x0RlOIxiqoIxfhlnz5bYNjKFinaMUAFc=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.84.0/go.mod h1:mcxeCwBWxyIFEOfrHczRwmWknNU/mr7X/p1SKz5oKc8=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver v0.84.0 h1:K1b3LilwRJemU11LjGbTQdA4FFJK6Sv6uvwhIk0/UiA=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver v0.84.0/go.mod h1:Dsesv+zRTSdHusPObC/Qoxb+M/tr9ZwiIZLdp3G6pcY=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.84.0 h1:4Rplr/R6Z9E/e6/F2jG4c4E7Vy9dTC576wi8cuVDG8M=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.84.0/go.mod h1:RPq12Un/5T3BUNQXO2445cJtFW8mTOjKY81+7wdWFEM=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.84.0 h1:Nv9JywcY7nBSZ3tIw/SjW0GUlgy/SeS05CIdRg0GqWk=

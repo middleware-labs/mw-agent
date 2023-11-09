@@ -8,6 +8,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
@@ -64,6 +65,8 @@ func (c *HostAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 	// if c.InfraPlatform == InfraPlatformECSEC2 {
 	receiverfactories = append(receiverfactories,
 		awsecscontainermetricsreceiver.NewFactory())
+	receiverfactories = append(receiverfactories,
+		awscloudwatchreceiver.NewFactory())
 	// }
 
 	// if infra monitoring is enabled, add hostmetricsreceiver
