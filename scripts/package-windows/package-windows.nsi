@@ -16,12 +16,14 @@
 ${StrRep}
 ;--------------------------------
 ;Settings
-  !define APPNAME "Middleware Windows Agent"
+  !define APPNAME "Middleware Agent"
   !define APP_NAME_IN_INSTALLED_DIR "mw-windows-agent"
   !define CONFIG_FILE_NAME_IN_INSTALLED_DIR "agent-config.yaml"
   !define COMPANYNAME "Middleware Inc"
-  !define DESCRIPTION "Middleware Windows Agent."
-  !define DEVELOPER "Middleware Inc" #License Holder
+  !define DESCRIPTION "Middleware Agent for Microsoft Windows"
+  !define DEVELOPER "Middleware Lab Inc" #License Holder
+
+  !define BUILDNUMBER "0"
   # Files Directory
   !define BUILD_DIR "..\..\build" #Replace with the full path of install folder
   !define REPO_ROOT_DIR "..\..\"
@@ -32,10 +34,6 @@ ${StrRep}
   ;!define SPLASH_IMG_FILE "splash.bmp"
   ;!define HEADER_IMG_FILE "header.bmp"
   # These three must be integers
-  !define VERSIONMAJOR 1	#Major release Number
-  !define VERSIONMINOR 1	#Minor release Number
-  !define VERSIONBUILD 1	#Maintenance release Number (bugfixes only)
-  !define BUILDNUMBER 1		#Source control revision number
   # These will be displayed by the "Click here for support information" link in "Add/Remove Programs"
   # It is possible to use "mailto:" links in here to open email client
   !define HELPURL "https://middleware.io/contact-us/"
@@ -51,10 +49,10 @@ ${StrRep}
   ;Name and file
   Name "${APPNAME}"
   Icon "logo.ico"
-  OutFile "mw-windows-agent-setup.exe"
+  OutFile "mw-windows-agent-${VERSION}-setup.exe"
 
   ;Default installation folder
-  InstallDir "$PROGRAMFILES\${APPNAME}"
+  InstallDir "$PROGRAMFILES64\${APPNAME}"
 
   ;Get installation folder from registry if available
   InstallDirRegKey HKLM "Software\${APPNAME}" ""
@@ -121,6 +119,11 @@ Var TextAPIKey
 Var TextTarget
 Var LogFilePath
 
+Function onManualInstallClick
+    pop $R9
+    ExecShell "open" "https://app.middleware.io/installation#infrastructures/windows" 
+FunctionEnd
+
 Function pgPageCreate
     !insertmacro MUI_HEADER_TEXT "Middleware Settings" "Please provide API Key and Target URL for your Middleware account"
 
@@ -134,20 +137,26 @@ Function pgPageCreate
     ${NSD_CreateGroupBox} 5% 10u 90% 70u "Middleware Account Details"
     Pop $0
 
-        ${NSD_CreateLabel} 10% 26u 30% 14u "API Key (MW_API_KEY) :"
+        ${NSD_CreateLabel} 10% 26u 30% 13u "API Key (MW_API_KEY)     :"
         Pop $0
 
         ${NSD_CreateText} 40% 24u 50% 14u ""
         Pop $TextAPIKey
 
-        ${NSD_CreateLabel} 10% 55u 30% 14u "Target (MW_TARGET)   :"
+        ${NSD_CreateLabel} 10% 55u 30% 13u "Target URL (MW_TARGET) :"
         Pop $0
 
         ${NSD_CreateText} 40% 53u 50% 14u ""
         Pop $TextTarget
     
-    ${NSD_CreateLabel} 5% 86u 90% 34u "API key and Target can be found in the installation section of your Middleware account."
+    ${NSD_CreateLabel} 5% 86u 90% 34u "API Key and Target URL can be found in the installation section of your Middleware account."
     Pop $0
+
+    ${NSD_CreateLink}  5% 120u 90% 34u "Click here to access your API Key and Target URL."
+    Pop $R9
+
+    ${NSD_OnClick} $R9 onManualInstallClick
+
     nsDialogs::Show
 FunctionEnd
 
@@ -195,7 +204,7 @@ Section "install"
   Call UpdateConfigFile
   ;ExecWait 'sc create ${APP_NAME_IN_INSTALLED_DIR} error= "severe" displayname= "${APPNAME}" type= "own" start= "auto" binpath= "$INSTDIR\${APP_NAME_IN_INSTALLED_DIR}.exe start --config-file $INSTDIR\config.yaml"'
   ;ExecWait 'net start ${APP_NAME_IN_INSTALLED_DIR}'
-  SimpleSC::InstallService ${APP_NAME_IN_INSTALLED_DIR} "Middleware Windows Agent" "16" "2" "$\"$INSTDIR\${APP_NAME_IN_INSTALLED_DIR}.exe$\" start --config-file $\"$INSTDIR\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}$\"" "" "" ""
+  SimpleSC::InstallService ${APP_NAME_IN_INSTALLED_DIR} "Middleware Agent" "16" "2" "$\"$INSTDIR\${APP_NAME_IN_INSTALLED_DIR}.exe$\" start --config-file $\"$INSTDIR\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}$\"" "" "" ""
   Pop $0 ; returns an errorcode (<>0) otherwise success (0)
 
   SimpleSC::StartService "${APP_NAME_IN_INSTALLED_DIR}" "" 30
@@ -225,9 +234,8 @@ Section "install"
  ; WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "HelpLink" "$\"${HELPURL}$\""
  ; WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion;\Uninstall\${APPNAME}" "URLUpdateInfo" "$\"${UPDATEURL}$\""
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "URLInfoAbout" "$\"${ABOUTURL}$\""
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayVersion" "$\"${VERSIONMAJOR}.${VERSIONMINOR}.${VERSIONBUILD}.${BUILDNUMBER}$\""
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "VersionMajor" ${VERSIONMAJOR}
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "VersionMinor" ${VERSIONMINOR}
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayVersion" "$\"${VERSION}.${BUILDNUMBER}$\""
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "Version" ${VERSION}.${BUILDNUMBER}
   # There is no option for modifying or reparing the install
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "NoModify" 1
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "NoRepair" 1
@@ -238,15 +246,15 @@ SectionEnd
 ;--------------------------------
 ;Version Information
 
-  VIProductVersion "${VERSIONMAJOR}.${VERSIONMINOR}.${VERSIONBUILD}.${BUILDNUMBER}"
+  VIProductVersion "${VERSION}.${BUILDNUMBER}"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductName" "${APPNAME}"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "Comments" "${DESCRIPTION}"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "CompanyName" "${COMPANYNAME}"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalTrademarks" "${APPNAME} is a trademark of ${COMPANYNAME}"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "${DEVELOPER} | ${COMPANYNAME}"
   VIAddVersionKey /LANG=${LANG_ENGLISH} "FileDescription" "${APPNAME}"
-  VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "${VERSIONMAJOR}.${VERSIONMINOR}.${VERSIONBUILD}"
-  VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductVersion" "${VERSIONMAJOR}.${VERSIONMINOR}.${VERSIONBUILD}.${BUILDNUMBER}"
+  VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "${VERSION}.${BUILDNUMBER}"
+  VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductVersion" "${VERSION}.${BUILDNUMBER}"
 
 ;--------------------------------
 ;Verify Uninstall
@@ -280,9 +288,10 @@ Section "uninstall"
   Pop $0 ; returns an errorcode (<>0) otherwise success (0)
 
   ################################################################################################################
+  #Delete installation folder from registry if available - this will only happen if it is empty
   rmDir /r "$INSTDIR"
 
-  #Delete installation folder from registry if available - this will only happen if it is empty
+
   DeleteRegKey /ifempty HKLM "Software\${APPNAME}"
 
   # Remove uninstaller information from the registry

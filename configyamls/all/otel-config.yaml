@@ -63,21 +63,20 @@ processors:
       from_attribute: faas.trigger
       key: mw.service.name.derived
   batch: null
-  resource:
+  resource/metrics:
     attributes:
     - action: upsert
       key: mw.account_key
       value: ${MW_API_KEY}
-    - action: upsert
-      from_attribute: host.name
-      key: host.id
+    - action: delete
+      key: host.name
     - action: insert
       from_attribute: host.name
       key: agent.installation.time
     - action: update
       key: agent.installation.time
       value: ${MW_AGENT_INSTALLATION_TIME}
-  resource/2:
+  resource/logs:
     attributes:
     - action: upsert
       key: mw.account_key
@@ -85,20 +84,24 @@ processors:
     - action: insert
       key: service.name
       value: middleware-logs
-    - action: upsert
-      from_attribute: host.name
-      key: host.id
-  resource/3:
+    - action: delete
+      key: host.name
+  resource/traces:
     attributes:
     - action: upsert
       key: mw.account_key
       value: ${MW_API_KEY}
-    - action: upsert
-      from_attribute: host.name
-      key: host.id
+    - action: delete
+      key: host.name
+  resource/hostid:
+    attributes:
+        - key: host.id
+          action: upsert
+          from_attribute: host.name
   resourcedetection:
     detectors:
     - env
+    - ec2
     - system
     - docker
     override: false
@@ -131,12 +134,17 @@ receivers:
     - id: systemd_err
       if: body matches "ts=.+ caller=.+ level=.+ msg=.+ name=systemd duration_seconds=.+
         err=.+"
-      output: backup_unresolved_body
+      output: extract_metadata_from_filepath
       parse_from: body
       regex: ts=(?P<systemd_err_ts>.+) caller=(?P<systemd_err_caller>.+) level=(?P<level>.+)
         msg=(?P<systemd_err_msg>.+) name=(?P<name>.+) duration_seconds=(?P<systemd_err_duration_seconds>.+)
         err="(?P<regex_resolved_body>.+)"
       type: regex_parser
+    - type: regex_parser
+      id: extract_metadata_from_filepath
+      regex: '^/var/lib/docker/containers/(?P<docker_container_id>[^_]+)/.*log$'
+      parse_from: attributes["log.file.path"]
+      output: backup_unresolved_body
     - from: body
       id: backup_unresolved_body
       if: attributes.regex_resolved_body != nil
@@ -201,8 +209,9 @@ service:
       exporters:
       - otlp/2
       processors:
+      - resource/logs
       - resourcedetection
-      - resource/2
+      - resource/hostid
       - attributes/logs
       - batch
       receivers:
@@ -212,8 +221,9 @@ service:
       exporters:
       - otlp/2
       processors:
+      - resource/metrics
       - resourcedetection
-      - resource
+      - resource/hostid
       - batch
       receivers:
       - hostmetrics
@@ -224,8 +234,9 @@ service:
       exporters:
       - otlp/2
       processors:
+      - resource/traces
       - resourcedetection
-      - resource/3
+      - resource/hostid
       - attributes/traces
       - batch
       receivers:
