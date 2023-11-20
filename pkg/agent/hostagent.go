@@ -98,6 +98,7 @@ const (
 	MongoDB
 	MySQL
 	Redis
+	JMX
 )
 
 type dbConfiguration struct {
@@ -111,6 +112,7 @@ type apiResponseForYAML struct {
 	MongodbConfig dbConfiguration `json:"mongodb_config"`
 	MysqlConfig   dbConfiguration `json:"mysql_config"`
 	RedisConfig   dbConfiguration `json:"redis_config"`
+	JMXConfig     dbConfiguration `json:"jmx_config"`
 	Message       string          `json:"message"`
 }
 
@@ -140,6 +142,8 @@ func (d DatabaseType) String() string {
 		return "mysql"
 	case Redis:
 		return "redis"
+	case JMX:
+		return "jmx"
 	}
 	return "unknown"
 }
@@ -262,6 +266,7 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 		MongoDB:    apiResponse.MongodbConfig,
 		MySQL:      apiResponse.MysqlConfig,
 		Redis:      apiResponse.RedisConfig,
+		JMX:        apiResponse.JMXConfig,
 	}
 
 	for dbType, dbConfig := range dbConfigs {
