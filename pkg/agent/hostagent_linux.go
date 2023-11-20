@@ -62,12 +62,15 @@ func (c *HostAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 
 	// if the host agent is running on ECS EC2, add
 	// relevant factories
-	// if c.InfraPlatform == InfraPlatformECSEC2 {
-	receiverfactories = append(receiverfactories,
-		awsecscontainermetricsreceiver.NewFactory())
-	receiverfactories = append(receiverfactories,
-		awscloudwatchreceiver.NewFactory())
-	// }
+	if c.InfraPlatform == InfraPlatformECSEC2 {
+		receiverfactories = append(receiverfactories,
+			awsecscontainermetricsreceiver.NewFactory())
+	} else if c.InfraPlatform == InfraPlatformECSFargate {
+		receiverfactories = append(receiverfactories,
+			awsecscontainermetricsreceiver.NewFactory())
+		receiverfactories = append(receiverfactories,
+			awscloudwatchreceiver.NewFactory())
+	}
 
 	// if infra monitoring is enabled, add hostmetricsreceiver
 	c.logger.Info("InfraMonitoring", zap.Bool("infra-monitoring", c.AgentFeatures.InfraMonitoring))

@@ -109,6 +109,13 @@ func getFlags(cfg *agent.HostConfig) []cli.Flag {
 			Destination: &cfg.HostTags,
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "fluent-port",
+			Usage:       "Fluent receiver will listen to this port",
+			EnvVars:     []string{"MW_FLUENT_PORT"},
+			Destination: &cfg.FluentPort,
+			Value:       "8006",
+		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "logfile",
 			Usage:       "Log file to store Middleware agent logs",
 			EnvVars:     []string{"MW_LOGFILE"},
@@ -226,6 +233,8 @@ func main() {
 					awsEnv := os.Getenv("AWS_EXECUTION_ENV")
 					if awsEnv == "AWS_ECS_EC2" {
 						infraPlatform = agent.InfraPlatformECSEC2
+					} else if awsEnv == "AWS_ECS_FARGATE" {
+						infraPlatform = agent.InfraPlatformECSFargate
 					}
 
 					execPath, err := os.Executable()
@@ -274,9 +283,10 @@ func main() {
 						target += ":443"
 					}
 
-					// Set MW_TARGET & MW_API_KEY so that envprovider can fill those in the otel config files
+					// Set MW_TARGET, MW_API_KEY  MW_FLUENT_PORT so that envprovider can fill those in the otel config files
 					os.Setenv("MW_TARGET", target)
 					os.Setenv("MW_API_KEY", cfg.APIKey)
+					os.Setenv("MW_FLUENT_PORT", cfg.FluentPort)
 
 					// TODO: check if on Windows, socket scheme is different than "unix"
 					os.Setenv("MW_DOCKER_ENDPOINT", cfg.DockerEndpoint)
@@ -289,13 +299,13 @@ func main() {
 						return agent.ErrInvalidHostTags
 					}
 
-					/*yamlPath, err := hostAgent.GetUpdatedYAMLPath()
+					yamlPath, err := hostAgent.GetUpdatedYAMLPath()
 					if err != nil {
 						logger.Error("error getting config file path", zap.Error(err))
 						return err
-					}*/
+					}
 
-					yamlPath := filepath.Join(installDir, "./configyamls/nodocker/otel-config.yaml")
+					// yamlPath := filepath.Join(installDir, "./configyamls/nodocker/otel-config.yaml")
 					logger.Info("yaml path loaded", zap.String("path", yamlPath))
 
 					configProvider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{

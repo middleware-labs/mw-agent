@@ -395,7 +395,7 @@ func (c *HostAgent) ListenForConfigChanges(ctx context.Context) error {
 
 	go func() {
 		for {
-			// c.logger.Info("check for config changes after", zap.Duration("restartInterval", restartInterval))
+			c.logger.Info("check for config changes after", zap.Duration("restartInterval", restartInterval))
 			select {
 			case <-ctx.Done():
 				return

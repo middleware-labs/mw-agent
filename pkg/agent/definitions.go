@@ -27,6 +27,8 @@ var (
 	InfraPlatformKubernetes InfraPlatform = 1
 	// InfraPlatformECSEC2 is for AWS ECS EC2 platform
 	InfraPlatformECSEC2 InfraPlatform = 2
+	// InfraPlatformECSFargate is for AWS ECS Fargate platform
+	InfraPlatformECSFargate InfraPlatform = 3
 )
 
 func (p InfraPlatform) String() string {
@@ -37,6 +39,8 @@ func (p InfraPlatform) String() string {
 		return "kubernetes"
 	case InfraPlatformECSEC2:
 		return "ecsec2"
+	case InfraPlatformECSFargate:
+		return "ecsfargate"
 	}
 	return "unknown"
 }
@@ -53,6 +57,7 @@ type BaseConfig struct {
 	ConfigCheckInterval       string
 	DockerEndpoint            string
 	APIURLForConfigCheck      string
+	FluentPort                string
 	InfraPlatform             InfraPlatform
 	OtelConfigFile            string
 	AgentFeatures             AgentFeatures

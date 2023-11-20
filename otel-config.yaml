@@ -153,7 +153,7 @@ receivers:
       to: body
       type: move
   fluentforward:
-    endpoint: 0.0.0.0:8006
+    endpoint: 0.0.0.0:${MW_FLUENT_PORT}
   hostmetrics:
     collection_interval: 5s
     scrapers:
