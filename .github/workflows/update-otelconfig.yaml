@@ -22,8 +22,8 @@ jobs:
       - name: Updating otel-config.yaml in install.middleware.io
         run: |
           git clone https://.:${{ secrets.GHCR_TOKEN }}@github.com/middleware-labs/install.middleware.io.git
-          cp configyamls/all/otel-config.yaml install.middleware.io/configyamls/all/otel-config.yaml 
-          cp configyamls/nodocker/otel-config.yaml install.middleware.io/configyamls/nodocker/otel-config.yaml 
+          cp otel-config.yaml install.middleware.io/configyamls/all/otel-config.yaml 
+          cp otel-config.yaml install.middleware.io/configyamls/nodocker/otel-config.yaml 
           cd install.middleware.io
           git config --global user.email "keval@middleware.io"
           git config --global user.name "bhogayatakb"

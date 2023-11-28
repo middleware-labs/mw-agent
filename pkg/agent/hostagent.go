@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -25,9 +24,8 @@ import (
 // HostAgent implements Agent interface for Hosts (e.g Linux)
 type HostAgent struct {
 	HostConfig
-	logger              *zap.Logger
-	otelConfigDirectory string
-	Version             string
+	logger  *zap.Logger
+	Version string
 }
 
 // HostOptions takes in various options for HostAgent
@@ -44,14 +42,6 @@ func WithHostAgentVersion(v string) HostOptions {
 func WithHostAgentLogger(logger *zap.Logger) HostOptions {
 	return func(h *HostAgent) {
 		h.logger = logger
-	}
-}
-
-// WithHostAgentOtelConfigDirectory sets the location of
-// the OTEL configuration
-func WithHostAgentOtelConfigDirectory(d string) HostOptions {
-	return func(h *HostAgent) {
-		h.otelConfigDirectory = d
 	}
 }
 
@@ -125,11 +115,6 @@ type apiResponseForRestart struct {
 var (
 	apiPathForYAML    = "api/v1/agent/ingestion-rules"
 	apiPathForRestart = "api/v1/agent/restart-status"
-)
-
-const (
-	yamlFile         = "configyamls/all/otel-config.yaml"
-	yamlFileNoDocker = "configyamls/nodocker/otel-config.yaml"
 )
 
 func (d DatabaseType) String() string {
@@ -284,7 +269,7 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 		return err
 	}
 
-	if err := os.WriteFile(yamlPath, apiYAMLBytes, 0644); err != nil {
+	if err := os.WriteFile(c.OtelConfigFile, apiYAMLBytes, 0644); err != nil {
 		c.logger.Error("failed to write new configuration data to file", zap.Error(err))
 		return err
 	}
@@ -295,19 +280,16 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 // GetUpdatedYAMLPath gets the correct otel configuration file
 func (c *HostAgent) GetUpdatedYAMLPath() (string, error) {
 	configType := "docker"
-	yamlPath := yamlFile
 	dockerSocketPath := strings.Split(c.DockerEndpoint, "//")
 	if len(dockerSocketPath) != 2 || !isSocketFn(dockerSocketPath[1]) {
 		configType = "nodocker"
-		yamlPath = yamlFileNoDocker
 	}
 
-	absYamlPath := filepath.Join(c.otelConfigDirectory, yamlPath)
-	if err := c.updateYAML(configType, absYamlPath); err != nil {
+	if err := c.updateYAML(configType, c.OtelConfigFile); err != nil {
 		return "", err
 	}
 
-	return absYamlPath, nil
+	return c.OtelConfigFile, nil
 }
 
 func (c *HostAgent) checkDBConfigValidity(dbType DatabaseType, configPath string) bool {

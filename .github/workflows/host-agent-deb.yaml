@@ -38,7 +38,7 @@ jobs:
         elif [ ${{ matrix.arch }} == "arm64" ]; then
           echo "::set-env name=ARCH::arm64"
           echo "::set-env name=BINARY_SOURCE::release/mw-go-agent-host-arm"
-          echo "::set-env name=RELEASE_VERSION::$(echo "${{ github.event.inputs.release_version }}" | tr -d '\n')arm64"
+          echo "::set-env name=RELEASE_VERSION::$(echo "${{ github.event.inputs.release_version }}" | tr -d '\n')"
           echo "::set-env name=CONTROL_FILE::control"
         else
           echo "Unsupported architecture"
@@ -113,6 +113,7 @@ jobs:
 
     - name: Creating DEB package
       run: |
+          pwd
           dpkg --build example/mw-agent_$RELEASE_VERSION-1_${{ matrix.arch }}
           dpkg-deb --info example/mw-agent_$RELEASE_VERSION-1_${{ matrix.arch }}.deb
           dpkg-deb --contents example/mw-agent_$RELEASE_VERSION-1_${{ matrix.arch }}.deb
@@ -129,6 +130,10 @@ jobs:
           Release ${{ github.ref }}
         draft: true
         prerelease: true
+
+    - name: Debugging
+      run: |
+          ls -R example
 
     - name: Upload JAR as Release Asset
       uses: actions/upload-release-asset@v1

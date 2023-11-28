@@ -138,6 +138,28 @@ func getFlags(cfg *agent.HostConfig) []cli.Flag {
 				return ""
 			}(),
 		},
+		&cli.StringFlag{
+			Name:        "otel-config-file",
+			EnvVars:     []string{"MW_OTEL_CONFIG_FILE"},
+			Destination: &cfg.OtelConfigFile,
+			Usage:       "Location of the OTEL pipelines configuration file for this agent.",
+			Value: func() string {
+				switch runtime.GOOS {
+				case "linux":
+					return filepath.Join("/etc", "mw-agent", "otel-config.yaml")
+				}
+
+				return ""
+			}(),
+			DefaultText: func() string {
+				switch runtime.GOOS {
+				case "linux":
+					return filepath.Join("/etc", "mw-agent", "otel-config.yaml")
+				}
+
+				return ""
+			}(),
+		},
 	}
 }
 
@@ -205,7 +227,6 @@ func main() {
 					}
 
 					logger.Info("starting host agent", zap.String("agent location", execPath))
-					installDir := filepath.Dir(execPath)
 
 					logger.Info("host agent config", zap.Stringer("config", cfg),
 						zap.String("version", agentVersion),
@@ -215,7 +236,6 @@ func main() {
 						cfg,
 						agent.WithHostAgentLogger(logger),
 						agent.WithHostAgentVersion(agentVersion),
-						agent.WithHostAgentOtelConfigDirectory(installDir),
 						agent.WithHostAgentInfraPlatform(infraPlatform),
 					)
 
@@ -281,7 +301,7 @@ func main() {
 								expandconverter.New(),
 								//overwritepropertiesconverter.New(getSetFlag()),
 							},
-							URIs: []string{yamlPath},
+							URIs: []string{cfg.OtelConfigFile},
 						},
 					})
 					if err != nil {
