@@ -114,7 +114,7 @@ type apiResponseForYAML struct {
 	MysqlConfig         dbConfiguration `json:"mysql_config"`
 	RedisConfig         dbConfiguration `json:"redis_config"`
 	ElasticsearchConfig dbConfiguration `json:"elasticsearch_config"`
-  JMXConfig     dbConfiguration `json:"jmx_config"`
+	JMXConfig           dbConfiguration `json:"jmx_config"`
 	Message             string          `json:"message"`
 }
 
@@ -271,7 +271,7 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 		MySQL:         apiResponse.MysqlConfig,
 		Redis:         apiResponse.RedisConfig,
 		Elasticsearch: apiResponse.ElasticsearchConfig,
-    JMX:           apiResponse.JMXConfig,
+		JMX:           apiResponse.JMXConfig,
 	}
 
 	for dbType, dbConfig := range dbConfigs {
