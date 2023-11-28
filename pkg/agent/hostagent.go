@@ -99,6 +99,7 @@ const (
 	MySQL
 	Redis
 	JMX
+	Elasticsearch
 )
 
 type dbConfiguration struct {
@@ -106,14 +107,15 @@ type dbConfiguration struct {
 }
 
 type apiResponseForYAML struct {
-	Status        bool            `json:"status"`
-	Config        configType      `json:"config"`
-	PgdbConfig    dbConfiguration `json:"pgdb_config"`
-	MongodbConfig dbConfiguration `json:"mongodb_config"`
-	MysqlConfig   dbConfiguration `json:"mysql_config"`
-	RedisConfig   dbConfiguration `json:"redis_config"`
-	JMXConfig     dbConfiguration `json:"jmx_config"`
-	Message       string          `json:"message"`
+	Status              bool            `json:"status"`
+	Config              configType      `json:"config"`
+	PgdbConfig          dbConfiguration `json:"pgdb_config"`
+	MongodbConfig       dbConfiguration `json:"mongodb_config"`
+	MysqlConfig         dbConfiguration `json:"mysql_config"`
+	RedisConfig         dbConfiguration `json:"redis_config"`
+	ElasticsearchConfig dbConfiguration `json:"elasticsearch_config"`
+  JMXConfig     dbConfiguration `json:"jmx_config"`
+	Message             string          `json:"message"`
 }
 
 type apiResponseForRestart struct {
@@ -144,6 +146,8 @@ func (d DatabaseType) String() string {
 		return "redis"
 	case JMX:
 		return "jmx"
+	case Elasticsearch:
+		return "elasticsearch"
 	}
 	return "unknown"
 }
@@ -262,11 +266,12 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	}
 
 	dbConfigs := map[DatabaseType]dbConfiguration{
-		PostgreSQL: apiResponse.PgdbConfig,
-		MongoDB:    apiResponse.MongodbConfig,
-		MySQL:      apiResponse.MysqlConfig,
-		Redis:      apiResponse.RedisConfig,
-		JMX:        apiResponse.JMXConfig,
+		PostgreSQL:    apiResponse.PgdbConfig,
+		MongoDB:       apiResponse.MongodbConfig,
+		MySQL:         apiResponse.MysqlConfig,
+		Redis:         apiResponse.RedisConfig,
+		Elasticsearch: apiResponse.ElasticsearchConfig,
+    JMX:           apiResponse.JMXConfig,
 	}
 
 	for dbType, dbConfig := range dbConfigs {
