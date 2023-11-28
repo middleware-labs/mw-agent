@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -148,6 +149,19 @@ func (d DatabaseType) String() string {
 	return "unknown"
 }
 
+func convertTabsToSpaces(input []byte, tabWidth int) []byte {
+	// Find the tab character in the input
+	tabChar := byte('\t')
+
+	// Calculate the number of spaces needed to replace each tab
+	spaces := bytes.Repeat([]byte(" "), tabWidth)
+
+	// Replace tabs with spaces using bytes.Replace
+	output := bytes.Replace(input, []byte{tabChar}, spaces, -1)
+
+	return output
+}
+
 func (c *HostAgent) updateConfig(config map[string]interface{}, path string) (map[string]interface{}, error) {
 
 	// Read the YAML file
@@ -157,8 +171,9 @@ func (c *HostAgent) updateConfig(config map[string]interface{}, path string) (ma
 	}
 
 	// Unmarshal the YAML data into a temporary map[string]interface{}
+	updatedYamlData := convertTabsToSpaces(yamlData, 2)
 	tempMap := make(map[string]interface{})
-	err = yaml.Unmarshal(yamlData, &tempMap)
+	err = yaml.Unmarshal(updatedYamlData, &tempMap)
 	if err != nil {
 		return map[string]interface{}{}, err
 	}
