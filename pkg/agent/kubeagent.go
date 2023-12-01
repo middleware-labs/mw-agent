@@ -2,7 +2,6 @@ package agent
 
 import (
 	"context"
-	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
@@ -60,18 +59,6 @@ func NewKubeAgent(cfg KubeConfig, opts ...KubeOptions) *KubeAgent {
 	}
 
 	return &agent
-}
-
-// GetUpdatedYAMLPath gets the correct otel configuration file.
-func (k *KubeAgent) GetUpdatedYAMLPath() (string, error) {
-	yamlPath := "/app/otel-config.yaml"
-	dockerSocketPath := strings.Split(k.DockerEndpoint, "//")
-
-	if len(dockerSocketPath) != 2 || !isSocketFn(dockerSocketPath[1]) {
-		yamlPath = "/app/otel-config-nodocker.yaml"
-	}
-
-	return yamlPath, nil
 }
 
 // GetFactories get otel factories for KubeAgent
