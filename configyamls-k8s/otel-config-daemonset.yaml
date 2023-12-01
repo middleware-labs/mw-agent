@@ -144,7 +144,7 @@ receivers:
         endpoint: 0.0.0.0:9320
 exporters:
   logging:
-    loglevel: fatal
+    loglevel: warn
   otlp:
     endpoint: ${MW_TARGET}
 processors:
@@ -323,18 +323,18 @@ service:
     #  - zpages
     #  - pprof
     pipelines:
-      # traces:
-      #   receivers: [ otlp ]
-      #   processors: [ resourcedetection,resource, resource/cluster, attributes/traces, batch, batch/2 ]
-      #   exporters: [  otlp ]
-      # logs:
-      #   receivers: [fluentforward, otlp, filelog ]
-      #   processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, batch, batch/2 ]
-      #   exporters: [ otlp ]
+      traces:
+        receivers: [ otlp ]
+        processors: [ resourcedetection,resource, resource/cluster, attributes/traces, batch, batch/2 ]
+        exporters: [  otlp ]
+      logs:
+        receivers: [fluentforward, otlp, filelog ]
+        processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, batch, batch/2 ]
+        exporters: [ otlp ]
       metrics:
         receivers: [ kubeletstats ]
         processors: [ resourcedetection, resource, k8sattributes, resource/cluster, batch, batch/2]
-        exporters: [ otlp, logging ]
+        exporters: [ otlp ]
       metrics/hostmetrics:
         receivers: [ hostmetrics ]
         processors: [ resourcedetection, resource, resource/hostmetrics, resource/cluster, k8sattributes, batch, batch/2]
