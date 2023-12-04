@@ -140,7 +140,6 @@ receivers:
   
   k8s_events:
     auth_type: serviceAccount
-    namespaces: all
   fluentforward:
     endpoint: 0.0.0.0:8006
   # kubeletstats:
@@ -232,6 +231,9 @@ processors:
       - key: k8s.cluster.name
         from_attribute: k8s.deployment.uid
         action: insert
+      - key: k8s.cluster.name
+        from_attribute: k8s.object.uid
+        action: insert
   resource/hostmetrics:
     attributes:
       - key: is.k8s.node
@@ -249,7 +251,11 @@ processors:
       - key: host.name
         action: update
         from_attribute: k8s.node.name
-  
+  resource/k8s_events:
+    attributes:
+      - key: service.name
+        action: upsert
+        value: k8s-events
   resource/logs:
     attributes:
       - key: service.name
@@ -338,8 +344,12 @@ service:
         processors: [ resourcedetection,resource, resource/cluster, attributes/traces, batch, batch/2 ]
         exporters: [  otlp ]
       logs:
-        receivers: [fluentforward, k8s_events, otlp, filelog ]
+        receivers: [fluentforward, otlp, filelog ]
         processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, batch, batch/2 ]
+        exporters: [ otlp ]
+      logs/k8s_events:
+        receivers: [ k8s_events ]
+        processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, resource/k8s_events, batch, batch/2, ]
         exporters: [ otlp ]
       metrics:
         receivers: [ prometheus, otlp, k8s_cluster, kubeletstats ]
