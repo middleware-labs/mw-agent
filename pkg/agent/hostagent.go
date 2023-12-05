@@ -74,6 +74,7 @@ var (
 	ErrReceiverKeyNotFound   = errors.New("'receivers' key not found")
 	ErrInvalidResponse       = errors.New("invalid response from ingestion rules api")
 	ErrInvalidHostTags       = errors.New("invalid host tags, kindly check the format")
+	ErrParse                 = errors.New("failed to parse otel config file")
 )
 
 type configType struct {
@@ -276,6 +277,16 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 				return err
 			}
 		}
+	}
+
+	// Add awsecscontainermetrics receiver dynamically if the agent is running inside ECS + Fargate setup
+	if c.InfraPlatform == InfraPlatformECSFargate || c.InfraPlatform == InfraPlatformECSEC2 {
+
+		apiYAMLConfig, err = updateConfigForECS(apiYAMLConfig)
+		if err != nil {
+			return err
+		}
+
 	}
 
 	apiYAMLBytes, err := yaml.Marshal(apiYAMLConfig)

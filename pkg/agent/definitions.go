@@ -74,6 +74,7 @@ func (c BaseConfig) String() string {
 	s += fmt.Sprintf("api-url-for-config-check: %s, ", c.APIURLForConfigCheck)
 	s += fmt.Sprintf("infra-platform: %s, ", c.InfraPlatform)
 	s += fmt.Sprintf("agent-features: %#v, ", c.AgentFeatures)
+	s += fmt.Sprintf("fluent-port: %#v, ", c.FluentPort)
 	return s
 }
 
