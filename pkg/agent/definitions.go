@@ -17,6 +17,15 @@ type Agent interface {
 	ListenForConfigChanges(ctx context.Context) error
 }
 
+// Otel config components
+const (
+	Receivers              = "receivers"
+	AWSECSContainerMetrics = "awsecscontainermetrics"
+	Service                = "service"
+	Pipelines              = "pipelines"
+	Metrics                = "metrics"
+)
+
 // InfraPlatform defines the agent's infrastructure platform
 type InfraPlatform uint16
 
@@ -27,6 +36,8 @@ var (
 	InfraPlatformKubernetes InfraPlatform = 1
 	// InfraPlatformECSEC2 is for AWS ECS EC2 platform
 	InfraPlatformECSEC2 InfraPlatform = 2
+	// InfraPlatformECSFargate is for AWS ECS Fargate platform
+	InfraPlatformECSFargate InfraPlatform = 3
 )
 
 func (p InfraPlatform) String() string {
@@ -37,8 +48,14 @@ func (p InfraPlatform) String() string {
 		return "kubernetes"
 	case InfraPlatformECSEC2:
 		return "ecsec2"
+	case InfraPlatformECSFargate:
+		return "ecsfargate"
 	}
 	return "unknown"
+}
+
+type AgentFeatures struct {
+	InfraMonitoring bool
 }
 
 // BaseConfig stores general configuration for all agent types
@@ -49,8 +66,10 @@ type BaseConfig struct {
 	ConfigCheckInterval       string
 	DockerEndpoint            string
 	APIURLForConfigCheck      string
+	FluentPort                string
 	InfraPlatform             InfraPlatform
 	OtelConfigFile            string
+	AgentFeatures             AgentFeatures
 }
 
 // String() implements stringer interface for BaseConfig
@@ -63,6 +82,8 @@ func (c BaseConfig) String() string {
 	s += fmt.Sprintf("docker-endpoint: %s, ", c.DockerEndpoint)
 	s += fmt.Sprintf("api-url-for-config-check: %s, ", c.APIURLForConfigCheck)
 	s += fmt.Sprintf("infra-platform: %s, ", c.InfraPlatform)
+	s += fmt.Sprintf("agent-features: %#v, ", c.AgentFeatures)
+	s += fmt.Sprintf("fluent-port: %#v, ", c.FluentPort)
 	return s
 }
 

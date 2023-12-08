@@ -109,6 +109,13 @@ func getFlags(cfg *agent.HostConfig) []cli.Flag {
 			Destination: &cfg.HostTags,
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "fluent-port",
+			Usage:       "Fluent receiver will listen to this port",
+			EnvVars:     []string{"MW_FLUENT_PORT"},
+			Destination: &cfg.FluentPort,
+			Value:       "8006",
+		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "logfile",
 			Usage:       "Log file to store Middleware agent logs",
 			EnvVars:     []string{"MW_LOGFILE"},
@@ -123,6 +130,14 @@ func getFlags(cfg *agent.HostConfig) []cli.Flag {
 			EnvVars:     []string{"MW_LOGFILE_SIZE"},
 			Destination: &cfg.LogfileSize,
 			Value:       1, // default value is 1MB
+		}),
+
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "agent-features.infra-monitoring",
+			Usage:       "Flag to enable or disable infrastructure monitoring",
+			EnvVars:     []string{"MW_AGENT_FEATURES_INFRA_MONITORING"},
+			Destination: &cfg.AgentFeatures.InfraMonitoring,
+			Value:       true, // infra monitoring is enabled by default
 		}),
 
 		&cli.StringFlag{
@@ -218,6 +233,8 @@ func main() {
 					awsEnv := os.Getenv("AWS_EXECUTION_ENV")
 					if awsEnv == "AWS_ECS_EC2" {
 						infraPlatform = agent.InfraPlatformECSEC2
+					} else if awsEnv == "AWS_ECS_FARGATE" {
+						infraPlatform = agent.InfraPlatformECSFargate
 					}
 
 					execPath, err := os.Executable()
@@ -266,9 +283,10 @@ func main() {
 						target += ":443"
 					}
 
-					// Set MW_TARGET & MW_API_KEY so that envprovider can fill those in the otel config files
+					// Set MW_TARGET, MW_API_KEY  MW_FLUENT_PORT so that envprovider can fill those in the otel config files
 					os.Setenv("MW_TARGET", target)
 					os.Setenv("MW_API_KEY", cfg.APIKey)
+					os.Setenv("MW_FLUENT_PORT", cfg.FluentPort)
 
 					// TODO: check if on Windows, socket scheme is different than "unix"
 					os.Setenv("MW_DOCKER_ENDPOINT", cfg.DockerEndpoint)
