@@ -17,6 +17,15 @@ type Agent interface {
 	ListenForConfigChanges(ctx context.Context) error
 }
 
+// Otel config components
+const (
+	Receivers              = "receivers"
+	AWSECSContainerMetrics = "awsecscontainermetrics"
+	Service                = "service"
+	Pipelines              = "pipelines"
+	Metrics                = "metrics"
+)
+
 // InfraPlatform defines the agent's infrastructure platform
 type InfraPlatform uint16
 

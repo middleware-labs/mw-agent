@@ -1,40 +1,40 @@
 package agent
 
-func updateConfigForECS(config map[string]interface{}, infraPlatform InfraPlatform) (map[string]interface{}, error) {
+func (c *HostAgent) updateConfigForECS(config map[string]interface{}) (map[string]interface{}, error) {
 
-	receiverData, ok := config["receivers"].(map[string]interface{})
+	receiverData, ok := config[Receivers].(map[string]interface{})
 	if !ok {
-		return nil, ErrParse
+		return nil, ErrParseReceivers
 	}
 
-	receiverData["awsecscontainermetrics"] = map[string]interface{}{}
+	receiverData[AWSECSContainerMetrics] = map[string]interface{}{}
 
-	serviceData, ok := config["service"].(map[string]interface{})
+	serviceData, ok := config[Service].(map[string]interface{})
 	if !ok {
-		return nil, ErrParse
+		return nil, ErrParseService
 	}
 
-	pipelinesData, ok := serviceData["pipelines"].(map[string]interface{})
+	pipelinesData, ok := serviceData[Pipelines].(map[string]interface{})
 	if !ok {
-		return nil, ErrParse
+		return nil, ErrParsePipelines
 	}
 
-	metricsData, ok := pipelinesData["metrics"].(map[string]interface{})
+	metricsData, ok := pipelinesData[Metrics].(map[string]interface{})
 	if !ok {
-		return nil, ErrParse
+		return nil, ErrParseMetrics
 	}
 
 	receiversData := []string{}
 
-	if infraPlatform == InfraPlatformECSEC2 {
-		for _, receiver := range metricsData["receivers"].([]interface{}) {
+	if c.InfraPlatform == InfraPlatformECSEC2 {
+		for _, receiver := range metricsData[Receivers].([]interface{}) {
 			receiverName := receiver.(string)
 			receiversData = append(receiversData, receiverName)
 		}
 	}
 
-	receiversData = append(receiversData, "awsecscontainermetrics")
-	metricsData["receivers"] = receiversData
+	receiversData = append(receiversData, AWSECSContainerMetrics)
+	metricsData[Receivers] = receiversData
 
 	return config, nil
 }
