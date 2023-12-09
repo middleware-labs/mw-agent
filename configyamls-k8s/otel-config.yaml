@@ -102,6 +102,9 @@ receivers:
       auth_type: serviceAccount
     extra_metadata_labels: [container.id, k8s.volume.type]
     insecure_skip_verify: true
+    resource_attributes:
+      k8s.node.uid:
+        enabled: true
   hostmetrics:
     collection_interval: 5s
     scrapers:
