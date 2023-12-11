@@ -100,6 +100,9 @@ receivers:
     k8s_api_config:
       auth_type: serviceAccount
     extra_metadata_labels: [container.id, k8s.volume.type]
+    resource_attributes:
+      k8s.node.uid:
+        enabled: true
   hostmetrics:
     collection_interval: 5s
     scrapers:
