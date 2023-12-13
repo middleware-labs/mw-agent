@@ -1,3 +1,0 @@
-[submodule "check-agent"]
-	path = check-agent
-	url = https://github.com/middleware-labs/check-agent.git

@@ -8,9 +8,8 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"checkagent"
-
 	"github.com/middleware-labs/mw-agent/pkg/agent"
+	syntheticsagent "github.com/middleware-labs/synthetics-agent"
 	"github.com/prometheus/common/version"
 	"gopkg.in/natefinch/lumberjack.v2"
 
@@ -270,7 +269,14 @@ func main() {
 
 					if cfg.EnableSyntheticMonitoring {
 						// TODO checkagent.Start should take context
-						go checkagent.Start()
+						// go checkagent.Start()
+						hostname, err := os.Hostname()
+						if err != nil {
+							logger.Info("error getting hostname for enabling synthetics", zap.Error(err))
+							return err
+						}
+
+						go syntheticsagent.RunSyntheticWorker("agent", hostname, cfg.APIKey)
 					}
 
 					u, err := url.Parse(cfg.Target)

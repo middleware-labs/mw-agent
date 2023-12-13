@@ -3,7 +3,7 @@ module github.com/middleware-labs/mw-agent
 go 1.20
 
 // replace checkagent => github.com/middleware-labs/check-agent v0.0.0-20230411103956-f67eb953ba5e
-replace checkagent => ./check-agent
+// replace checkagent => ./check-agent
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.81.1-0.20230918092733-46edb9b1e697
 
@@ -38,8 +38,8 @@ require (
 )
 
 require (
-	checkagent v0.0.0-00010101000000-000000000000
 	github.com/kardianos/service v1.2.2
+	github.com/middleware-labs/synthetics-agent v0.0.0-20230807065245-dd07d90d8ed5
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.84.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.84.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.84.0
