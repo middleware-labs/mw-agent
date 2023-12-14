@@ -199,7 +199,6 @@ Section "install"
   file "${BUILD_DIR}\${APP_NAME_IN_INSTALLED_DIR}.exe"
   file "logo.ico"
   file "${REPO_ROOT_DIR}\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}"
-  file /r "${REPO_ROOT_DIR}\configyamls"
 
   Call UpdateConfigFile
   ;ExecWait 'sc create ${APP_NAME_IN_INSTALLED_DIR} error= "severe" displayname= "${APPNAME}" type= "own" start= "auto" binpath= "$INSTDIR\${APP_NAME_IN_INSTALLED_DIR}.exe start --config-file $INSTDIR\config.yaml"'

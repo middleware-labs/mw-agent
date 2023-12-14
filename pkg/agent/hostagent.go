@@ -300,7 +300,8 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	}
 
 	if err := os.WriteFile(c.OtelConfigFile, apiYAMLBytes, 0644); err != nil {
-		c.logger.Error("failed to write new configuration data to file", zap.Error(err))
+		c.logger.Error("failed to write new configuration data to file", zap.String("file", c.OtelConfigFile),
+			zap.Error(err))
 		return err
 	}
 

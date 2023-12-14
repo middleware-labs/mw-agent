@@ -58,7 +58,7 @@ func (p *program) run() {
 	}
 }
 
-func getFlags(cfg *agent.HostConfig) []cli.Flag {
+func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 	return []cli.Flag{
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "api-key",
@@ -162,6 +162,8 @@ func getFlags(cfg *agent.HostConfig) []cli.Flag {
 				switch runtime.GOOS {
 				case "linux":
 					return filepath.Join("/etc", "mw-agent", "otel-config.yaml")
+				case "windows":
+					return filepath.Join(filepath.Dir(execPath), "otel-config.yaml")
 				}
 
 				return ""
@@ -179,8 +181,6 @@ func getFlags(cfg *agent.HostConfig) []cli.Flag {
 }
 
 func main() {
-	var cfg agent.HostConfig
-	flags := getFlags(&cfg)
 	zapEncoderCfg := zapcore.EncoderConfig{
 		MessageKey: "message",
 
@@ -199,6 +199,15 @@ func main() {
 	defer func() {
 		_ = logger.Sync()
 	}()
+
+	execPath, err := os.Executable()
+	if err != nil {
+		logger.Info("error getting executable path", zap.Error(err))
+		return
+	}
+
+	var cfg agent.HostConfig
+	flags := getFlags(execPath, &cfg)
 
 	app := &cli.App{
 		Name:  "mw-agent",
@@ -235,12 +244,6 @@ func main() {
 						infraPlatform = agent.InfraPlatformECSEC2
 					} else if awsEnv == "AWS_ECS_FARGATE" {
 						infraPlatform = agent.InfraPlatformECSFargate
-					}
-
-					execPath, err := os.Executable()
-					if err != nil {
-						logger.Info("error getting executable path", zap.Error(err))
-						return err
 					}
 
 					logger.Info("starting host agent", zap.String("agent location", execPath))
