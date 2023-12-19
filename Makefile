@@ -4,7 +4,7 @@ build-linux:
 	GOOS=linux CGO_ENABLED=0 go build -o build/mw-host-agent cmd/host-agent/main.go
 
 build-kube:
-	GOOS=linux CGO_ENABLED=0 go build -o build/mw-host-agent cmd/kube-agent/main.go
+	GOOS=linux CGO_ENABLED=0 go build -o build/mw-kube-agent cmd/kube-agent/main.go
 build: build-linux build-windows build-kube
 
 #package-windows only works on Linux
