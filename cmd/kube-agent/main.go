@@ -77,6 +77,13 @@ func getFlags(cfg *agent.KubeConfig) []cli.Flag {
 			Value:       "24h",
 			Hidden:      true,
 		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "agent-features.infra-monitoring",
+			Usage:       "Flag to enable or disable infrastructure monitoring",
+			EnvVars:     []string{"MW_AGENT_FEATURES_INFRA_MONITORING"},
+			Destination: &cfg.AgentFeatures.InfraMonitoring,
+			Value:       true, // infra monitoring is enabled by default
+		}),
 
 		&cli.StringFlag{
 			Name:    "config-file",
