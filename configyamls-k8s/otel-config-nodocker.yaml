@@ -103,6 +103,8 @@ receivers:
     resource_attributes:
       k8s.node.uid:
         enabled: true
+    metric_groups:
+      - volume
   hostmetrics:
     collection_interval: 5s
     scrapers:
