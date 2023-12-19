@@ -90,11 +90,55 @@ type KubeConfig struct {
 	InsightRefreshDuration string
 }
 
+type KubeAgentMonitorConfig struct {
+	AgentNamespace      string
+	Daemonset           string
+	Deployment          string
+	DaemonsetConfigMap  string
+	DeploymentConfigMap string
+}
+
+// WithDaemonset sets the daemonset name for the agent
+func WithDaemonset(v string) KubeAgentMonitorOptions {
+	return func(k *KubeAgentMonitor) {
+		k.Daemonset = v
+	}
+}
+
+// WithDeployment sets the deployment name for the agent
+func WithDeployment(v string) KubeAgentMonitorOptions {
+	return func(k *KubeAgentMonitor) {
+		k.Deployment = v
+	}
+}
+
+// WithAgentNamespace sets the namespace where the agent is running
+func WithAgentNamespace(v string) KubeAgentMonitorOptions {
+	return func(k *KubeAgentMonitor) {
+		k.AgentNamespace = v
+	}
+}
+
+// WithDaemonsetConfigMap sets the configmap name for the agent daemonset
+func WithDaemonsetConfigMap(v string) KubeAgentMonitorOptions {
+	return func(k *KubeAgentMonitor) {
+		k.DaemonsetConfigMap = v
+	}
+}
+
+// WithDeploymentConfigMap sets the configmap name for the agent deployment
+func WithDeploymentConfigMap(v string) KubeAgentMonitorOptions {
+	return func(k *KubeAgentMonitor) {
+		k.DeploymentConfigMap = v
+	}
+}
+
 // String() implements stringer interface for KubeConfig
 func (k KubeConfig) String() string {
 	s := k.BaseConfig.String()
 	s += fmt.Sprintf("insight-refresh-duration: %s",
 		k.InsightRefreshDuration)
+
 	return s
 }
 

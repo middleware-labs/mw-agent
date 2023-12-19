@@ -122,6 +122,7 @@ func setAgentInstallationTime(logger *zap.Logger) {
 func main() {
 	var cfg agent.KubeConfig
 	flags := getFlags(&cfg)
+
 	zapEncoderCfg := zapcore.EncoderConfig{
 		MessageKey: "message",
 
@@ -283,6 +284,25 @@ func main() {
 						logger.Error("collector server run finished with error", zap.Error(err))
 						return err
 					}
+					return nil
+				},
+			},
+			{
+				Name:  "update",
+				Usage: "Watch for configuration updates and restart the agent when a change is detected",
+				Flags: flags,
+				Action: func(c *cli.Context) error {
+
+					kubeAgentMonitor := agent.NewKubeAgentMonitor(cfg,
+						agent.WithAgentNamespace("mw-agent-ns"),
+						agent.WithDaemonset("mw-kube-agent"),
+						agent.WithDeployment("mw-kube-agent"),
+						agent.WithDaemonsetConfigMap("mw-daemonset-otel-config"),
+						agent.WithDeploymentConfigMap("mw-deployment-otel-config"),
+					)
+
+					kubeAgentMonitor.SetClientSet()
+					kubeAgentMonitor.ListenForConfigChanges(context.TODO())
 					return nil
 				},
 			},

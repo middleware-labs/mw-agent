@@ -76,8 +76,10 @@ var (
 )
 
 type configType struct {
-	Docker   map[string]interface{} `json:"docker"`
-	NoDocker map[string]interface{} `json:"nodocker"`
+	Docker     map[string]interface{} `json:"docker"`
+	NoDocker   map[string]interface{} `json:"nodocker"`
+	Deployment map[string]interface{} `json:"deployment"`
+	DaemonSet  map[string]interface{} `json:"daemonset"`
 }
 
 // DatabaseType represents the type of the database.
@@ -106,10 +108,16 @@ type apiResponseForYAML struct {
 	Message             string          `json:"message"`
 }
 
+type rollout struct {
+	Deployment bool `json:"deployment"`
+	Daemonset  bool `json:"daemonset"`
+}
+
 type apiResponseForRestart struct {
-	Status  bool   `json:"status"`
-	Restart bool   `json:"restart"`
-	Message string `json:"message"`
+	Status  bool    `json:"status"`
+	Restart bool    `json:"restart"`
+	Rollout rollout `json:"rollout"`
+	Message string  `json:"message"`
 }
 
 var (
