@@ -10,7 +10,6 @@ ARG AGENT_VERSION
 ENV AGENT_VERSION=$AGENT_VERSION
 
 RUN CGO_ENABLED=0 go build -ldflags "-s -w -X main.agentVersion=${AGENT_VERSION}" -o /tmp/mw-agent cmd/kube-agent/main.go
-RUN CGO_ENABLED=0 go install -ldflags="-s -w -extldflags '-static'" github.com/go-delve/delve/cmd/dlv@latest
 
 FROM busybox:glibc as prod
 WORKDIR /app
@@ -18,11 +17,8 @@ COPY --from=build /etc/ssl/certs /etc/ssl/certs
 COPY --from=build /tmp/mw-agent /usr/bin/mw-agent
 COPY --from=build /app/configyamls-k8s/otel-config.yaml /app/otel-config.yaml
 COPY --from=build /app/configyamls-k8s/otel-config-nodocker.yaml /app/otel-config-nodocker.yaml
-COPY --from=build /app/configyamls-k8s/otel-config-daemonset.yaml /app/otel-config-daemonset.yaml
-COPY --from=build /app/configyamls-k8s/otel-config-deployment.yaml /app/otel-config-deployment.yaml
-COPY --from=build /go/bin/dlv /usr/bin/dlv
+
 # A symlink to support existing k8s agent users
 RUN ln -s /usr/bin/mw-agent /usr/bin/api-server
 
 CMD ["mw-agent", "start"]
-# CMD ["dlv --listen=:4040 --continue --accept-multiclient --headless=true exec", "/usr/bin/mw-agent", "start"]

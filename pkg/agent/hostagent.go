@@ -127,6 +127,11 @@ type rollout struct {
 	Daemonset  bool `json:"daemonset"`
 }
 
+type rollout struct {
+	Deployment bool `json:"deployment"`
+	Daemonset  bool `json:"daemonset"`
+}
+
 type apiResponseForRestart struct {
 	Status  bool    `json:"status"`
 	Restart bool    `json:"restart"`

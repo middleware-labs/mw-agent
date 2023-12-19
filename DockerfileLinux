@@ -10,8 +10,6 @@ ARG AGENT_VERSION
 ENV AGENT_VERSION=$AGENT_VERSION
 
 RUN CGO_ENABLED=0 go build -ldflags "-s -w -X main.agentVersion=${AGENT_VERSION}" -o /tmp/mw-agent cmd/host-agent/main.go
-RUN CGO_ENABLED=0 go install -ldflags="-s -w -extldflags '-static'" github.com/go-delve/delve/cmd/dlv@latest
-RUN CGO_ENABLED=0 go install -ldflags="-s -w -extldflags '-static'" github.com/go-delve/delve/cmd/dlv@latest
 
 FROM busybox:glibc as prod
 RUN mkdir -p /var/log
@@ -19,5 +17,4 @@ WORKDIR /opt/mw-host-agent
 COPY --from=build /etc/ssl/certs /etc/ssl/certs
 COPY --from=build /tmp/mw-agent /opt/mw-host-agent/mw-agent
 COPY --from=build /app/otel-config.yaml /etc/mw-agent/otel-config.yaml
-COPY --from=build /go/bin/dlv /usr/bin/dlv
-CMD ["/usr/bin/dlv --listen=:4040 --continue --accept-multiclient --headless=true exec /opt/mw-host-agent/mw-agent start"]
+CMD ["/opt/mw-host-agent/mw-agent", "start"]

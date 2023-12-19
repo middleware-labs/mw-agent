@@ -144,7 +144,7 @@ receivers:
         endpoint: 0.0.0.0:9320
 exporters:
   logging:
-    loglevel: debug
+    loglevel: fatal
   otlp:
     endpoint: ${MW_TARGET}
 processors:
@@ -315,7 +315,7 @@ processors:
 service:
     telemetry:
       logs:
-        level: "debug"
+        level: "fatal"
       metrics:
         address: 0.0.0.0:8888
     #extensions:
