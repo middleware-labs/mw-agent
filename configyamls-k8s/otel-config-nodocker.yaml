@@ -105,6 +105,9 @@ receivers:
         enabled: true
     metric_groups:
       - volume
+      - node
+      - pod
+      - container
   hostmetrics:
     collection_interval: 5s
     scrapers:
