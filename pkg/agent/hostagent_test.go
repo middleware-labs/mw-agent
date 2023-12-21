@@ -176,7 +176,15 @@ func TestListenForConfigChanges(t *testing.T) {
 }
 
 func TestHostAgentGetFactories(t *testing.T) {
-	agent := NewHostAgent(HostConfig{},
+	baseConfig := BaseConfig{
+		AgentFeatures: AgentFeatures{
+			InfraMonitoring: true,
+		},
+	}
+
+	agent := NewHostAgent(HostConfig{
+		BaseConfig: baseConfig,
+	},
 		WithHostAgentLogger(zap.NewNop()),
 		WithHostAgentInfraPlatform(InfraPlatformECSEC2))
 
@@ -194,7 +202,7 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assert.Contains(t, factories.Extensions, component.Type("health_check"))
 
 	// check if factories contains expected receivers
-	assert.Len(t, factories.Receivers, 11)
+	assert.Len(t, factories.Receivers, 12)
 	assert.Contains(t, factories.Receivers, component.Type("otlp"))
 	assert.Contains(t, factories.Receivers, component.Type("fluentforward"))
 	assert.Contains(t, factories.Receivers, component.Type("filelog"))
@@ -205,6 +213,7 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assert.Contains(t, factories.Receivers, component.Type("mongodb"))
 	assert.Contains(t, factories.Receivers, component.Type("mysql"))
 	assert.Contains(t, factories.Receivers, component.Type("redis"))
+	assert.Contains(t, factories.Receivers, component.Type("elasticsearch"))
 	assert.Contains(t, factories.Receivers, component.Type("awsecscontainermetrics"))
 
 	// check if factories contain expected exporters

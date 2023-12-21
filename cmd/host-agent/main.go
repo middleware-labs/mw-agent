@@ -98,8 +98,8 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			Name:        "api-url-for-config-check",
 			EnvVars:     []string{"MW_API_URL_FOR_CONFIG_CHECK"},
 			Destination: &cfg.APIURLForConfigCheck,
-			DefaultText: "https://app.middleware.io",
-			Value:       "https://app.middleware.io",
+			DefaultText: "",
+			Value:       "",
 			Hidden:      true,
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
@@ -252,6 +252,19 @@ func main() {
 						zap.String("version", agentVersion),
 						zap.Stringer("infra-platform", infraPlatform))
 
+					if cfg.APIURLForConfigCheck == "" {
+						cfg.APIURLForConfigCheck, err = agent.GetAPIURLForConfigCheck(cfg.Target)
+						// could not derive api url for config check from target
+						if err != nil {
+							logger.Info("could not derive api url for config check from target",
+								zap.String("target", cfg.Target))
+							return err
+						}
+
+						logger.Info("derived api url for config check",
+							zap.String("api-url-for-config-check", cfg.APIURLForConfigCheck))
+					}
+
 					hostAgent := agent.NewHostAgent(
 						cfg,
 						agent.WithHostAgentLogger(logger),
@@ -308,7 +321,6 @@ func main() {
 						return err
 					}
 
-					// yamlPath := filepath.Join(installDir, "./configyamls/nodocker/otel-config.yaml")
 					logger.Info("yaml path loaded", zap.String("path", yamlPath))
 
 					configProvider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{
