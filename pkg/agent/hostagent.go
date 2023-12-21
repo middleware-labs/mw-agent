@@ -58,6 +58,7 @@ func WithHostAgentInfraPlatform(p InfraPlatform) HostOptions {
 func NewHostAgent(cfg HostConfig, opts ...HostOptions) *HostAgent {
 	var agent HostAgent
 	agent.HostConfig = cfg
+
 	for _, apply := range opts {
 		apply(&agent)
 	}
