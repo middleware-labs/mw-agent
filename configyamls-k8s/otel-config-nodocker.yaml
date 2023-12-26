@@ -103,6 +103,15 @@ receivers:
     resource_attributes:
       k8s.node.uid:
         enabled: true
+    metrics:
+      k8s.pod.cpu_limit_utilization:
+        enabled: true
+      k8s.pod.cpu_request_utilization:
+        enabled: true
+      k8s.pod.memory_limit_utilization:
+        enabled: true
+      k8s.pod.memory_request_utilization:
+        enabled: true
     metric_groups:
       - volume
       - node
@@ -161,7 +170,7 @@ receivers:
         endpoint: 0.0.0.0:9320
 exporters:
   logging:
-    loglevel: warn
+    loglevel: debug
   otlp:
     endpoint: ${MW_TARGET}
 processors:
@@ -339,7 +348,7 @@ processors:
 service:
     telemetry:
       logs:
-        level: "fatal"
+        level: "debug"
       metrics:
         address: 0.0.0.0:8888
     #extensions:
@@ -360,9 +369,13 @@ service:
         processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, resource/k8s_events, batch, batch/2, ]
         exporters: [ otlp ]
       metrics:
-        receivers: [ prometheus, otlp, k8s_cluster, kubeletstats ]
+        receivers: [ prometheus, otlp, k8s_cluster ]
         processors: [ resourcedetection, resource, k8sattributes, resource/cluster, batch, batch/2]
         exporters: [ otlp ]
+      metrics/kubeletstats:
+        receivers: [ kubeletstats ]
+        processors: [ resourcedetection, resource, k8sattributes, resource/cluster, batch, batch/2]
+        exporters: [ otlp, logging ]
       metrics/hostmetrics:
         receivers: [ hostmetrics ]
         processors: [ resourcedetection, resource, resource/hostmetrics, resource/cluster, k8sattributes, batch, batch/2]

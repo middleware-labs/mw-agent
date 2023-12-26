@@ -27,6 +27,12 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+var factories otelcol.Factories
+
+func components() (otelcol.Factories, error) {
+	return factories, nil
+}
+
 func getFlags(cfg *agent.KubeConfig) []cli.Flag {
 	return []cli.Flag{
 		altsrc.NewStringFlag(&cli.StringFlag{
@@ -260,7 +266,7 @@ func main() {
 						return err
 					}
 
-					factories, err := kubeAgent.GetFactories(ctx)
+					factories, err = kubeAgent.GetFactories(ctx)
 					if err != nil {
 						logger.Error("failed to get factories", zap.Error(err))
 						return err
@@ -274,7 +280,7 @@ func main() {
 							Description: "OpenTelemetry Collector Contrib",
 							Version:     version.Version,
 						},
-						Factories:      factories,
+						Factories:      components,
 						ConfigProvider: configProvider,
 					}
 					collector, _ := otelcol.NewCollector(settings)
