@@ -699,6 +699,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearch
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.84.0/go.mod h1:RPq12Un/5T3BUNQXO2445cJtFW8mTOjKY81+7wdWFEM=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.84.0 h1:Nv9JywcY7nBSZ3tIw/SjW0GUlgy/SeS05CIdRg0GqWk=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.84.0/go.mod h1:9WuVkTk8tnvdixBWRITzOHUtd/++RceKFmlEfKF4ErU=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.84.0 h1:tyHA25IIJotyE90tVtMnrJ7smka+umHeiwlKTa1F1bw=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.84.0/go.mod h1:iVmCNIswzYzfwGIWrnR/n+31whX9HcLwlDeU4MDjbBc=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver v0.84.0 h1:EnEiPx6dQ8N5JW87sjzJ4cexmr2Rd2+HrW5q44p6Bg0=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver v0.84.0/go.mod h1:GeLRNnCZAlnVc6ae/1ggcUmG4unV09qzd6c2NWGw2Kg=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.84.0 h1:L9u5WTry4P9/C0tPAWufi/hpcR0LIEWcIm4XqPTMess=
