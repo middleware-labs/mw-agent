@@ -95,6 +95,7 @@ const (
 	MongoDB
 	MySQL
 	Redis
+	Cassandra
 	Elasticsearch
 )
 
@@ -110,6 +111,7 @@ type apiResponseForYAML struct {
 	MysqlConfig         dbConfiguration `json:"mysql_config"`
 	RedisConfig         dbConfiguration `json:"redis_config"`
 	ElasticsearchConfig dbConfiguration `json:"elasticsearch_config"`
+	CassandraConfig     dbConfiguration `json:"cassandra_config"`
 	Message             string          `json:"message"`
 }
 
@@ -134,6 +136,8 @@ func (d DatabaseType) String() string {
 		return "mysql"
 	case Redis:
 		return "redis"
+	case Cassandra:
+		return "cassandra"
 	case Elasticsearch:
 		return "elasticsearch"
 	}
@@ -273,6 +277,7 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 		MySQL:         apiResponse.MysqlConfig,
 		Redis:         apiResponse.RedisConfig,
 		Elasticsearch: apiResponse.ElasticsearchConfig,
+		Cassandra:     apiResponse.CassandraConfig,
 	}
 
 	for dbType, dbConfig := range dbConfigs {
