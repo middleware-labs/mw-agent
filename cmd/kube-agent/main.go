@@ -92,6 +92,14 @@ func getFlags(cfg *agent.KubeConfig) []cli.Flag {
 				return ""
 			}(),
 		},
+		&cli.StringFlag{
+			Name:        "otel-config-file",
+			EnvVars:     []string{"MW_OTEL_CONFIG_FILE"},
+			Destination: &cfg.OtelConfigFile,
+			Usage:       "Location of the OTEL pipelines configuration file for this agent.",
+			Value:       filepath.Join("/app", "otel-config-nodocker.yaml"),
+			DefaultText: filepath.Join("/app", "otel-config-nodocker.yaml"),
+		},
 	}
 }
 
@@ -115,6 +123,7 @@ func setAgentInstallationTime(logger *zap.Logger) {
 func main() {
 	var cfg agent.KubeConfig
 	flags := getFlags(&cfg)
+
 	zapEncoderCfg := zapcore.EncoderConfig{
 		MessageKey: "message",
 
@@ -166,12 +175,6 @@ func main() {
 
 					// Set MW_DOCKER_ENDPOINT env variable to be used by otel collector
 					os.Setenv("MW_DOCKER_ENDPOINT", cfg.DockerEndpoint)
-
-					yamlPath, err := kubeAgent.GetUpdatedYAMLPath()
-					if err != nil {
-						logger.Error("error getting config file path", zap.Error(err))
-						return err
-					}
 
 					k8sClient, err := kubernetes.NewClient("", "")
 					if err != nil {
@@ -252,7 +255,7 @@ func main() {
 								expandconverter.New(),
 								//overwritepropertiesconverter.New(getSetFlag()),
 							},
-							URIs: []string{yamlPath},
+							URIs: []string{cfg.OtelConfigFile},
 						},
 					})
 					if err != nil {
@@ -282,6 +285,25 @@ func main() {
 						logger.Error("collector server run finished with error", zap.Error(err))
 						return err
 					}
+					return nil
+				},
+			},
+			{
+				Name:  "update",
+				Usage: "Watch for configuration updates and restart the agent when a change is detected",
+				Flags: flags,
+				Action: func(c *cli.Context) error {
+
+					kubeAgentMonitor := agent.NewKubeAgentMonitor(cfg,
+						agent.WithAgentNamespace("mw-agent-ns"),
+						agent.WithDaemonset("mw-kube-agent"),
+						agent.WithDeployment("mw-kube-agent"),
+						agent.WithDaemonsetConfigMap("mw-daemonset-otel-config"),
+						agent.WithDeploymentConfigMap("mw-deployment-otel-config"),
+					)
+
+					kubeAgentMonitor.SetClientSet()
+					kubeAgentMonitor.ListenForConfigChanges(context.TODO())
 					return nil
 				},
 			},
