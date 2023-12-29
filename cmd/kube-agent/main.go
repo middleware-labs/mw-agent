@@ -62,13 +62,7 @@ func getFlags(cfg *agent.KubeConfig) []cli.Flag {
 			DefaultText: "unix:///var/run/docker.sock",
 			Value:       "unix:///var/run/docker.sock",
 		}),
-		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:        "api-url-for-config-check",
-			EnvVars:     []string{"MW_API_URL_FOR_CONFIG_CHECK"},
-			Destination: &cfg.APIURLForConfigCheck,
-			DefaultText: "https://app.middleware.io",
-			Hidden:      true,
-		}),
+
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "insight-refresh-duration",
 			EnvVars:     []string{"MW_INSIGHT_REFRESH_DURATION"},
@@ -76,6 +70,13 @@ func getFlags(cfg *agent.KubeConfig) []cli.Flag {
 			DefaultText: "24h",
 			Value:       "24h",
 			Hidden:      true,
+		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "agent-features.infra-monitoring",
+			Usage:       "Flag to enable or disable infrastructure monitoring",
+			EnvVars:     []string{"MW_AGENT_FEATURES_INFRA_MONITORING"},
+			Destination: &cfg.AgentFeatures.InfraMonitoring,
+			Value:       true, // infra monitoring is enabled by default
 		}),
 
 		&cli.StringFlag{

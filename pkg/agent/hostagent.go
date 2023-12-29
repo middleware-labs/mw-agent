@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -57,6 +58,7 @@ func WithHostAgentInfraPlatform(p InfraPlatform) HostOptions {
 func NewHostAgent(cfg HostConfig, opts ...HostOptions) *HostAgent {
 	var agent HostAgent
 	agent.HostConfig = cfg
+
 	for _, apply := range opts {
 		apply(&agent)
 	}
@@ -73,6 +75,11 @@ var (
 	ErrReceiverKeyNotFound   = errors.New("'receivers' key not found")
 	ErrInvalidResponse       = errors.New("invalid response from ingestion rules api")
 	ErrInvalidHostTags       = errors.New("invalid host tags, kindly check the format")
+
+	ErrParseReceivers = fmt.Errorf("failed to parse %s in otel config file", Receivers)
+	ErrParseService   = fmt.Errorf("failed to parse %s in otel config file", Service)
+	ErrParsePipelines = fmt.Errorf("failed to parse %s in otel config file", Pipelines)
+	ErrParseMetrics   = fmt.Errorf("failed to parse %s in otel config file", Metrics)
 )
 
 type configType struct {
@@ -90,7 +97,9 @@ const (
 	MongoDB
 	MySQL
 	Redis
+	Cassandra
 	Elasticsearch
+	Clickhouse
 )
 
 type dbConfiguration struct {
@@ -105,6 +114,8 @@ type apiResponseForYAML struct {
 	MysqlConfig         dbConfiguration `json:"mysql_config"`
 	RedisConfig         dbConfiguration `json:"redis_config"`
 	ElasticsearchConfig dbConfiguration `json:"elasticsearch_config"`
+	CassandraConfig     dbConfiguration `json:"cassandra_config"`
+	ClickhouseConfig    dbConfiguration `json:"clickhouse_config"`
 	Message             string          `json:"message"`
 }
 
@@ -135,10 +146,27 @@ func (d DatabaseType) String() string {
 		return "mysql"
 	case Redis:
 		return "redis"
+	case Cassandra:
+		return "cassandra"
 	case Elasticsearch:
 		return "elasticsearch"
+	case Clickhouse:
+		return "clickhouse"
 	}
 	return "unknown"
+}
+
+func convertTabsToSpaces(input []byte, tabWidth int) []byte {
+	// Find the tab character in the input
+	tabChar := byte('\t')
+
+	// Calculate the number of spaces needed to replace each tab
+	spaces := bytes.Repeat([]byte(" "), tabWidth)
+
+	// Replace tabs with spaces using bytes.Replace
+	output := bytes.Replace(input, []byte{tabChar}, spaces, -1)
+
+	return output
 }
 
 func (c *HostAgent) updateConfig(config map[string]interface{}, path string) (map[string]interface{}, error) {
@@ -150,8 +178,9 @@ func (c *HostAgent) updateConfig(config map[string]interface{}, path string) (ma
 	}
 
 	// Unmarshal the YAML data into a temporary map[string]interface{}
+	updatedYamlData := convertTabsToSpaces(yamlData, 2)
 	tempMap := make(map[string]interface{})
-	err = yaml.Unmarshal(yamlData, &tempMap)
+	err = yaml.Unmarshal(updatedYamlData, &tempMap)
 	if err != nil {
 		return map[string]interface{}{}, err
 	}
@@ -260,6 +289,8 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 		MySQL:         apiResponse.MysqlConfig,
 		Redis:         apiResponse.RedisConfig,
 		Elasticsearch: apiResponse.ElasticsearchConfig,
+		Cassandra:     apiResponse.CassandraConfig,
+		Clickhouse:    apiResponse.ClickhouseConfig,
 	}
 
 	for dbType, dbConfig := range dbConfigs {
@@ -271,6 +302,16 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 		}
 	}
 
+	// Add awsecscontainermetrics receiver dynamically if the agent is running inside ECS + Fargate setup
+	if c.InfraPlatform == InfraPlatformECSFargate || c.InfraPlatform == InfraPlatformECSEC2 {
+
+		apiYAMLConfig, err = c.updateConfigForECS(apiYAMLConfig)
+		if err != nil {
+			return err
+		}
+
+	}
+
 	apiYAMLBytes, err := yaml.Marshal(apiYAMLConfig)
 	if err != nil {
 		c.logger.Error("failed to marshal api data", zap.Error(err))
@@ -278,7 +319,8 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	}
 
 	if err := os.WriteFile(c.OtelConfigFile, apiYAMLBytes, 0644); err != nil {
-		c.logger.Error("failed to write new configuration data to file", zap.Error(err))
+		c.logger.Error("failed to write new configuration data to file", zap.String("file", c.OtelConfigFile),
+			zap.Error(err))
 		return err
 	}
 

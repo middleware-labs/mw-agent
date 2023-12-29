@@ -14,11 +14,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
@@ -50,22 +52,27 @@ func (c *HostAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 		fluentforwardreceiver.NewFactory(),
 		filelogreceiver.NewFactory(),
 		dockerstatsreceiver.NewFactory(),
-		hostmetricsreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
 		postgresqlreceiver.NewFactory(),
-		//windowseventlogreceiver.NewFactory(),
-		//windowsperfcountersreceiver.NewFactory(),
 		mongodbreceiver.NewFactory(),
 		mysqlreceiver.NewFactory(),
 		elasticsearchreceiver.NewFactory(),
 		redisreceiver.NewFactory(),
+		jmxreceiver.NewFactory(),
 	}
 
 	// if the host agent is running on ECS EC2, add
 	// relevant factories
-	if c.InfraPlatform == InfraPlatformECSEC2 {
+	if c.InfraPlatform == InfraPlatformECSEC2 || c.InfraPlatform == InfraPlatformECSFargate {
 		receiverfactories = append(receiverfactories,
 			awsecscontainermetricsreceiver.NewFactory())
+	}
+
+	// if infra monitoring is enabled, add hostmetricsreceiver
+	c.logger.Info("InfraMonitoring", zap.Bool("infra-monitoring", c.AgentFeatures.InfraMonitoring))
+	if c.AgentFeatures.InfraMonitoring {
+		receiverfactories = append(receiverfactories,
+			hostmetricsreceiver.NewFactory())
 	}
 
 	factories.Receivers, err = receiver.MakeFactoryMap(receiverfactories...)

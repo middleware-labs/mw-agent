@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"strings"
 
 	"go.opentelemetry.io/collector/otelcol"
 )
@@ -17,6 +18,19 @@ type Agent interface {
 	ListenForConfigChanges(ctx context.Context) error
 }
 
+// Otel config components
+const (
+	Receivers              = "receivers"
+	AWSECSContainerMetrics = "awsecscontainermetrics"
+	Service                = "service"
+	Pipelines              = "pipelines"
+	Metrics                = "metrics"
+)
+
+var (
+	ErrInvalidTarget = fmt.Errorf("invalid target")
+)
+
 // InfraPlatform defines the agent's infrastructure platform
 type InfraPlatform uint16
 
@@ -27,6 +41,8 @@ var (
 	InfraPlatformKubernetes InfraPlatform = 1
 	// InfraPlatformECSEC2 is for AWS ECS EC2 platform
 	InfraPlatformECSEC2 InfraPlatform = 2
+	// InfraPlatformECSFargate is for AWS ECS Fargate platform
+	InfraPlatformECSFargate InfraPlatform = 3
 )
 
 func (p InfraPlatform) String() string {
@@ -37,8 +53,14 @@ func (p InfraPlatform) String() string {
 		return "kubernetes"
 	case InfraPlatformECSEC2:
 		return "ecsec2"
+	case InfraPlatformECSFargate:
+		return "ecsfargate"
 	}
 	return "unknown"
+}
+
+type AgentFeatures struct {
+	InfraMonitoring bool
 }
 
 // BaseConfig stores general configuration for all agent types
@@ -49,8 +71,10 @@ type BaseConfig struct {
 	ConfigCheckInterval       string
 	DockerEndpoint            string
 	APIURLForConfigCheck      string
+	FluentPort                string
 	InfraPlatform             InfraPlatform
 	OtelConfigFile            string
+	AgentFeatures             AgentFeatures
 }
 
 // String() implements stringer interface for BaseConfig
@@ -63,6 +87,8 @@ func (c BaseConfig) String() string {
 	s += fmt.Sprintf("docker-endpoint: %s, ", c.DockerEndpoint)
 	s += fmt.Sprintf("api-url-for-config-check: %s, ", c.APIURLForConfigCheck)
 	s += fmt.Sprintf("infra-platform: %s, ", c.InfraPlatform)
+	s += fmt.Sprintf("agent-features: %#v, ", c.AgentFeatures)
+	s += fmt.Sprintf("fluent-port: %#v, ", c.FluentPort)
 	return s
 }
 
@@ -158,4 +184,26 @@ func getHostname() string {
 		return ""
 	}
 	return hostname
+}
+
+func GetAPIURLForConfigCheck(target string) (string, error) {
+	url := strings.TrimRight(target, "/")
+
+	// There should at least be two "." in the URL
+	parts := strings.Split(url, ".")
+	if len(parts) < 3 {
+		return "", ErrInvalidTarget
+	}
+
+	// Find the index of the last "/" and first "."
+	firstSlash := strings.LastIndex(url, "/")
+	firstDot := strings.Index(url, ".")
+
+	// Check if both "/" and "." exist in the URL
+	if firstSlash != -1 && firstDot != -1 {
+		// Replace the string between "/" and the first "."
+		return url[:firstSlash+1] + "app" + url[firstDot:], nil
+	}
+
+	return "", ErrInvalidTarget
 }

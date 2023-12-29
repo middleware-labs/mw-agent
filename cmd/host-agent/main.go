@@ -58,7 +58,7 @@ func (p *program) run() {
 	}
 }
 
-func getFlags(cfg *agent.HostConfig) []cli.Flag {
+func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 	return []cli.Flag{
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "api-key",
@@ -98,8 +98,8 @@ func getFlags(cfg *agent.HostConfig) []cli.Flag {
 			Name:        "api-url-for-config-check",
 			EnvVars:     []string{"MW_API_URL_FOR_CONFIG_CHECK"},
 			Destination: &cfg.APIURLForConfigCheck,
-			DefaultText: "https://app.middleware.io",
-			Value:       "https://app.middleware.io",
+			DefaultText: "",
+			Value:       "",
 			Hidden:      true,
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
@@ -107,6 +107,13 @@ func getFlags(cfg *agent.HostConfig) []cli.Flag {
 			Usage:       "Tags for this host",
 			EnvVars:     []string{"MW_HOST_TAGS"},
 			Destination: &cfg.HostTags,
+		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "fluent-port",
+			Usage:       "Fluent receiver will listen to this port",
+			EnvVars:     []string{"MW_FLUENT_PORT"},
+			Destination: &cfg.FluentPort,
+			Value:       "8006",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "logfile",
@@ -123,6 +130,14 @@ func getFlags(cfg *agent.HostConfig) []cli.Flag {
 			EnvVars:     []string{"MW_LOGFILE_SIZE"},
 			Destination: &cfg.LogfileSize,
 			Value:       1, // default value is 1MB
+		}),
+
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "agent-features.infra-monitoring",
+			Usage:       "Flag to enable or disable infrastructure monitoring",
+			EnvVars:     []string{"MW_AGENT_FEATURES_INFRA_MONITORING"},
+			Destination: &cfg.AgentFeatures.InfraMonitoring,
+			Value:       true, // infra monitoring is enabled by default
 		}),
 
 		&cli.StringFlag{
@@ -147,6 +162,8 @@ func getFlags(cfg *agent.HostConfig) []cli.Flag {
 				switch runtime.GOOS {
 				case "linux":
 					return filepath.Join("/etc", "mw-agent", "otel-config.yaml")
+				case "windows":
+					return filepath.Join(filepath.Dir(execPath), "otel-config.yaml")
 				}
 
 				return ""
@@ -164,8 +181,6 @@ func getFlags(cfg *agent.HostConfig) []cli.Flag {
 }
 
 func main() {
-	var cfg agent.HostConfig
-	flags := getFlags(&cfg)
 	zapEncoderCfg := zapcore.EncoderConfig{
 		MessageKey: "message",
 
@@ -184,6 +199,15 @@ func main() {
 	defer func() {
 		_ = logger.Sync()
 	}()
+
+	execPath, err := os.Executable()
+	if err != nil {
+		logger.Info("error getting executable path", zap.Error(err))
+		return
+	}
+
+	var cfg agent.HostConfig
+	flags := getFlags(execPath, &cfg)
 
 	app := &cli.App{
 		Name:  "mw-agent",
@@ -218,12 +242,8 @@ func main() {
 					awsEnv := os.Getenv("AWS_EXECUTION_ENV")
 					if awsEnv == "AWS_ECS_EC2" {
 						infraPlatform = agent.InfraPlatformECSEC2
-					}
-
-					execPath, err := os.Executable()
-					if err != nil {
-						logger.Info("error getting executable path", zap.Error(err))
-						return err
+					} else if awsEnv == "AWS_ECS_FARGATE" {
+						infraPlatform = agent.InfraPlatformECSFargate
 					}
 
 					logger.Info("starting host agent", zap.String("agent location", execPath))
@@ -231,6 +251,19 @@ func main() {
 					logger.Info("host agent config", zap.Stringer("config", cfg),
 						zap.String("version", agentVersion),
 						zap.Stringer("infra-platform", infraPlatform))
+
+					if cfg.APIURLForConfigCheck == "" {
+						cfg.APIURLForConfigCheck, err = agent.GetAPIURLForConfigCheck(cfg.Target)
+						// could not derive api url for config check from target
+						if err != nil {
+							logger.Info("could not derive api url for config check from target",
+								zap.String("target", cfg.Target))
+							return err
+						}
+
+						logger.Info("derived api url for config check",
+							zap.String("api-url-for-config-check", cfg.APIURLForConfigCheck))
+					}
 
 					hostAgent := agent.NewHostAgent(
 						cfg,
@@ -266,9 +299,10 @@ func main() {
 						target += ":443"
 					}
 
-					// Set MW_TARGET & MW_API_KEY so that envprovider can fill those in the otel config files
+					// Set MW_TARGET, MW_API_KEY  MW_FLUENT_PORT so that envprovider can fill those in the otel config files
 					os.Setenv("MW_TARGET", target)
 					os.Setenv("MW_API_KEY", cfg.APIKey)
+					os.Setenv("MW_FLUENT_PORT", cfg.FluentPort)
 
 					// TODO: check if on Windows, socket scheme is different than "unix"
 					os.Setenv("MW_DOCKER_ENDPOINT", cfg.DockerEndpoint)
@@ -287,7 +321,6 @@ func main() {
 						return err
 					}
 
-					// yamlPath := filepath.Join(installDir, "./configyamls/nodocker/otel-config.yaml")
 					logger.Info("yaml path loaded", zap.String("path", yamlPath))
 
 					configProvider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{
