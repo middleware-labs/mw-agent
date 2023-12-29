@@ -97,6 +97,7 @@ const (
 	Redis
 	Cassandra
 	Elasticsearch
+	Clickhouse
 )
 
 type dbConfiguration struct {
@@ -112,6 +113,7 @@ type apiResponseForYAML struct {
 	RedisConfig         dbConfiguration `json:"redis_config"`
 	ElasticsearchConfig dbConfiguration `json:"elasticsearch_config"`
 	CassandraConfig     dbConfiguration `json:"cassandra_config"`
+	ClickhouseConfig    dbConfiguration `json:"clickhouse_config"`
 	Message             string          `json:"message"`
 }
 
@@ -140,6 +142,8 @@ func (d DatabaseType) String() string {
 		return "cassandra"
 	case Elasticsearch:
 		return "elasticsearch"
+	case Clickhouse:
+		return "clickhouse"
 	}
 	return "unknown"
 }
@@ -278,6 +282,7 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 		Redis:         apiResponse.RedisConfig,
 		Elasticsearch: apiResponse.ElasticsearchConfig,
 		Cassandra:     apiResponse.CassandraConfig,
+		Clickhouse:    apiResponse.ClickhouseConfig,
 	}
 
 	for dbType, dbConfig := range dbConfigs {
