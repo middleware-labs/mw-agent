@@ -87,11 +87,11 @@ type configType struct {
 	NoDocker map[string]interface{} `json:"nodocker"`
 }
 
-// ExtensionType represents the type of the database.
-type ExtensionType int
+// IntegrationType represents the type of the database.
+type IntegrationType int
 
 const (
-	PostgreSQL ExtensionType = iota
+	PostgreSQL IntegrationType = iota
 	MongoDB
 	MySQL
 	Redis
@@ -101,7 +101,7 @@ const (
 )
 
 type integrationConfiguration struct {
-	// In future this struct can be extended to further accomodate new extensions.
+	// In future this struct can be extended to further accomodate new integrations.
 	Path string `json:"path"`
 }
 
@@ -129,7 +129,7 @@ var (
 	apiPathForRestart = "api/v1/agent/restart-status"
 )
 
-func (d ExtensionType) String() string {
+func (d IntegrationType) String() string {
 	switch d {
 	case PostgreSQL:
 		return "postgresql"
@@ -276,7 +276,7 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 		apiYAMLConfig = apiResponse.Config.Docker
 	}
 
-	extensionConfigs := map[ExtensionType]integrationConfiguration{
+	integrationConfigs := map[IntegrationType]integrationConfiguration{
 		PostgreSQL:    apiResponse.PgdbConfig,
 		MongoDB:       apiResponse.MongodbConfig,
 		MySQL:         apiResponse.MysqlConfig,
@@ -286,9 +286,9 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 		Clickhouse:    apiResponse.ClickhouseConfig,
 	}
 
-	for extensionType, extensionConfig := range extensionConfigs {
-		if c.checkExtConfigValidity(extensionType, extensionConfig.Path) {
-			apiYAMLConfig, err = c.updateConfig(apiYAMLConfig, extensionConfig.Path)
+	for integrationType, integrationConfig := range integrationConfigs {
+		if integrationConfig.HasPath && c.checkExtConfigValidity(integrationType, integrationConfig.Path) {
+			apiYAMLConfig, err = c.updateConfig(apiYAMLConfig, integrationConfig.Path)
 			if err != nil {
 				return err
 			}
@@ -335,11 +335,11 @@ func (c *HostAgent) GetUpdatedYAMLPath() (string, error) {
 	return c.OtelConfigFile, nil
 }
 
-func (c *HostAgent) checkExtConfigValidity(extensionType ExtensionType, configPath string) bool {
+func (c *HostAgent) checkExtConfigValidity(integrationType IntegrationType, configPath string) bool {
 	if configPath != "" {
 		// Check if the file exists
 		if _, err := os.Stat(configPath); os.IsNotExist(err) {
-			c.logger.Warn(fmt.Sprintf("%v config file not found", extensionType), zap.String("path", configPath))
+			c.logger.Warn(fmt.Sprintf("%v config file not found", integrationType), zap.String("path", configPath))
 			return false
 		}
 
