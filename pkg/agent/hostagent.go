@@ -287,7 +287,7 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	}
 
 	for integrationType, integrationConfig := range integrationConfigs {
-		if integrationConfig.HasPath && c.checkExtConfigValidity(integrationType, integrationConfig.Path) {
+		if c.checkIntConfigValidity(integrationType, integrationConfig.Path) {
 			apiYAMLConfig, err = c.updateConfig(apiYAMLConfig, integrationConfig.Path)
 			if err != nil {
 				return err
@@ -335,7 +335,7 @@ func (c *HostAgent) GetUpdatedYAMLPath() (string, error) {
 	return c.OtelConfigFile, nil
 }
 
-func (c *HostAgent) checkExtConfigValidity(integrationType IntegrationType, configPath string) bool {
+func (c *HostAgent) checkIntConfigValidity(integrationType IntegrationType, configPath string) bool {
 	if configPath != "" {
 		// Check if the file exists
 		if _, err := os.Stat(configPath); os.IsNotExist(err) {
