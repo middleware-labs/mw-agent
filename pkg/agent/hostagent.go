@@ -89,11 +89,11 @@ type configType struct {
 	DaemonSet  map[string]interface{} `json:"daemonset"`
 }
 
-// DatabaseType represents the type of the database.
-type DatabaseType int
+// IntegrationType represents the type of the database.
+type IntegrationType int
 
 const (
-	PostgreSQL DatabaseType = iota
+	PostgreSQL IntegrationType = iota
 	MongoDB
 	MySQL
 	Redis
@@ -102,21 +102,22 @@ const (
 	Clickhouse
 )
 
-type dbConfiguration struct {
+type integrationConfiguration struct {
+	// In future this struct can be extended to further accomodate new integrations.
 	Path string `json:"path"`
 }
 
 type apiResponseForYAML struct {
-	Status              bool            `json:"status"`
-	Config              configType      `json:"config"`
-	PgdbConfig          dbConfiguration `json:"pgdb_config"`
-	MongodbConfig       dbConfiguration `json:"mongodb_config"`
-	MysqlConfig         dbConfiguration `json:"mysql_config"`
-	RedisConfig         dbConfiguration `json:"redis_config"`
-	ElasticsearchConfig dbConfiguration `json:"elasticsearch_config"`
-	CassandraConfig     dbConfiguration `json:"cassandra_config"`
-	ClickhouseConfig    dbConfiguration `json:"clickhouse_config"`
-	Message             string          `json:"message"`
+	Status              bool                     `json:"status"`
+	Config              configType               `json:"config"`
+	PgdbConfig          integrationConfiguration `json:"pgdb_config"`
+	MongodbConfig       integrationConfiguration `json:"mongodb_config"`
+	MysqlConfig         integrationConfiguration `json:"mysql_config"`
+	RedisConfig         integrationConfiguration `json:"redis_config"`
+	ElasticsearchConfig integrationConfiguration `json:"elasticsearch_config"`
+	CassandraConfig     integrationConfiguration `json:"cassandra_config"`
+	ClickhouseConfig    integrationConfiguration `json:"clickhouse_config"`
+	Message             string                   `json:"message"`
 }
 
 type rollout struct {
@@ -136,7 +137,7 @@ var (
 	apiPathForRestart = "api/v1/agent/restart-status"
 )
 
-func (d DatabaseType) String() string {
+func (d IntegrationType) String() string {
 	switch d {
 	case PostgreSQL:
 		return "postgresql"
@@ -283,7 +284,7 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 		apiYAMLConfig = apiResponse.Config.Docker
 	}
 
-	dbConfigs := map[DatabaseType]dbConfiguration{
+	integrationConfigs := map[IntegrationType]integrationConfiguration{
 		PostgreSQL:    apiResponse.PgdbConfig,
 		MongoDB:       apiResponse.MongodbConfig,
 		MySQL:         apiResponse.MysqlConfig,
@@ -293,9 +294,9 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 		Clickhouse:    apiResponse.ClickhouseConfig,
 	}
 
-	for dbType, dbConfig := range dbConfigs {
-		if c.checkDBConfigValidity(dbType, dbConfig.Path) {
-			apiYAMLConfig, err = c.updateConfig(apiYAMLConfig, dbConfig.Path)
+	for integrationType, integrationConfig := range integrationConfigs {
+		if c.checkIntConfigValidity(integrationType, integrationConfig.Path) {
+			apiYAMLConfig, err = c.updateConfig(apiYAMLConfig, integrationConfig.Path)
 			if err != nil {
 				return err
 			}
@@ -342,11 +343,11 @@ func (c *HostAgent) GetUpdatedYAMLPath() (string, error) {
 	return c.OtelConfigFile, nil
 }
 
-func (c *HostAgent) checkDBConfigValidity(dbType DatabaseType, configPath string) bool {
+func (c *HostAgent) checkIntConfigValidity(integrationType IntegrationType, configPath string) bool {
 	if configPath != "" {
 		// Check if the file exists
 		if _, err := os.Stat(configPath); os.IsNotExist(err) {
-			c.logger.Warn(fmt.Sprintf("%v config file not found", dbType), zap.String("path", configPath))
+			c.logger.Warn(fmt.Sprintf("%v config file not found", integrationType), zap.String("path", configPath))
 			return false
 		}
 
