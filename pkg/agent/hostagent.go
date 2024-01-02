@@ -335,11 +335,11 @@ func (c *HostAgent) GetUpdatedYAMLPath() (string, error) {
 	return c.OtelConfigFile, nil
 }
 
-func (c *HostAgent) checkExtConfigValidity(dbType ExtensionType, configPath string) bool {
+func (c *HostAgent) checkExtConfigValidity(extensionType ExtensionType, configPath string) bool {
 	if configPath != "" {
 		// Check if the file exists
 		if _, err := os.Stat(configPath); os.IsNotExist(err) {
-			c.logger.Warn(fmt.Sprintf("%v config file not found", dbType), zap.String("path", configPath))
+			c.logger.Warn(fmt.Sprintf("%v config file not found", extensionType), zap.String("path", configPath))
 			return false
 		}
 
