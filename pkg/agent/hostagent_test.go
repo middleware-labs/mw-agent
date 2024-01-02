@@ -23,7 +23,7 @@ func TestUpdatepgdbConfig(t *testing.T) {
 		},
 	}
 
-	pgdbConfig := dbConfiguration{
+	pgdbConfig := integrationConfiguration{
 		Path: "db-config_test.yaml",
 	}
 
@@ -58,7 +58,7 @@ func TestUpdateMongodbConfig(t *testing.T) {
 		},
 	}
 
-	mongodbConfig := dbConfiguration{
+	mongodbConfig := integrationConfiguration{
 		Path: "db-config_test.yaml",
 	}
 
@@ -93,7 +93,7 @@ func TestUpdateMysqlConfig(t *testing.T) {
 		},
 	}
 
-	mysqlConfig := dbConfiguration{
+	mysqlConfig := integrationConfiguration{
 		Path: "db-config_test.yaml",
 	}
 
@@ -127,7 +127,7 @@ func TestUpdateRedisConfig(t *testing.T) {
 		},
 	}
 
-	redisConfig := dbConfiguration{
+	redisConfig := integrationConfiguration{
 		Path: "db-config_test.yaml",
 	}
 
