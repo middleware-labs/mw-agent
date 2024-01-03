@@ -410,6 +410,7 @@ func (c *HostAgent) callRestartStatusAPI() error {
 		c.logger.Info("restarting mw-agent")
 		if _, err := c.GetUpdatedYAMLPath(); err != nil {
 			c.logger.Error("Error getting Updated YAML", zap.Error(err))
+			return err
 		}
 		if err := restartHostAgent(); err != nil {
 			c.logger.Error("error restarting mw-agent", zap.Error(err))
