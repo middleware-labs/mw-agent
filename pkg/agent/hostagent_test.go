@@ -202,7 +202,7 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assert.Contains(t, factories.Extensions, component.Type("health_check"))
 
 	// check if factories contains expected receivers
-	assert.Len(t, factories.Receivers, 12)
+	assert.Len(t, factories.Receivers, 13)
 	assert.Contains(t, factories.Receivers, component.Type("otlp"))
 	assert.Contains(t, factories.Receivers, component.Type("fluentforward"))
 	assert.Contains(t, factories.Receivers, component.Type("filelog"))
@@ -215,6 +215,7 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assert.Contains(t, factories.Receivers, component.Type("redis"))
 	assert.Contains(t, factories.Receivers, component.Type("elasticsearch"))
 	assert.Contains(t, factories.Receivers, component.Type("awsecscontainermetrics"))
+	assert.Contains(t, factories.Receivers, component.Type("jmx"))
 
 	// check if factories contain expected exporters
 	assert.Len(t, factories.Exporters, 3)
