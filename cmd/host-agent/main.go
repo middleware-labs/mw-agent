@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"checkagent"
-
 	"github.com/middleware-labs/mw-agent/pkg/agent"
 	"github.com/prometheus/common/version"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -71,11 +69,6 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			EnvVars:     []string{"MW_TARGET"},
 			Usage:       "Middleware target for your account.",
 			Destination: &cfg.Target,
-		}),
-		altsrc.NewBoolFlag(&cli.BoolFlag{
-			Name:        "enable-synthetic-monitoring",
-			EnvVars:     []string{"MW_ENABLE_SYNTHETIC_MONITORING"},
-			Destination: &cfg.EnableSyntheticMonitoring,
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:    "config-check-interval",
@@ -282,11 +275,6 @@ func main() {
 							logger.Info("error for listening for config changes", zap.Error(err))
 							return err
 						}
-					}
-
-					if cfg.EnableSyntheticMonitoring {
-						// TODO checkagent.Start should take context
-						go checkagent.Start()
 					}
 
 					u, err := url.Parse(cfg.Target)

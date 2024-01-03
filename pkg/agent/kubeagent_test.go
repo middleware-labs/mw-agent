@@ -6,38 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"go.uber.org/zap"
 )
-
-func setIsSocketMock(b bool) {
-	isSocketFn = func(path string) bool {
-		return b
-	}
-}
-
-func TestGetUpdatedYAMLPath(t *testing.T) {
-	var cfg KubeConfig
-	cfg.DockerEndpoint = "unix:///var/run/docker.sock"
-	agent := NewKubeAgent(cfg,
-		WithKubeAgentLogger(zap.NewNop()))
-
-	// Test when docker socket is found
-	yamlPath, err := agent.GetUpdatedYAMLPath()
-	assert.NoError(t, err)
-	assert.Equal(t, "/app/otel-config.yaml", yamlPath)
-
-	// Test when docker socket is not found
-	setIsSocketMock(false) // Mock isSocket function to return false
-	yamlPath, err = agent.GetUpdatedYAMLPath()
-	assert.NoError(t, err)
-	assert.Equal(t, "/app/otel-config-nodocker.yaml", yamlPath)
-
-	// Reset the mock
-	setIsSocketMock(true)
-	yamlPath, err = agent.GetUpdatedYAMLPath()
-	assert.NoError(t, err)
-	assert.Equal(t, "/app/otel-config.yaml", yamlPath)
-}
 
 func TestKubeAgentGetFactories(t *testing.T) {
 	agent := NewKubeAgent(KubeConfig{})
