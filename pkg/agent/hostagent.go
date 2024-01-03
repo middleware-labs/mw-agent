@@ -172,6 +172,9 @@ func convertTabsToSpaces(input []byte, tabWidth int) []byte {
 
 func (c *HostAgent) updateConfig(config map[string]interface{}, path string) (map[string]interface{}, error) {
 
+	if path == "NA" {
+		return config, nil
+	}
 	// Read the YAML file
 	yamlData, err := os.ReadFile(path)
 	if err != nil {
