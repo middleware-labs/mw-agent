@@ -8,7 +8,7 @@ build-kube:
 build: build-linux build-windows build-kube
 
 #package-windows only works on Linux
-package-windows: build-windows
+package-windows: 
 	makensis -DVERSION=0.0.0 scripts/package-windows/package-windows.nsi 
 
 clean:

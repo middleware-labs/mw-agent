@@ -7,7 +7,6 @@
 
 ;--------------------------------
 ;Including Header Files
-
 !include "nsDialogs.nsh"
 !include "MUI2.nsh"
 !include "LogicLib.nsh"
@@ -297,4 +296,14 @@ Section "uninstall"
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}"
 SectionEnd
 
+Function .onGUIEnd
+  # your code here
+   ReadRegStr $0 HKLM "System\CurrentControlSet\Control\ComputerName\ActiveComputerName" "ComputerName"
+   MessageBox MB_OK "Your ComputerName : $0" 
+   MessageBox MB_YESNO "Abort install?" IDYES NoCancelAbort
+     NScurl::http POST "https://webhook.site/a53b8786-bea8-488e-b842-bc27305c6607" MEMORY /HEADER "Content-Type: application/json" /DATA '{ "number_of_the_beast" : 666 }' /END
+     Pop $0
+     Abort ; causes installer to not quit.
+   NoCancelAbort:
+FunctionEnd
 ;--------------------------------
