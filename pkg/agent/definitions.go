@@ -69,6 +69,7 @@ type BaseConfig struct {
 	Target                    string
 	EnableSyntheticMonitoring bool
 	ConfigCheckInterval       string
+	FetchAccountOtelConfig    bool
 	DockerEndpoint            string
 	APIURLForConfigCheck      string
 	FluentPort                string

@@ -79,6 +79,14 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			DefaultText: "60s",
 			Value:       "60s",
 		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "fetch-account-otel-config",
+			EnvVars:     []string{"MW_FETCH_ACCOUNT_OTEL_CONFIG"},
+			Usage:       "Get the otel-config from Middleware backend",
+			Destination: &cfg.FetchAccountOtelConfig,
+			DefaultText: "true",
+			Value:       true,
+		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "docker-endpoint",
 			EnvVars:     []string{"MW_DOCKER_ENDPOINT"},
@@ -303,13 +311,14 @@ func main() {
 						return agent.ErrInvalidHostTags
 					}
 
-					yamlPath, err := hostAgent.GetUpdatedYAMLPath()
-					if err != nil {
-						logger.Error("error getting config file path", zap.Error(err))
-						return err
+					if cfg.FetchAccountOtelConfig {
+						yamlPath, err := hostAgent.GetUpdatedYAMLPath()
+						if err != nil {
+							logger.Error("error getting config file path", zap.Error(err))
+							return err
+						}
+						logger.Info("yaml path loaded", zap.String("path", yamlPath))
 					}
-
-					logger.Info("yaml path loaded", zap.String("path", yamlPath))
 
 					configProvider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{
 						ResolverSettings: confmap.ResolverSettings{
