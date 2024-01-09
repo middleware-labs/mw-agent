@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -104,7 +105,8 @@ const (
 
 type integrationConfiguration struct {
 	// In future this struct can be extended to further accomodate new integrations.
-	Path string `json:"path"`
+	Path     string `json:"path"`
+	Endpoint string `json:"endpoint"`
 }
 
 type apiResponseForYAML struct {
@@ -170,10 +172,13 @@ func convertTabsToSpaces(input []byte, tabWidth int) []byte {
 	return output
 }
 
-func (c *HostAgent) updateConfig(config map[string]interface{}, path string) (map[string]interface{}, error) {
+func (c *HostAgent) updateConfig(config map[string]interface{}, cnf integrationConfiguration) (map[string]interface{}, error) {
 
+	if c.isIPPortFormat(cnf.Endpoint) {
+		return config, nil
+	}
 	// Read the YAML file
-	yamlData, err := os.ReadFile(path)
+	yamlData, err := os.ReadFile(cnf.Path)
 	if err != nil {
 		return map[string]interface{}{}, err
 	}
@@ -295,8 +300,8 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 	}
 
 	for integrationType, integrationConfig := range integrationConfigs {
-		if c.checkIntConfigValidity(integrationType, integrationConfig.Path) {
-			apiYAMLConfig, err = c.updateConfig(apiYAMLConfig, integrationConfig.Path)
+		if c.checkIntConfigValidity(integrationType, integrationConfig) {
+			apiYAMLConfig, err = c.updateConfig(apiYAMLConfig, integrationConfig)
 			if err != nil {
 				return err
 			}
@@ -342,22 +347,44 @@ func (c *HostAgent) GetUpdatedYAMLPath() (string, error) {
 
 	return c.OtelConfigFile, nil
 }
+func (c *HostAgent) isIPPortFormat(endpoint string) bool {
+	// Regex for IPv4:PORT format, also consider localhost as an IP
+	regexPattern := `(?:localhost|((?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))):(?:[0-9]|[1-9][0-9]{1,4}|[1-5][0-9]{4}|6[0-5][0-5][0-3][0-5])$`
 
-func (c *HostAgent) checkIntConfigValidity(integrationType IntegrationType, configPath string) bool {
-	if configPath != "" {
-		// Check if the file exists
-		if _, err := os.Stat(configPath); os.IsNotExist(err) {
-			c.logger.Warn(fmt.Sprintf("%v config file not found", integrationType), zap.String("path", configPath))
-			return false
-		}
+	// Compile the regular expression
+	regex, err := regexp.Compile(regexPattern)
+	if err != nil {
+		c.logger.Error("error invalid regexPattern for IP:Port format", zap.Error(err))
+		return false
+	}
 
+	// Path variable is IP:PORT for these integrations -> Clickhouse, Redpanda
+	if regex.MatchString(endpoint) {
+		c.logger.Info("found valid endpoint", zap.String("endpoint", endpoint))
 		return true
 	}
 	return false
 }
 
-func restartHostAgent() error {
-	//GetUpdatedYAMLPath()
+func (c *HostAgent) checkIntConfigValidity(integrationType IntegrationType, cnf integrationConfiguration) bool {
+	if cnf.Path != "" {
+		// Check if the file exists
+		if _, err := os.Stat(cnf.Path); os.IsNotExist(err) {
+			c.logger.Warn(fmt.Sprintf("%v config file not found", integrationType), zap.String("path", cnf.Path))
+			return false
+		}
+
+		return true
+	} else if cnf.Endpoint != "" {
+		if c.isIPPortFormat(cnf.Endpoint) {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *HostAgent) restartHostAgent() error {
+	c.GetUpdatedYAMLPath()
 	cmd := exec.Command("kill", "-SIGHUP", fmt.Sprintf("%d", os.Getpid()))
 	err := cmd.Run()
 	if err != nil {
@@ -412,7 +439,7 @@ func (c *HostAgent) callRestartStatusAPI() error {
 			c.logger.Error("error getting Updated YAML", zap.Error(err))
 			return err
 		}
-		if err := restartHostAgent(); err != nil {
+		if err := c.restartHostAgent(); err != nil {
 			c.logger.Error("error restarting mw-agent", zap.Error(err))
 			return err
 		}
