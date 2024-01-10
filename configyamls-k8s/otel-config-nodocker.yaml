@@ -103,6 +103,23 @@ receivers:
     resource_attributes:
       k8s.node.uid:
         enabled: true
+    metrics:
+      k8s.pod.cpu_limit_utilization:
+        enabled: true
+      k8s.pod.cpu_request_utilization:
+        enabled: true
+      k8s.pod.memory_limit_utilization:
+        enabled: true
+      k8s.pod.memory_request_utilization:
+        enabled: true
+      k8s.container.cpu_limit_utilization:
+        enabled: true
+      k8s.container.cpu_request_utilization:
+        enabled: true
+      k8s.container.memory_limit_utilization:
+        enabled: true
+      k8s.container.memory_request_utilization:
+        enabled: true
     metric_groups:
       - volume
       - node
@@ -165,6 +182,72 @@ exporters:
   otlp:
     endpoint: ${MW_TARGET}
 processors:
+  metricstransform:
+    transforms:
+      - include: system.network.io
+        action: insert
+        new_name: system.network.io.rate
+        operations: []
+      - include: system.disk.io
+        action: insert
+        new_name: system.disk.io.rate
+        operations: []
+      - include: system.disk.operations
+        action: insert
+        new_name: system.disk.operations.rate
+        operations: []
+      - include: system.network.packets
+        action: insert
+        new_name: system.network.packets.rate
+        operations: []
+      - include: system.network.errors
+        action: insert
+        new_name: system.network.errors.rate
+        operations: []
+      - include: system.network.dropped
+        action: insert
+        new_name: system.network.dropped.rate
+        operations: []
+      - include: k8s.pod.network.io
+        action: insert
+        new_name: k8s.pod.network.io.rate
+        operations: []
+      - include: k8s.pod.network.errors
+        action: insert
+        new_name: k8s.pod.network.errors.rate
+        operations: []
+      - include: k8s.node.network.io
+        action: insert
+        new_name: k8s.node.network.io.rate
+        operations: []
+      - include: k8s.node.network.errors
+        action: insert
+        new_name: k8s.node.network.errors.rate
+        operations: []
+  cumulativetodelta:
+    include:
+      metrics:
+        - system.network.io.rate
+        - system.disk.io.rate
+        - system.disk.operations.rate
+        - system.network.errors.rate
+        - system.network.dropped.rate
+        - k8s.pod.network.io.rate
+        - k8s.pod.network.errors.rate
+        - k8s.node.network.io.rate
+        - k8s.node.network.errors.rate
+      match_type: strict
+  deltatorate:
+    metrics:
+      - system.network.io.rate
+      - system.disk.io.rate
+      - system.disk.operations.rate
+      - system.network.errors.rate
+      - system.network.dropped.rate
+      - k8s.pod.network.io.rate
+      - k8s.pod.network.errors.rate
+      - k8s.node.network.io.rate
+      - k8s.node.network.errors.rate
   # filter/blanklog:
   #   logs: 
   #     exclude:
@@ -360,10 +443,14 @@ service:
         processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, resource/k8s_events, batch, batch/2, ]
         exporters: [ otlp ]
       metrics:
-        receivers: [ prometheus, otlp, k8s_cluster, kubeletstats ]
+        receivers: [ prometheus, otlp, k8s_cluster ]
         processors: [ resourcedetection, resource, k8sattributes, resource/cluster, batch, batch/2]
+        exporters: [ otlp ]
+      metrics/kubeletstats:
+        receivers: [ kubeletstats ]
+        processors: [ resourcedetection, resource, k8sattributes, resource/cluster, metricstransform, cumulativetodelta, deltatorate, batch, batch/2]
         exporters: [ otlp ]
       metrics/hostmetrics:
         receivers: [ hostmetrics ]
-        processors: [ resourcedetection, resource, resource/hostmetrics, resource/cluster, k8sattributes, batch, batch/2]
+        processors: [ resourcedetection, resource, resource/hostmetrics, resource/cluster, k8sattributes, metricstransform, cumulativetodelta,  deltatorate, batch, batch/2]
         exporters: [ otlp ]
