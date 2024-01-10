@@ -17,7 +17,7 @@ FROM busybox:glibc as prod
 RUN mkdir -p /var/log
 WORKDIR /opt/mw-host-agent
 COPY --from=build /etc/ssl/certs /etc/ssl/certs
-COPY --from=build /tmp/mw-agent /opt/mw-host-agent/mw-agent
+COPY --from=build /tmp/mw-agent /usr/bin/mw-agent
 COPY --from=build /app/otel-config.yaml /etc/mw-agent/otel-config.yaml
 COPY --from=build /go/bin/dlv /usr/bin/dlv
-CMD ["/usr/bin/dlv", "--listen=:4040","--continue","--accept-multiclient", "--headless=true", "--api-version=2","exec", "/opt/mw-host-agent/mw-agent", "start"]
+CMD ["/usr/bin/dlv", "--listen=:4040","--continue","--accept-multiclient", "--headless=true", "--api-version=2","exec", "/usr/bin/mw-agent", "start"]

@@ -4,7 +4,8 @@ RUN apt-get update && apt-get install -y ca-certificates openssl
 RUN update-ca-certificates
 COPY . .
 ENV CGO_ENABLED=0
-RUN go get -d -v ./... && go mod tidy
+RUN go get -d -v ./... 
+RUN go mod tidy
 
 ARG AGENT_VERSION
 ENV AGENT_VERSION=$AGENT_VERSION
@@ -16,11 +17,10 @@ FROM busybox:glibc as prod
 WORKDIR /app
 COPY --from=build /etc/ssl/certs /etc/ssl/certs
 COPY --from=build /tmp/mw-agent /usr/bin/mw-agent
-COPY --from=build /app/configyamls-k8s/otel-config.yaml /app/otel-config.yaml
-COPY --from=build /app/configyamls-k8s/otel-config-nodocker.yaml /app/otel-config-nodocker.yaml
+COPY --from=build /app/otel-config.yaml /etc/mw-agent/otel-config.yaml
 COPY --from=build /go/bin/dlv /usr/bin/dlv
 
 # A symlink to support existing k8s agent users
 RUN ln -s /usr/bin/mw-agent /usr/bin/api-server
 
-CMD ["/usr/bin/dlv", "--listen=:4040","--continue","--accept-multiclient", "--headless=true", "--api-version=2","exec", "mw-agent", "start"]
+CMD ["/usr/bin/dlv", "--listen=:4040","--continue","--accept-multiclient", "--headless=true", "--api-version=2","exec", "/usr/bin/mw-agent", "start"]
