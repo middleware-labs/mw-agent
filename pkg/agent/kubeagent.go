@@ -216,6 +216,7 @@ func (c *KubeAgentMonitor) callRestartStatusAPI() error {
 	baseURL = baseURL.JoinPath(c.APIKey)
 	params := url.Values{}
 	params.Add("platform", "k8s")
+	params.Add("host_id", os.Getenv("MW_KUBE_CLUSTER_NAME"))
 	params.Add("cluster", os.Getenv("MW_KUBE_CLUSTER_NAME"))
 
 	// Add Query Parameters to the URL
@@ -335,6 +336,7 @@ func (c *KubeAgentMonitor) updateConfigMap(componentType ComponentType) error {
 	params := url.Values{}
 	params.Add("platform", "k8s")
 	params.Add("component_type", componentType.String())
+	params.Add("host_id", os.Getenv("MW_KUBE_CLUSTER_NAME"))
 	params.Add("cluster", os.Getenv("MW_KUBE_CLUSTER_NAME"))
 
 	// Add Query Parameters to the URL
@@ -380,11 +382,9 @@ func (c *KubeAgentMonitor) updateConfigMap(componentType ComponentType) error {
 		return ErrInvalidResponse
 	}
 
-	// apiYAMLConfig = apiResponse.Config.NoDocker
+	apiYAMLConfig = apiResponse.Config.Deployment
 	if componentType == DaemonSet {
 		apiYAMLConfig = apiResponse.Config.DaemonSet
-	} else {
-		apiYAMLConfig = apiResponse.Config.Deployment
 	}
 
 	yamlData, err := yaml.Marshal(apiYAMLConfig)
@@ -399,6 +399,7 @@ func (c *KubeAgentMonitor) updateConfigMap(componentType ComponentType) error {
 		existingDaemonsetConfigMap, err := c.Clientset.CoreV1().ConfigMaps(c.AgentNamespace).Get(context.Background(), c.DaemonsetConfigMap, metav1.GetOptions{})
 		if err != nil {
 			c.logger.Error("Error getting ConfigMap: %v\n" + err.Error())
+			return err
 		}
 
 		// Modify the content of the ConfigMap
@@ -408,6 +409,7 @@ func (c *KubeAgentMonitor) updateConfigMap(componentType ComponentType) error {
 		updatedConfigMap, err := c.Clientset.CoreV1().ConfigMaps(c.AgentNamespace).Update(context.Background(), existingDaemonsetConfigMap, metav1.UpdateOptions{})
 		if err != nil {
 			c.logger.Error("Error updating ConfigMap ", zap.String("error", err.Error()))
+			return err
 		}
 
 		c.logger.Info("ConfigMap updated successfully ", zap.String("configmap", updatedConfigMap.Name))
@@ -416,6 +418,7 @@ func (c *KubeAgentMonitor) updateConfigMap(componentType ComponentType) error {
 		existingDeploymentConfigMap, err := c.Clientset.CoreV1().ConfigMaps(c.AgentNamespace).Get(context.Background(), c.DeploymentConfigMap, metav1.GetOptions{})
 		if err != nil {
 			c.logger.Error("Error getting ConfigMap ", zap.String("error", err.Error()))
+			return err
 		}
 
 		// Modify the content of the ConfigMap
@@ -425,6 +428,7 @@ func (c *KubeAgentMonitor) updateConfigMap(componentType ComponentType) error {
 		updatedDeploymentConfigMap, err := c.Clientset.CoreV1().ConfigMaps(c.AgentNamespace).Update(context.Background(), existingDeploymentConfigMap, metav1.UpdateOptions{})
 		if err != nil {
 			c.logger.Error("Error updating ConfigMap", zap.String("error", err.Error()))
+			return err
 		}
 
 		c.logger.Info("ConfigMap updated successfully", zap.String("configmap", updatedDeploymentConfigMap.Name))
