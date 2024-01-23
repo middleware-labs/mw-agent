@@ -692,6 +692,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedete
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.84.0/go.mod h1:CXioiwzuR9YaxCtT+bobWx3aeNd6KTlFpIWlnNpfriI=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.84.0 h1:63ocfTOX403x0RlOIxiqoIxfhlnz5bYNjKFinaMUAFc=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.84.0/go.mod h1:mcxeCwBWxyIFEOfrHczRwmWknNU/mr7X/p1SKz5oKc8=
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.84.0 h1:XvMpqQaINsFvhSq1KLXEdPspjVInu3jH5vrczMMO4kQ=
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.84.0/go.mod h1:2A2By9RbrjOrFO2u4rn+hq0NTSgMdUZKeKH7wchoAe8=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.84.0 h1:4Rplr/R6Z9E/e6/F2jG4c4E7Vy9dTC576wi8cuVDG8M=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.84.0/go.mod h1:RPq12Un/5T3BUNQXO2445cJtFW8mTOjKY81+7wdWFEM=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.84.0 h1:Nv9JywcY7nBSZ3tIw/SjW0GUlgy/SeS05CIdRg0GqWk=

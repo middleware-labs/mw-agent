@@ -10,6 +10,11 @@ exporters:
       num_consumers: 100
       queue_size: 10000
 processors:
+  transform:
+    log_statements:
+      - context: log
+        statements:
+          - set(resource.attributes["service.name"], attributes["service.name"])
   attributes/logs:
     actions:
     - action: upsert
@@ -205,6 +210,7 @@ service:
       exporters:
       - otlp/2
       processors:
+      - transform
       - resource/logs
       - resourcedetection
       - resource/hostid

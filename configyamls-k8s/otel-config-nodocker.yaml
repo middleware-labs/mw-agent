@@ -182,6 +182,11 @@ exporters:
   otlp:
     endpoint: ${MW_TARGET}
 processors:
+  transform:
+    log_statements:
+      - context: log
+        statements:
+          - set(resource.attributes["service.name"], attributes["service.name"])
   metricstransform:
     transforms:
       - include: system.network.io
@@ -436,7 +441,7 @@ service:
         exporters: [  otlp ]
       logs:
         receivers: [fluentforward, otlp, filelog ]
-        processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, batch, batch/2 ]
+        processors: [ transform, resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, batch, batch/2 ]
         exporters: [ otlp ]
       logs/k8s_events:
         receivers: [ k8s_events ]
