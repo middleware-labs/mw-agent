@@ -1,0 +1,37 @@
+name: Integration Testing
+
+on:
+  push:
+    branches:
+      - "*"
+
+jobs:
+  integration_testing:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Create k8s Kind Cluster
+        uses: helm/kind-action@v1.8.0
+        with:
+          cluster_name: k8s-integration-testing
+
+      - name: Kafka Installation
+
+
+      - name: Install MW Agent
+        run: |
+          bash -c mw-kube-agent-install.sh
+          sleep 60
+
+#          i=1
+#          while true
+#          do
+#            echo "check $i"
+#            echo $(kubectl get pods -n "mw-agent-ns" --no-headers=true | awk '{print $3}')
+#            echo $(kubectl logs -n mw-agent-ns $pod_name)
+#            i=$i+1
+#            sleep 10
+#          done

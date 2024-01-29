@@ -162,8 +162,12 @@ receivers:
 exporters:
   logging:
     loglevel: warn
-  otlp:
-    endpoint: ${MW_TARGET}
+  kafka:
+    brokers:
+      - 10.105.74.242:9092
+#      - kafka-broker:9092
+    protocol_version: 2.0.0
+
 processors:
   # filter/blanklog:
   #   logs: 
@@ -339,31 +343,15 @@ processors:
 service:
     telemetry:
       logs:
-        level: "fatal"
+        level: "debug"
       metrics:
         address: 0.0.0.0:8888
-    #extensions:
-    #  - health_check
-    #  - zpages
-    #  - pprof
     pipelines:
-      traces:
-        receivers: [ otlp ]
-        processors: [ resourcedetection,resource, resource/cluster, attributes/traces, batch, batch/2 ]
-        exporters: [  otlp ]
-      logs:
-        receivers: [fluentforward, otlp, filelog ]
-        processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, batch, batch/2 ]
-        exporters: [ otlp ]
-      logs/k8s_events:
-        receivers: [ k8s_events ]
-        processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, resource/k8s_events, batch, batch/2, ]
-        exporters: [ otlp ]
       metrics:
-        receivers: [ prometheus, otlp, k8s_cluster, kubeletstats ]
+        receivers: [ k8s_cluster, kubeletstats ]
         processors: [ resourcedetection, resource, k8sattributes, resource/cluster, batch, batch/2]
-        exporters: [ otlp ]
+        exporters: [ kafka ]
       metrics/hostmetrics:
         receivers: [ hostmetrics ]
         processors: [ resourcedetection, resource, resource/hostmetrics, resource/cluster, k8sattributes, batch, batch/2]
-        exporters: [ otlp ]
+        exporters: [ kafka ]

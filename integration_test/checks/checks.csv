@@ -1,0 +1,5 @@
+check_no,metric,attributes
+1,"container.cpu.usage.total","['container.hostname','host.name','mw.account_key']"
+2,"container.cpu.usage.usermode","['container.hostname','host.name','mw.account_key']"
+3,"otelcol_exporter_enqueue_failed_metric_points","['exporter','service_instance_id','custom.attribute']"
+4,custom.metric,['cs1']

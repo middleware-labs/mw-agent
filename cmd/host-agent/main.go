@@ -154,7 +154,7 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			Value: func() string {
 				switch runtime.GOOS {
 				case "linux":
-					return filepath.Join("/etc", "mw-agent", "otel-config.yaml")
+					return filepath.Join("otel-config.yaml")
 				case "windows":
 					return filepath.Join(filepath.Dir(execPath), "otel-config.yaml")
 				}
@@ -245,18 +245,18 @@ func main() {
 						zap.String("version", agentVersion),
 						zap.Stringer("infra-platform", infraPlatform))
 
-					if cfg.APIURLForConfigCheck == "" {
-						cfg.APIURLForConfigCheck, err = agent.GetAPIURLForConfigCheck(cfg.Target)
-						// could not derive api url for config check from target
-						if err != nil {
-							logger.Info("could not derive api url for config check from target",
-								zap.String("target", cfg.Target))
-							return err
-						}
-
-						logger.Info("derived api url for config check",
-							zap.String("api-url-for-config-check", cfg.APIURLForConfigCheck))
-					}
+					//if cfg.APIURLForConfigCheck == "" {
+					//	cfg.APIURLForConfigCheck, err = agent.GetAPIURLForConfigCheck(cfg.Target)
+					//	// could not derive api url for config check from target
+					//	if err != nil {
+					//		logger.Info("could not derive api url for config check from target",
+					//			zap.String("target", cfg.Target))
+					//		return err
+					//	}
+					//
+					//	logger.Info("derived api url for config check",
+					//		zap.String("api-url-for-config-check", cfg.APIURLForConfigCheck))
+					//}
 
 					hostAgent := agent.NewHostAgent(
 						cfg,
@@ -269,13 +269,13 @@ func main() {
 					defer cancel()
 
 					// Listen to the config changes provided by Middleware API
-					if cfg.ConfigCheckInterval != "0" {
-						err = hostAgent.ListenForConfigChanges(ctx)
-						if err != nil {
-							logger.Info("error for listening for config changes", zap.Error(err))
-							return err
-						}
-					}
+					//if cfg.ConfigCheckInterval != "0" {
+					//	err = hostAgent.ListenForConfigChanges(ctx)
+					//	if err != nil {
+					//		logger.Info("error for listening for config changes", zap.Error(err))
+					//		return err
+					//	}
+					//}
 
 					u, err := url.Parse(cfg.Target)
 					if err != nil {
@@ -303,13 +303,13 @@ func main() {
 						return agent.ErrInvalidHostTags
 					}
 
-					yamlPath, err := hostAgent.GetUpdatedYAMLPath()
-					if err != nil {
-						logger.Error("error getting config file path", zap.Error(err))
-						return err
-					}
-
-					logger.Info("yaml path loaded", zap.String("path", yamlPath))
+					//yamlPath, err := hostAgent.GetUpdatedYAMLPath()
+					//if err != nil {
+					//	logger.Error("error getting config file path", zap.Error(err))
+					//	return err
+					//}
+					//
+					//logger.Info("yaml path loaded", zap.String("path", yamlPath))
 
 					configProvider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{
 						ResolverSettings: confmap.ResolverSettings{
