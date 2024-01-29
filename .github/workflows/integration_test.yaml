@@ -1,9 +1,9 @@
 name: Integration Testing
 
 on:
-  push:
+  pull_request:
     branches:
-      - "*"
+      - "ENG-1184"
 
 jobs:
   integration_testing:
@@ -19,7 +19,8 @@ jobs:
           cluster_name: k8s-integration-testing
 
       - name: Kafka Installation
-
+        run: 
+          echo "Hello world!"
 
       - name: Install MW Agent
         run: |
