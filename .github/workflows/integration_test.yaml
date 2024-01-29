@@ -19,7 +19,8 @@ jobs:
           cluster_name: k8s-integration-testing
 
       - name: Kafka Installation
-
+        run: 
+          echo "Hello world!"
 
       - name: Install MW Agent
         run: |
