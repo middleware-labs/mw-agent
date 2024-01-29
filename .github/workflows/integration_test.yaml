@@ -1,9 +1,9 @@
 name: Integration Testing
 
 on:
-  push:
+  pull_request:
     branches:
-      - "*"
+      - "ENG-1184"
 
 jobs:
   integration_testing:
