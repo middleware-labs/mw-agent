@@ -98,4 +98,3 @@ else
 fi
 
 echo "Middleware Kubernetes agent successfully installed !"
-
