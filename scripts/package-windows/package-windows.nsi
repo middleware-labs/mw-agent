@@ -7,12 +7,12 @@
 
 ;--------------------------------
 ;Including Header Files
-
 !include "nsDialogs.nsh"
 !include "MUI2.nsh"
 !include "LogicLib.nsh"
 !addplugindir "Plugins"
 !include "StrFunc.nsh"
+!include "windows-version.nsh"
 ${StrRep}
 ;--------------------------------
 ;Settings
@@ -64,6 +64,12 @@ ${StrRep}
 ;Variables
 
 Var StartMenuFolder
+
+Var InstallerStatus
+Var InstallerMessage
+Var InstallerOperation
+Var InstallServiceStatus
+Var StartServiceStatus
   
 ;--------------------------------
 ;Interface Settings
@@ -79,16 +85,15 @@ Var StartMenuFolder
   !insertmacro MUI_PAGE_LICENSE "${LICENSE_TEXT_FILE}"
   Page custom pgPageCreate pgPageLeave
   !insertmacro MUI_PAGE_DIRECTORY
+
   ;Start Menu Folder Page Configuration
   !define MUI_STARTMENUPAGE_REGISTRY_ROOT "HKLM" 
   !define MUI_STARTMENUPAGE_REGISTRY_KEY "Software\${APPNAME}" 
   !define MUI_STARTMENUPAGE_REGISTRY_VALUENAME "Start Menu Folder"
-  
   !insertmacro MUI_PAGE_STARTMENU Application $StartMenuFolder
-  
+
   !insertmacro MUI_PAGE_INSTFILES
   !insertmacro MUI_PAGE_FINISH
-
   !insertmacro MUI_UNPAGE_WELCOME
   !insertmacro MUI_UNPAGE_CONFIRM
   !insertmacro MUI_UNPAGE_INSTFILES
@@ -117,7 +122,17 @@ Var StartMenuFolder
 Var Dialog
 Var TextAPIKey
 Var TextTarget
+Var MWAPIKey
+Var MWTarget
 Var LogFilePath
+
+Function .onInit
+  Strcpy $InstallerOperation "install"
+  StrCpy $InstallerStatus "pending"
+  StrCpy $InstallerMessage "installer loaded"
+  StrCpy $InstallServiceStatus "not yet installed"
+  StrCpy $StartServiceStatus "not yet started"
+FunctionEnd
 
 Function onManualInstallClick
     pop $R9
@@ -161,16 +176,17 @@ Function pgPageCreate
 FunctionEnd
 
 Function PgPageLeave
-    ${NSD_GetText} $TextAPIKey $0
-    ${NSD_GetText} $TextTarget $1
-    ${If} $0 == ""
+    ${NSD_GetText} $TextAPIKey $MWAPIKey
+    ${NSD_GetText} $TextTarget $MWTarget
+    ${If} $MWAPIKey == ""
         MessageBox MB_OK "Please provide a valid Middleware API key"
         Abort
     ${EndIf}
-    ${If} $1 == ""
+    ${If} $MWTarget == ""
         MessageBox MB_OK "Please provide a valid Middleware target"
         Abort
     ${EndIf}
+    StrCpy $InstallerMessage "api key and target entered"
 FunctionEnd
 
 Function UpdateConfigFile
@@ -178,12 +194,12 @@ Function UpdateConfigFile
     FileOpen $4 "$INSTDIR\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}" w
     FileWrite $4 "api-key: $0 $\r$\n"
     FileWrite $4 "target: $1 $\r$\n"
-    FileWrite $4 "enable-synthetic-monitoring: true $\r$\n"
     FileWrite $4 "config-check-interval: $\"5m$\"$\r$\n"
     Strcpy $LogFilePath "$INSTDIR\mw-agent.log"
     ${StrRep} $R0 $LogFilePath "\" "\\"
     FileWrite $4 "logfile: $\"$R0$\"$\r$\n"
     FileClose $4
+    StrCpy $InstallerMessage "$INSTDIR\${CONFIG_FILE_NAME_IN_INSTALLED_DIR} file created"
 FunctionEnd
 ;--------------------------------
 ;Installer section
@@ -205,10 +221,13 @@ Section "install"
   ;ExecWait 'net start ${APP_NAME_IN_INSTALLED_DIR}'
   SimpleSC::InstallService ${APP_NAME_IN_INSTALLED_DIR} "Middleware Agent" "16" "2" "$\"$INSTDIR\${APP_NAME_IN_INSTALLED_DIR}.exe$\" start --config-file $\"$INSTDIR\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}$\"" "" "" ""
   Pop $0 ; returns an errorcode (<>0) otherwise success (0)
+  StrCpy $InstallServiceStatus $0
 
   SimpleSC::StartService "${APP_NAME_IN_INSTALLED_DIR}" "" 30
   Pop $0 ; returns an errorcode (<>0) otherwise success (0)
- 
+  StrCpy $StartServiceStatus $0
+  StrCpy $InstallerStatus "installed"
+  StrCpy $InstallerMessage "installer completed"
  
   ################################################################################################################
 
@@ -297,4 +316,26 @@ Section "uninstall"
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}"
 SectionEnd
 
+Function .onGUIEnd
+  # your code here
+   ReadRegStr $0 HKLM "System\CurrentControlSet\Control\ComputerName\ActiveComputerName" "ComputerName"
+   ${GetWindowsVersion} $R0
+   Var /GLOBAL data 
+   StrCpy $data "\
+   {\
+    $\"status$\": $\"$InstallerStatus$\",\
+    $\"metadata$\": {\
+      $\"script$\": $\"windows$\",\
+      $\"message$\": $\"$InstallerMessage$\",\
+      $\"operation$\": $\"$InstallerOperation$\",\
+      $\"windows_version$\": $\"$R0$\",\
+      $\"agent_version$\": $\"${VERSION}.${BUILDNUMBER}$\",\
+      $\"host_id$\": $\"$0$\",\
+      $\"script_logs$\": $\"agent_service_install_status: $InstallServiceStatus, agent_service_start_status: $StartServiceStatus$\"\
+    }\
+  }"
+
+  NScurl::http POST "$MWTarget/api/v1/agent/tracking/$MWAPIKey" MEMORY /HEADER "Content-Type: application/json" /DATA '$data' /END
+  Pop $0
+FunctionEnd
 ;--------------------------------
