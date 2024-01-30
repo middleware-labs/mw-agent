@@ -164,9 +164,9 @@ exporters:
     loglevel: warn
   kafka:
     brokers:
-      - 10.105.74.242:9092
-#      - kafka-broker:9092
+      - ${KAFKA_BROKER}
     protocol_version: 2.0.0
+    encoding: otlp_json
 
 processors:
   # filter/blanklog:

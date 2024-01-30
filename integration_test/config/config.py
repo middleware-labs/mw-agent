@@ -6,7 +6,7 @@ from enum import Enum
 class Config(Enum):
     # Kafka Configuration
     BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVER", "localhost:9092")
-    POLLING_INTERVAL = int(os.getenv("KAFKA_CONSUMER_POLLING_INTERVAL", "2"))
+    POLLING_INTERVAL = int(os.getenv("KAFKA_CONSUMER_POLLING_INTERVAL", "30"))
     KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "otlp_metrics")
 
     # Checks file path

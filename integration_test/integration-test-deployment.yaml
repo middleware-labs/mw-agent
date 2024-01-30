@@ -26,7 +26,7 @@ spec:
       containers:
         - env:
             - name: KAFKA_BOOTSTRAP_SERVER
-              value: 10.105.74.242:9092
+              value: ${KAFKA_BOOTSTRAP_SERVER}
           image: ghcr.io/middleware-labs/integration-test:dp
           imagePullPolicy: Always
           name: integration-test

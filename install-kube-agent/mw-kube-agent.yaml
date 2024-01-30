@@ -239,6 +239,8 @@ spec:
             - mw-agent
             - start
           env:
+            - name: KAFKA_BROKER
+              value: "KAFKA_BROKER_VALUE"
             - name: MW_TARGET
               value: "TARGET_VALUE"
             - name: MW_API_KEY

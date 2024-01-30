@@ -1,4 +1,5 @@
 import json
+import logging
 
 from kafka import KafkaConsumer
 
@@ -11,23 +12,24 @@ class MetricsConsumer:
     # Kafka consumer to consume the metrics messages
     @staticmethod
     def get_messages():
-        print("IN: get_messages")
+        logging.warning("IN: get_messages")
         offset = "earliest"
         messages = []
         consumer = KafkaConsumer(
             bootstrap_servers=Config.BOOTSTRAP_SERVERS.value,
             consumer_timeout_ms=(Config.POLLING_INTERVAL.value * 1000),
-            # auto_offset_reset=offset
+            auto_offset_reset=offset,
+            group_id="integration_test_group"
         )
-        print("\tConsumer Created...!!")
+        logging.warning("\tConsumer Created...!!")
         consumer.subscribe([Config.KAFKA_TOPIC.value])
-        print(f"\tTopic {Config.KAFKA_TOPIC.value} Subscribed...!!")
+        logging.warning(f"\tTopic {Config.KAFKA_TOPIC.value} Subscribed...!!")
         for message in consumer:
             json_data = json.loads(message.value)
             messages.append(json_data)
-            print(len(messages))
+            logging.info(len(messages))
 
-        print("\tClosing the consumer")
+        logging.warning("\tClosing the consumer")
         consumer.close()
-        print("OUT: get_messages")
+        logging.warning("OUT: get_messages")
         return messages

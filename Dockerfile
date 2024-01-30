@@ -3,7 +3,7 @@ WORKDIR /app
 # COPY . .
 RUN apt-get update && apt-get install -y ca-certificates openssl
 RUN update-ca-certificates
-COPY /build/mw-kube-agent /usr/bin/mw-agent
+COPY ./build/mw-kube-agent /usr/bin/mw-agent
 COPY configyamls-k8s/otel-config.yaml /app/otel-config.yaml
 COPY configyamls-k8s/otel-config-nodocker.yaml /app/otel-config-nodocker.yaml
 
