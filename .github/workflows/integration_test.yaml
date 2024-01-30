@@ -20,8 +20,8 @@ jobs:
 
       - name: Kafka Installation
         run: |
-          helm repo add cloudhut https://raw.githubusercontent.com/cloudhut/charts/master/archives
-          helm repo update
+          helm repo add kafka-repo https://helm-charts.itboon.top/kafka
+          helm repo update kafka-repo
           helm upgrade --install kafka   --namespace kafka-demo   --create-namespace   --set broker.combinedMode.enabled="true"   --set broker.persistence.enabled="false"   kafka-repo/kafka
           sleep 10
 
