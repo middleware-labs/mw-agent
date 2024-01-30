@@ -75,7 +75,7 @@ if [ "${MW_KUBE_AGENT_INSTALL_METHOD}" = "manifest" ] || [ "${MW_KUBE_AGENT_INST
   sudo su << EOSUDO
   mkdir -p $MW_KUBE_AGENT_HOME
   touch $MW_KUBE_AGENT_HOME/agent.yaml
-  cp /home/parth/Desktop/mw/mw-agent/mw-kube-agent.yaml $MW_KUBE_AGENT_HOME/agent.yaml
+  cp install-kube-agent/mw-kube-agent.yaml $MW_KUBE_AGENT_HOME/agent.yaml
 EOSUDO
 
   if [ -z "${MW_KUBECONFIG}" ]; then
