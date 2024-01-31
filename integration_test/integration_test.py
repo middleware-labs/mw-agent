@@ -19,11 +19,18 @@ def main():
 
     # Generate the final report and act accordingly.
     report = checks.generate_report()
-    if report:
-        raise Exception(report)
-    else:
-        logging.warning("All the checks have been run successfully")
-    logging.warning("Integration testing completed...")
+
+    # Write the report content in file
+    with open('/usr/bin/report.txt', 'w') as file:
+        if report:
+            logging.warning(f"Checks failed: {report}")
+            for check in report:
+                file.write(check + '\n')
+        else:
+            logging.warning("Checks passed: All the checks have been run successfully")
+            file.write("All the checks have been run successfully")
+
+    # logging.warning("Integration testing completed...")
 
 
 if __name__ == '__main__':

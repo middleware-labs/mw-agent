@@ -31,13 +31,25 @@ jobs:
           bash -c "$(cat install-kube-agent/mw-kube-agent-install.sh)"
           sleep 100
           kubectl delete ns mw-agent-ns
+          kubectl delete clusterrole mw-cluster-role
+          kubectl delete clusterrolebinding mw-app
           sleep 10
 
       - name: Run integration test
         run: |
           export KAFKA_BOOTSTRAP_SERVER=$KAFKA_BROKER
           envsubst < integration_test/integration-test-deployment.yaml | kubectl apply -f -
+          sleep 60
+          kubectl cp default/integration-test-pod:/usr/bin/report.txt ~/report.txt
+          cat ~/report.txt
           
+          if grep -q "All the checks have been run successfully" "~/report.txt"; then
+            echo "Integration test run successfully"
+          else
+            exit 1
+          fi
+          
+          kubectl delete pod integration-test-pod
 
 #          i=1
 #          while true
