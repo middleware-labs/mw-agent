@@ -39,7 +39,7 @@ jobs:
         run: |
           export KAFKA_BOOTSTRAP_SERVER=$KAFKA_BROKER
           envsubst < integration_test/integration-test-deployment.yaml | kubectl apply -f -
-          sleep 60
+          sleep 80
           kubectl cp default/integration-test-pod:/usr/bin/report.txt ~/report.txt
           cat ~/report.txt
           
