@@ -37,10 +37,10 @@ jobs:
           export KAFKA_BOOTSTRAP_SERVER=$KAFKA_BROKER
           envsubst < integration_test/integration-test-deployment.yaml | kubectl apply -f -
           sleep 60
-          echo "Installing tar in linux"
-          sudo apt -y install tar
+
           echo "Copy from pod to local"
-          kubectl cp default/integration-test-pod:/usr/bin/report.txt ~/report.txt
+#          kubectl cp default/integration-test-pod:/usr/bin/report.txt ~/report.txt
+          kubectl exec -it integration-test-pod -- cat /usr/bin/report.txt &> $HOME/report.txt
           if grep -q "All the checks have been run successfully" "$HOME/report.txt"; then
             echo "Integration test run successfully"
           else
