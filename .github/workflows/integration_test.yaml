@@ -39,7 +39,6 @@ jobs:
           sleep 60
 
           echo "Copy from pod to local"
-#          kubectl cp default/integration-test-pod:/usr/bin/report.txt ~/report.txt
           kubectl exec -it integration-test-pod -- cat /usr/bin/report.txt &> $HOME/report.txt
           if grep -q "All the checks have been run successfully" "$HOME/report.txt"; then
             echo "Integration test run successfully"
