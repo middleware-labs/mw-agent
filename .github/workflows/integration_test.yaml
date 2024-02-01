@@ -18,38 +18,71 @@ jobs:
         with:
           cluster_name: k8s-integration-testing
 
-      - name: Kafka Installation
+      - name: All in one
         run: |
           helm repo add kafka-repo https://helm-charts.itboon.top/kafka
           helm repo update kafka-repo
           helm upgrade --install kafka   --namespace kafka-demo   --create-namespace   --set broker.combinedMode.enabled="true"   --set broker.persistence.enabled="false"   kafka-repo/kafka
           sleep 10
-
-      - name: Install MW Agent
-        run: |
-          export KAFKA_BROKER=$(kubectl -n kafka-demo get services kafka-broker -o jsonpath='{.spec.clusterIP}'):9092 
+          
+          
+          export KAFKA_BROKER=$(kubectl -n kafka-demo get services kafka-broker -o jsonpath='{.spec.clusterIP}'):9092
           bash -c "$(cat install-kube-agent/mw-kube-agent-install.sh)"
           sleep 100
           kubectl delete ns mw-agent-ns
           kubectl delete clusterrole mw-cluster-role
           kubectl delete clusterrolebinding mw-app
-          sleep 10
-
-      - name: Run integration test
-        run: |
+          
+          
           export KAFKA_BOOTSTRAP_SERVER=$KAFKA_BROKER
           envsubst < integration_test/integration-test-deployment.yaml | kubectl apply -f -
           sleep 60
           kubectl cp default/integration-test-pod:/usr/bin/report.txt ~/report.txt
-          cat ~/report.txt
-          
-          if grep -q "All the checks have been run successfully" "~/report.txt"; then
+          if grep -q "All the checks have been run successfully" "$HOME/report.txt"; then
             echo "Integration test run successfully"
           else
+            cat ~/report.txt
             exit 1
           fi
-          
-          kubectl delete pod integration-test-pod
+
+#      - name: Kafka Installation
+#        run: |
+#          helm repo add kafka-repo https://helm-charts.itboon.top/kafka
+#          helm repo update kafka-repo
+#          helm upgrade --install kafka   --namespace kafka-demo   --create-namespace   --set broker.combinedMode.enabled="true"   --set broker.persistence.enabled="false"   kafka-repo/kafka
+#          sleep 10
+#
+#      - name: Install MW Agent
+#        run: |
+#          export KAFKA_BROKER=$(kubectl -n kafka-demo get services kafka-broker -o jsonpath='{.spec.clusterIP}'):9092
+#          bash -c "$(cat install-kube-agent/mw-kube-agent-install.sh)"
+#          sleep 100
+#          kubectl delete ns mw-agent-ns
+#          kubectl delete clusterrole mw-cluster-role
+#          kubectl delete clusterrolebinding mw-app
+#          sleep 10
+#
+#      - name: Run integration test
+#        run: |
+#          export KAFKA_BOOTSTRAP_SERVER=$KAFKA_BROKER
+#          envsubst < integration_test/integration-test-deployment.yaml | kubectl apply -f -
+#          sleep 60
+#          kubectl cp default/integration-test-pod:/usr/bin/report.txt ~/report.txt
+#          cat ~/report.txt
+#
+#          if grep -q "All the checks have been run successfully" "~/report.txt"; then
+#            echo "Integration test run successfully"
+#          else
+#            exit 1
+#          fi
+#
+#          kubectl delete pod integration-test-pod
+
+
+
+
+
+
 
 #          i=1
 #          while true

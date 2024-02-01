@@ -18,8 +18,7 @@ class MetricsConsumer:
         consumer = KafkaConsumer(
             bootstrap_servers=Config.BOOTSTRAP_SERVERS.value,
             consumer_timeout_ms=(Config.POLLING_INTERVAL.value * 1000),
-            auto_offset_reset=offset,
-            group_id="integration_test_group"
+            auto_offset_reset=offset
         )
         logging.warning("\tConsumer Created...!!")
         consumer.subscribe([Config.KAFKA_TOPIC.value])
