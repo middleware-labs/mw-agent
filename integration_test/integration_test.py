@@ -1,3 +1,5 @@
+import time
+
 from checks import Checks
 from consumer import MetricsConsumer
 import logging
@@ -30,6 +32,8 @@ def main():
             logging.warning("Checks passed: All the checks have been run successfully")
             file.write("All the checks have been run successfully")
 
+    while True:
+        time.sleep(10)
     # logging.warning("Integration testing completed...")
 
 
