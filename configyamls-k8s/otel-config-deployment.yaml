@@ -34,13 +34,11 @@ exporters:
   otlp:
     endpoint: ${MW_TARGET}
 processors:
-  # filter/blanklog:
-  #   logs: 
-  #     exclude:
-  #       match_type: strict
-  #       bodies:
-  #       - \n
-  #       - {}\n
+  transform:
+      log_statements:
+        - context: log
+          statements:
+            - set(resource.attributes["service.name"], attributes["service.name"])
   k8sattributes:
     auth_type: "serviceAccount"
     passthrough: false
@@ -215,7 +213,7 @@ service:
         exporters: [  otlp ]
       logs:
         receivers: [fluentforward, k8s_events, otlp ]
-        processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, batch, batch/2 ]
+        processors: [ transform, resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, batch, batch/2 ]
         exporters: [ otlp ]
       metrics:
         receivers: [ prometheus, otlp, k8s_cluster ]
