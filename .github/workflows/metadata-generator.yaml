@@ -1,0 +1,60 @@
+name: Update Links and Dependencies
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag for Metadata Generation'
+        required: true
+  push:
+    branch:
+      - metadata-generation
+
+jobs:
+  update_urls:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Install jq and sed
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+          sudo apt-get install -y sed
+
+      - name: Read go.mod and Update Dependencies
+        id: update-dependencies
+        run: |
+          ENTRY=$(grep "replace.*github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver" go.mod)
+          VERSION=$(echo $ENTRY | awk -F'-| ' '{print $NF}')
+          echo "::set-output name=version::$VERSION"
+
+      - name: Update Links in input.json
+        run: |
+          jq '.[] |= . + {"files": [.files[] | sub("/opentelemetry-collector-contrib/main"; "/opentelemetry-collector-contrib/'${{ steps.update-dependencies.outputs.version }}'") ] }' metadata/base/metrics.json > metadata.json
+
+      - name: Publishing DEB with Github Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            Release ${{ github.ref }}
+          draft: true
+          prerelease: true
+
+      - name: Upload metadata.json as Release Asset
+        id: upload_asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./metadata.json
+          asset_name: metadata.json
+          asset_content_type: application/json
