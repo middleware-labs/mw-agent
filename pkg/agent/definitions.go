@@ -125,36 +125,43 @@ type KubeAgentMonitorConfig struct {
 	DeploymentConfigMap string
 }
 
-// WithDaemonset sets the daemonset name for the agent
-func WithDaemonset(v string) KubeAgentMonitorOptions {
+// WithKubeAgentMonitorClusterName sets the cluster name
+func WithKubeAgentMonitorClusterName(v string) KubeAgentMonitorOptions {
+	return func(k *KubeAgentMonitor) {
+		k.ClusterName = v
+	}
+}
+
+// WithKubeAgentMonitorDaemonset sets the daemonset name for the agent
+func WithKubeAgentMonitorDaemonset(v string) KubeAgentMonitorOptions {
 	return func(k *KubeAgentMonitor) {
 		k.Daemonset = v
 	}
 }
 
-// WithDeployment sets the deployment name for the agent
-func WithDeployment(v string) KubeAgentMonitorOptions {
+// WithKubeAgentMonitorDeployment sets the deployment name for the agent
+func WithKubeAgentMonitorDeployment(v string) KubeAgentMonitorOptions {
 	return func(k *KubeAgentMonitor) {
 		k.Deployment = v
 	}
 }
 
-// WithAgentNamespace sets the namespace where the agent is running
-func WithAgentNamespace(v string) KubeAgentMonitorOptions {
+// WithKubeAgentMonitorAgentNamespace sets the namespace where the agent is running
+func WithKubeAgentMonitorAgentNamespace(v string) KubeAgentMonitorOptions {
 	return func(k *KubeAgentMonitor) {
 		k.AgentNamespace = v
 	}
 }
 
-// WithDaemonsetConfigMap sets the configmap name for the agent daemonset
-func WithDaemonsetConfigMap(v string) KubeAgentMonitorOptions {
+// WithKubeAgentMonitorDaemonsetConfigMap sets the configmap name for the agent daemonset
+func WithKubeAgentMonitorDaemonsetConfigMap(v string) KubeAgentMonitorOptions {
 	return func(k *KubeAgentMonitor) {
 		k.DaemonsetConfigMap = v
 	}
 }
 
-// WithDeploymentConfigMap sets the configmap name for the agent deployment
-func WithDeploymentConfigMap(v string) KubeAgentMonitorOptions {
+// WithKubeAgentMonitorDeploymentConfigMap sets the configmap name for the agent deployment
+func WithKubeAgentMonitorDeploymentConfigMap(v string) KubeAgentMonitorOptions {
 	return func(k *KubeAgentMonitor) {
 		k.DeploymentConfigMap = v
 	}

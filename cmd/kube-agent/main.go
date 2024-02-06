@@ -55,6 +55,14 @@ func getFlags(cfg *agent.KubeConfig) []cli.Flag {
 			DefaultText: "60s",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "api-url-for-config-check",
+			EnvVars:     []string{"MW_API_URL_FOR_CONFIG_CHECK"},
+			Destination: &cfg.APIURLForConfigCheck,
+			DefaultText: "",
+			Value:       "",
+			Hidden:      true,
+		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "docker-endpoint",
 			EnvVars:     []string{"MW_DOCKER_ENDPOINT"},
 			Usage:       "Set the endpoint for Docker socket if different from default",
@@ -294,16 +302,44 @@ func main() {
 				Flags: flags,
 				Action: func(c *cli.Context) error {
 
+					if cfg.APIURLForConfigCheck == "" {
+						var err error
+						cfg.APIURLForConfigCheck, err = agent.GetAPIURLForConfigCheck(cfg.Target)
+						// could not derive api url for config check from target
+						if err != nil {
+							logger.Info("could not derive api url for config check from target",
+								zap.String("target", cfg.Target))
+							return err
+						}
+
+						logger.Info("derived api url for config check",
+							zap.String("api-url-for-config-check", cfg.APIURLForConfigCheck))
+					}
+
+					ctx, cancel := context.WithCancel(c.Context)
+					defer cancel()
+
 					kubeAgentMonitor := agent.NewKubeAgentMonitor(cfg,
-						agent.WithAgentNamespace("mw-agent-ns"),
-						agent.WithDaemonset("mw-kube-agent"),
-						agent.WithDeployment("mw-kube-agent"),
-						agent.WithDaemonsetConfigMap("mw-daemonset-otel-config"),
-						agent.WithDeploymentConfigMap("mw-deployment-otel-config"),
+						agent.WithKubeAgentMonitorClusterName(os.Getenv("MW_KUBE_CLUSTER_NAME")),
+						agent.WithKubeAgentMonitorAgentNamespace("mw-agent-ns"),
+						agent.WithKubeAgentMonitorDaemonset("mw-kube-agent"),
+						agent.WithKubeAgentMonitorDeployment("mw-kube-agent"),
+						agent.WithKubeAgentMonitorDaemonsetConfigMap("mw-daemonset-otel-config"),
+						agent.WithKubeAgentMonitorDeploymentConfigMap("mw-deployment-otel-config"),
 					)
 
-					kubeAgentMonitor.SetClientSet()
-					kubeAgentMonitor.ListenForConfigChanges(context.TODO())
+					err := kubeAgentMonitor.SetClientSet()
+					if err != nil {
+						logger.Error("collector server run finished with error", zap.Error(err))
+						return err
+					}
+					if cfg.ConfigCheckInterval != "0" {
+						err = kubeAgentMonitor.ListenForConfigChanges(ctx)
+						if err != nil {
+							logger.Info("error for listening for config changes", zap.Error(err))
+							return err
+						}
+					}
 					return nil
 				},
 			},
