@@ -53,7 +53,7 @@ type KubeAgent struct {
 }
 
 type KubeAgentMonitor struct {
-	Clientset *kubernetes.Clientset
+	Clientset kubernetes.Interface
 	KubeAgentMonitorConfig
 	KubeConfig
 	ClusterName string
@@ -179,7 +179,7 @@ func (k *KubeAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 // ListenForConfigChanges listens for configuration changes for the
 // agent on the Middleware backend and restarts the agent if configuration
 // has changed.
-func (c *KubeAgentMonitor) ListenForConfigChanges(ctx context.Context) error {
+func (c *KubeAgentMonitor) ListenForKubeOtelConfigChanges(ctx context.Context) error {
 
 	restartInterval, err := time.ParseDuration(c.ConfigCheckInterval)
 	if err != nil {

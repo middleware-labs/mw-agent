@@ -334,7 +334,7 @@ func main() {
 						return err
 					}
 					if cfg.ConfigCheckInterval != "0" {
-						err = kubeAgentMonitor.ListenForConfigChanges(ctx)
+						err = kubeAgentMonitor.ListenForKubeOtelConfigChanges(ctx)
 						if err != nil {
 							logger.Info("error for listening for config changes", zap.Error(err))
 							return err
