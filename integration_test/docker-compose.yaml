@@ -1,13 +1,8 @@
 version: '3'
 services:
   integration_test:
-    image: mwparth/integration-test:dp
+    image: ghcr.io/middleware-labs/integration-test:dp
     ports:
       - "5000:5000"
     environment:
-      - KAFKA_BOOTSTRAP_SERVER=kafka:19092
-    networks:
-      - kafka-stack-docker-compose_default
-networks:
-  kafka-stack-docker-compose_default:
-    external: true
+      - KAFKA_BOOTSTRAP_SERVER=localhost:9092
