@@ -37,5 +37,5 @@ services:
       - zoo1
 
   integration_test:
-    image: mwparth/integration-test:dp
+    image: ghcr.io/middleware-labs/integration-test:dp
     network_mode: host
