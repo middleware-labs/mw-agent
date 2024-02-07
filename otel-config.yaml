@@ -1,14 +1,20 @@
 exporters:
   logging:
     loglevel: debug
-  otlp/2:
-    endpoint: ${MW_TARGET}
-    headers:
-      authorization: ${MW_API_KEY}
-    sending_queue:
-      enabled: true
-      num_consumers: 100
-      queue_size: 10000
+#  otlp/2:
+#    endpoint: ${MW_TARGET}
+#    headers:
+#      authorization: ${MW_API_KEY}
+#    sending_queue:
+#      enabled: true
+#      num_consumers: 100
+#      queue_size: 10000
+  kafka:
+    brokers:
+      - localhost:9092
+    protocol_version: 2.0.0
+    encoding: "otlp_json"
+
 processors:
   attributes/logs:
     actions:
@@ -201,22 +207,23 @@ receivers:
           - 127.0.0.1:8888
 service:
   pipelines:
-    logs:
-      exporters:
-      - otlp/2
-      processors:
-      - resource/logs
-      - resourcedetection
-      - resource/hostid
-      - attributes/logs
-      - batch
-      receivers:
-      - otlp
-      - fluentforward
-      - filelog
+#    logs:
+#      exporters:
+#      - otlp/2
+#      processors:
+#      - resource/logs
+#      - resourcedetection
+#      - resource/hostid
+#      - attributes/logs
+#      - batch
+#      receivers:
+#      - otlp
+#      - fluentforward
+#      - filelog
     metrics:
       exporters:
-      - otlp/2
+#      - otlp/2
+      - kafka
       processors:
       - resource
       - resourcedetection
@@ -227,17 +234,17 @@ service:
       - docker_stats
       - otlp
       - prometheus
-    traces:
-      exporters:
-      - otlp/2
-      processors:
-      - resource/traces
-      - resourcedetection
-      - resource/hostid
-      - attributes/traces
-      - batch
-      receivers:
-      - otlp
+#    traces:
+#      exporters:
+#      - otlp/2
+#      processors:
+#      - resource/traces
+#      - resourcedetection
+#      - resource/hostid
+#      - attributes/traces
+#      - batch
+#      receivers:
+#      - otlp
   telemetry:
     logs:
       level: fatal

@@ -1,0 +1,282 @@
+# Creating namespace where all the Middleware Agent related components will run
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: "NAMESPACE_VALUE"
+---
+# To establish permissions for Middleware Agent
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    k8s-app: mw-app
+  name: mw-service-account
+  namespace: "NAMESPACE_VALUE"
+---
+# Exposing service for Middleware Agent Daemonset
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    k8s-app: mw-app
+  name: mw-service
+  namespace: "NAMESPACE_VALUE"
+spec:
+  type: NodePort
+  ports:
+    - port: 443
+      name: "grpc"
+      targetPort: 8443
+    - port: 9319
+      name: "grpc2"
+      targetPort: 9319
+    - port: 9320
+      name: "http"
+      targetPort: 9320
+    - port: 8006
+      name: "fluent"
+      targetPort: 8006
+  selector:
+    k8s-app: mw-app
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    k8s-app: mw-app
+  name: mw-app-certs
+  namespace: "NAMESPACE_VALUE"
+type: Opaque
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    k8s-app: mw-app
+  name: mw-app-csrf
+  namespace: "NAMESPACE_VALUE"
+type: Opaque
+data:
+  csrf: ""
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    k8s-app: mw-app
+  name: mw-app-key-holder
+  namespace: "NAMESPACE_VALUE"
+type: Opaque
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  labels:
+    k8s-app: mw-app
+  name: mw-app-settings
+  namespace: "NAMESPACE_VALUE"
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  labels:
+    k8s-app: mw-app
+  name: mw-role
+  namespace: "NAMESPACE_VALUE"
+rules:
+  # Allow Dashboard to get, update and delete Dashboard exclusive secrets.
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["mw-app-key-holder", "mw-app-certs", "mw-app-csrf"]
+    verbs: ["get", "update", "delete"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/exec"]
+    verbs: ["get", "list", "delete", "patch", "create"]
+  # Allow Dashboard to get and update 'mw-app-settings' config map.
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["mw-app-settings"]
+    verbs: ["get", "update"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+    # Allow Dashboard to get metrics.
+  - apiGroups: [""]
+    resources: ["services"]
+    resourceNames: ["heapster", "dashboard-metrics-scraper"]
+    verbs: ["proxy"]
+  - apiGroups: [""]
+    resources: ["services/proxy"]
+    resourceNames: ["heapster", "http:heapster:", "https:heapster:", "dashboard-metrics-scraper", "http:dashboard-metrics-scraper"]
+    verbs: ["get"]
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  labels:
+    k8s-app: kubernetes-dashboard
+  name: mw-cluster-role
+  namespace: "NAMESPACE_VALUE"
+rules:
+  # Allow Metrics Scraper to get metrics from the Metrics server
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["pods", "nodes"]
+    verbs: ["get", "list", "watch"]
+
+  # Other resources
+  - apiGroups: [""]
+    resources: ["nodes", "nodes/stats", "nodes/proxy", "namespaces", "pods", "serviceaccounts", "services", "configmaps", "endpoints", "persistentvolumeclaims", "replicationcontrollers", "replicationcontrollers/scale", "persistentvolumeclaims", "persistentvolumes", "bindings", "events", "limitranges", "namespaces/status", "pods/log", "pods/status", "replicationcontrollers/status", "resourcequotas", "resourcequotas/status"]
+    verbs: ["get", "list", "watch"]
+  
+  - apiGroups: ["apps"]
+    resources: ["daemonsets", "deployments", "deployments/scale", "replicasets", "replicasets/scale", "statefulsets"]
+    verbs: ["get", "list", "watch", "patch"]
+
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["batch"]
+    resources: ["cronjobs", "jobs"]
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["extensions"]
+    resources: ["daemonsets", "deployments", "deployments/scale", "networkpolicies", "replicasets", "replicasets/scale", "replicationcontrollers/scale"]
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses", "networkpolicies"]
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["policy"]
+    resources: ["poddisruptionbudgets"]
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses", "volumeattachments"]
+    verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["clusterrolebindings", "clusterroles", "roles", "rolebindings", ]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    k8s-app: mw-app
+  name: mw-role-binding
+  namespace: "NAMESPACE_VALUE"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: mw-role
+subjects:
+  - kind: ServiceAccount
+    name: mw-service-account
+    namespace: "NAMESPACE_VALUE"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: mw-app
+  namespace: "NAMESPACE_VALUE"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: mw-cluster-role
+subjects:
+  - kind: ServiceAccount
+    name: mw-service-account
+    namespace: "NAMESPACE_VALUE"
+---
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: mw-kube-agent
+  namespace: "NAMESPACE_VALUE"
+spec:
+  selector:
+    matchLabels:
+      app: mw-app
+  template:
+    metadata:
+      labels:
+        app: mw-app
+        k8s-app: mw-app
+    spec:
+      tolerations:
+      # these tolerations are to have the daemonset runnable on control plane nodes
+      # remove them if your control plane nodes should not run pods
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      - operator: "Exists"
+        effect: "NoSchedule"
+      - operator: "Exists"
+        effect: "NoExecute"
+      hostNetwork: true
+      volumes:
+      # volume binding for log collection 
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varrun
+        hostPath:
+          path: /var/run/docker.sock
+      - name: runcontainerd
+        hostPath:
+          path: /run/containerd/containerd.sock
+      # volume binding for log collection
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+      containers:
+        - args:
+            - mw-agent
+            - start
+          env:
+            - name: KAFKA_BROKER
+              value: "KAFKA_BROKER_VALUE"
+            - name: MW_TARGET
+              value: "TARGET_VALUE"
+            - name: MW_API_KEY
+              value: "MW_API_KEY_VALUE"
+            - name: MW_DOCKER_ENDPOINT
+              value: "MW_DOCKER_ENDPOINT_VALUE"
+            - name: MW_KUBE_CLUSTER_NAME
+              value: "MW_KUBE_CLUSTER_NAME_VALUE"
+            - name: K8S_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: K8S_NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+          image: ghcr.io/middleware-labs/mw-kube-agent:parth
+          imagePullPolicy: Always
+          name: mw-kube-agent
+          securityContext:
+            privileged: true
+          volumeMounts:
+          - mountPath: /var/log
+            name: varlog
+            readOnly: true
+          - mountPath: /var/run/docker.sock
+            name: varrun
+            readOnly: true
+          - mountPath: /run/containerd/containerd.sock
+            name: runcontainerd
+            readOnly: true
+          - mountPath: /var/lib/docker/containers
+            name: varlibdockercontainers
+            readOnly: true
+          resources: {}
+      imagePullSecrets:
+        - name: gh-regcred
+      restartPolicy: Always
+      serviceAccountName: mw-service-account
