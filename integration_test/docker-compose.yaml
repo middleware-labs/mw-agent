@@ -1,8 +1,5 @@
 version: '3'
 services:
   integration_test:
-    image: ghcr.io/middleware-labs/integration-test:dp
-    ports:
-      - "5000:5000"
-    environment:
-      - KAFKA_BOOTSTRAP_SERVER=localhost:9092
+    image: mwparth/integration-test:dp
+    network_mode: host
