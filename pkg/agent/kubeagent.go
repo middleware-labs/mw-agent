@@ -12,6 +12,7 @@ import (
 	yaml "gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor"
@@ -151,6 +152,7 @@ func (k *KubeAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 		loggingexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
+		kafkaexporter.NewFactory(),
 	}...)
 	if err != nil {
 		return otelcol.Factories{}, err
