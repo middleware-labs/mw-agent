@@ -351,6 +351,7 @@ func (c *HostAgent) isIPPortFormat(endpoint string) bool {
 	// Regex for IPv4:PORT format, also consider localhost as an IP
 	regexPattern := `(?:localhost|((?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))):(?:[0-9]|[1-9][0-9]{1,4}|[1-5][0-9]{4}|6[0-5][0-5][0-3][0-5])$`
 
+
 	// Compile the regular expression
 	regex, err := regexp.Compile(regexPattern)
 	if err != nil {
@@ -440,6 +441,7 @@ func (c *HostAgent) callRestartStatusAPI() error {
 			return err
 		}
 		if err := c.restartHostAgent(); err != nil {
+
 			c.logger.Error("error restarting mw-agent", zap.Error(err))
 			return err
 		}
