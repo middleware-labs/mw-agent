@@ -44,3 +44,5 @@ services:
       - kafka1
     environment:
       - KAFKA_BOOTSTRAP_SERVER=localhost:9092
+    restart: on-failure
+    restart_delay: 1m
