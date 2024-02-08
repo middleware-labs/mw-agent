@@ -36,6 +36,18 @@ services:
     depends_on:
       - zoo1
 
+  kowl:
+    image: quay.io/cloudhut/kowl:v1.2.1
+    restart: on-failure
+    hostname: kowl
+    volumes:
+      - ./config.yaml:/etc/kowl/config.yaml
+    ports:
+      - "8080:8080"
+    entrypoint: ./kowl --config.filepath=/etc/kowl/config.yaml
+    depends_on:
+      - kafka1
+
   integration_test:
     image: ghcr.io/middleware-labs/integration-test:terraform
     network_mode: host

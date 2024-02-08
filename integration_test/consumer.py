@@ -24,6 +24,7 @@ class MetricsConsumer:
         consumer.subscribe([Config.KAFKA_TOPIC.value])
         logging.warning(f"\tTopic {Config.KAFKA_TOPIC.value} Subscribed...!!")
         for message in consumer:
+            logging.info(f"\nloading...{message.value}")
             json_data = json.loads(message.value)
             messages.append(json_data)
             logging.info(len(messages))
