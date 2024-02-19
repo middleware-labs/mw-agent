@@ -1,0 +1,34 @@
+name: Kube Agent - Docker
+
+on:
+  workflow_dispatch:
+    inputs:
+      type:
+        description: 'host OR k8s'
+        required: true
+  push:
+    paths-ignore:
+      - '.github/**'
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  release:
+    name: New Release 
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GHCR_TOKEN }}
+          ssh-key: ${{ secrets.CHECK_AGENT_ACCESS }}
+          submodules: 'recursive'
+      
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GHCR_TOKEN }}
+          ssh-key: ${{ secrets.CHECK_AGENT_ACCESS }}
+          submodules: 'recursive'
+        
+      

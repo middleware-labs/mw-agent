@@ -133,13 +133,10 @@ receivers:
   
   fluentforward:
     endpoint: 0.0.0.0:8006
-  # kubeletstats:
-  #   ceat_path:
   otlp:
     protocols:
       grpc:
         endpoint: 0.0.0.0:9319
-        # max_recv_msg_size_mib: 8
       http:
         endpoint: 0.0.0.0:9320
 exporters:
@@ -148,13 +145,6 @@ exporters:
   otlp:
     endpoint: ${MW_TARGET}
 processors:
-  # filter/blanklog:
-  #   logs: 
-  #     exclude:
-  #       match_type: strict
-  #       bodies:
-  #       - \n
-  #       - {}\n
   k8sattributes:
     auth_type: "serviceAccount"
     passthrough: false
@@ -252,10 +242,6 @@ processors:
       hostname_sources: ["os"]
     timeout: 2s
     override: false
-  #  memory_limiter:
-  #    check_interval: 1s
-  #    limit_mib: 4000
-  #    spike_limit_mib: 800
   batch:
   batch/2:
     send_batch_size: 2000
@@ -318,19 +304,15 @@ service:
         level: "fatal"
       metrics:
         address: 0.0.0.0:8888
-    #extensions:
-    #  - health_check
-    #  - zpages
-    #  - pprof
     pipelines:
-      # traces:
-      #   receivers: [ otlp ]
-      #   processors: [ resourcedetection,resource, resource/cluster, attributes/traces, batch, batch/2 ]
-      #   exporters: [  otlp ]
-      # logs:
-      #   receivers: [fluentforward, otlp, filelog ]
-      #   processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, batch, batch/2 ]
-      #   exporters: [ otlp ]
+      traces:
+        receivers: [ otlp ]
+        processors: [ resourcedetection,resource, resource/cluster, attributes/traces, batch, batch/2 ]
+        exporters: [  otlp ]
+      logs:
+        receivers: [fluentforward, otlp, filelog ]
+        processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, batch, batch/2 ]
+        exporters: [ otlp ]
       metrics:
         receivers: [ kubeletstats ]
         processors: [ resourcedetection, resource, k8sattributes, resource/cluster, batch, batch/2]

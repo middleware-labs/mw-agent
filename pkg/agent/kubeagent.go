@@ -7,12 +7,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"time"
 
 	yaml "gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor"
@@ -54,10 +54,11 @@ type KubeAgent struct {
 }
 
 type KubeAgentMonitor struct {
-	Clientset *kubernetes.Clientset
+	Clientset kubernetes.Interface
 	KubeAgentMonitorConfig
 	KubeConfig
-	logger *zap.Logger
+	ClusterName string
+	logger      *zap.Logger
 }
 
 type ComponentType int
@@ -151,6 +152,7 @@ func (k *KubeAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 		loggingexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
+		kafkaexporter.NewFactory(),
 	}...)
 	if err != nil {
 		return otelcol.Factories{}, err
@@ -179,11 +181,11 @@ func (k *KubeAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 // ListenForConfigChanges listens for configuration changes for the
 // agent on the Middleware backend and restarts the agent if configuration
 // has changed.
-func (c *KubeAgentMonitor) ListenForConfigChanges(ctx context.Context) {
+func (c *KubeAgentMonitor) ListenForKubeOtelConfigChanges(ctx context.Context) error {
 
 	restartInterval, err := time.ParseDuration(c.ConfigCheckInterval)
 	if err != nil {
-		c.logger.Error(err.Error())
+		return err
 	}
 
 	ticker := time.NewTicker(restartInterval)
@@ -192,9 +194,9 @@ func (c *KubeAgentMonitor) ListenForConfigChanges(ctx context.Context) {
 		c.logger.Info("check for config changes after", zap.Duration("restartInterval", restartInterval))
 		select {
 		case <-ctx.Done():
-			// return
+			return nil
 		case <-ticker.C:
-			err = c.callRestartStatusAPI()
+			err = c.callRestartStatusAPI(ctx)
 			if err != nil {
 				c.logger.Info("error restarting agent on config change",
 					zap.Error(err))
@@ -205,7 +207,7 @@ func (c *KubeAgentMonitor) ListenForConfigChanges(ctx context.Context) {
 
 // callRestartStatusAPI checks if there is an update in the otel-config at Middleware Backend
 // For a particular account
-func (c *KubeAgentMonitor) callRestartStatusAPI() error {
+func (c *KubeAgentMonitor) callRestartStatusAPI(ctx context.Context) error {
 
 	u, err := url.Parse(c.APIURLForConfigCheck)
 	if err != nil {
@@ -216,7 +218,8 @@ func (c *KubeAgentMonitor) callRestartStatusAPI() error {
 	baseURL = baseURL.JoinPath(c.APIKey)
 	params := url.Values{}
 	params.Add("platform", "k8s")
-	params.Add("cluster", os.Getenv("MW_KUBE_CLUSTER_NAME"))
+	params.Add("host_id", c.ClusterName)
+	params.Add("cluster", c.ClusterName)
 
 	// Add Query Parameters to the URL
 	baseURL.RawQuery = params.Encode() // Escape Query Parameters
@@ -242,7 +245,7 @@ func (c *KubeAgentMonitor) callRestartStatusAPI() error {
 
 	if apiResponse.Rollout.Daemonset {
 		c.logger.Info("restarting mw-agent")
-		if err := c.restartKubeAgent(DaemonSet); err != nil {
+		if err := c.restartKubeAgent(ctx, DaemonSet); err != nil {
 			c.logger.Error("error restarting mw-agent daemonset", zap.Error(err))
 			return err
 		}
@@ -250,7 +253,7 @@ func (c *KubeAgentMonitor) callRestartStatusAPI() error {
 
 	if apiResponse.Rollout.Deployment {
 		c.logger.Info("restarting mw-agent")
-		if err := c.restartKubeAgent(Deployment); err != nil {
+		if err := c.restartKubeAgent(ctx, Deployment); err != nil {
 			c.logger.Error("error restarting mw-agent deployment", zap.Error(err))
 			return err
 		}
@@ -260,60 +263,57 @@ func (c *KubeAgentMonitor) callRestartStatusAPI() error {
 }
 
 // restartKubeAgent rewrites the configmaps and rollout restarts agent's data scraping components
-func (c *KubeAgentMonitor) restartKubeAgent(componentType ComponentType) error {
+func (c *KubeAgentMonitor) restartKubeAgent(ctx context.Context, componentType ComponentType) error {
 
-	updateConfigMapErr := c.updateConfigMap(componentType)
+	updateConfigMapErr := c.updateConfigMap(ctx, componentType)
 	if updateConfigMapErr != nil {
 		return updateConfigMapErr
 	}
 
-	rolloutRestartErr := c.rolloutRestart(componentType)
-	if rolloutRestartErr != nil {
-		return rolloutRestartErr
-	}
+	return c.rolloutRestart(ctx, componentType)
 
-	return nil
 }
 
-func (c *KubeAgentMonitor) SetClientSet() {
+func (c *KubeAgentMonitor) SetClientSet() error {
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		c.logger.Error("Error getting in-cluster config", zap.String("error", err.Error()))
+		return err
 	}
 
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		c.logger.Error("Error creating Kubernetes client", zap.String("error", err.Error()))
+		return err
 	}
 
 	c.Clientset = clientset
+	return nil
 }
 
 // rolloutRestart reloads the k8s components
 // based on component type
-func (c *KubeAgentMonitor) rolloutRestart(componentType ComponentType) error {
+func (c *KubeAgentMonitor) rolloutRestart(ctx context.Context, componentType ComponentType) error {
 
 	switch componentType {
 	case DaemonSet:
-		daemonSet, err := c.Clientset.AppsV1().DaemonSets(c.AgentNamespace).Get(context.TODO(), c.Daemonset, metav1.GetOptions{})
+		daemonSet, err := c.Clientset.AppsV1().DaemonSets(c.AgentNamespace).Get(ctx, c.Daemonset, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 
 		daemonSet.Spec.Template.ObjectMeta.Labels[Timestamp] = fmt.Sprintf("%d", metav1.Now().Unix())
-		_, err = c.Clientset.AppsV1().DaemonSets(c.AgentNamespace).Update(context.TODO(), daemonSet, metav1.UpdateOptions{})
+		_, err = c.Clientset.AppsV1().DaemonSets(c.AgentNamespace).Update(ctx, daemonSet, metav1.UpdateOptions{})
 		if err != nil {
 			return err
 		}
 
 	case Deployment:
-		deployment, err := c.Clientset.AppsV1().Deployments(c.AgentNamespace).Get(context.TODO(), c.Deployment, metav1.GetOptions{})
+		deployment, err := c.Clientset.AppsV1().Deployments(c.AgentNamespace).Get(ctx, c.Deployment, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 
 		deployment.Spec.Template.ObjectMeta.Labels[Timestamp] = fmt.Sprintf("%d", metav1.Now().Unix())
-		_, err = c.Clientset.AppsV1().Deployments(c.AgentNamespace).Update(context.TODO(), deployment, metav1.UpdateOptions{})
+		_, err = c.Clientset.AppsV1().Deployments(c.AgentNamespace).Update(ctx, deployment, metav1.UpdateOptions{})
 		if err != nil {
 			return err
 		}
@@ -323,7 +323,7 @@ func (c *KubeAgentMonitor) rolloutRestart(componentType ComponentType) error {
 
 // updateConfigMap gets the latest configmap from Middleware backend and updates the k8s configmap
 // based on component type
-func (c *KubeAgentMonitor) updateConfigMap(componentType ComponentType) error {
+func (c *KubeAgentMonitor) updateConfigMap(ctx context.Context, componentType ComponentType) error {
 
 	u, err := url.Parse(c.APIURLForConfigCheck)
 	if err != nil {
@@ -335,7 +335,8 @@ func (c *KubeAgentMonitor) updateConfigMap(componentType ComponentType) error {
 	params := url.Values{}
 	params.Add("platform", "k8s")
 	params.Add("component_type", componentType.String())
-	params.Add("cluster", os.Getenv("MW_KUBE_CLUSTER_NAME"))
+	params.Add("host_id", c.ClusterName)
+	params.Add("cluster", c.ClusterName)
 
 	// Add Query Parameters to the URL
 	baseURL.RawQuery = params.Encode() // Escape Query Parameters
@@ -380,11 +381,9 @@ func (c *KubeAgentMonitor) updateConfigMap(componentType ComponentType) error {
 		return ErrInvalidResponse
 	}
 
-	// apiYAMLConfig = apiResponse.Config.NoDocker
+	apiYAMLConfig = apiResponse.Config.Deployment
 	if componentType == DaemonSet {
 		apiYAMLConfig = apiResponse.Config.DaemonSet
-	} else {
-		apiYAMLConfig = apiResponse.Config.Deployment
 	}
 
 	yamlData, err := yaml.Marshal(apiYAMLConfig)
@@ -399,6 +398,7 @@ func (c *KubeAgentMonitor) updateConfigMap(componentType ComponentType) error {
 		existingDaemonsetConfigMap, err := c.Clientset.CoreV1().ConfigMaps(c.AgentNamespace).Get(context.Background(), c.DaemonsetConfigMap, metav1.GetOptions{})
 		if err != nil {
 			c.logger.Error("Error getting ConfigMap: %v\n" + err.Error())
+			return err
 		}
 
 		// Modify the content of the ConfigMap
@@ -408,6 +408,7 @@ func (c *KubeAgentMonitor) updateConfigMap(componentType ComponentType) error {
 		updatedConfigMap, err := c.Clientset.CoreV1().ConfigMaps(c.AgentNamespace).Update(context.Background(), existingDaemonsetConfigMap, metav1.UpdateOptions{})
 		if err != nil {
 			c.logger.Error("Error updating ConfigMap ", zap.String("error", err.Error()))
+			return err
 		}
 
 		c.logger.Info("ConfigMap updated successfully ", zap.String("configmap", updatedConfigMap.Name))
@@ -416,6 +417,7 @@ func (c *KubeAgentMonitor) updateConfigMap(componentType ComponentType) error {
 		existingDeploymentConfigMap, err := c.Clientset.CoreV1().ConfigMaps(c.AgentNamespace).Get(context.Background(), c.DeploymentConfigMap, metav1.GetOptions{})
 		if err != nil {
 			c.logger.Error("Error getting ConfigMap ", zap.String("error", err.Error()))
+			return err
 		}
 
 		// Modify the content of the ConfigMap
@@ -425,6 +427,7 @@ func (c *KubeAgentMonitor) updateConfigMap(componentType ComponentType) error {
 		updatedDeploymentConfigMap, err := c.Clientset.CoreV1().ConfigMaps(c.AgentNamespace).Update(context.Background(), existingDeploymentConfigMap, metav1.UpdateOptions{})
 		if err != nil {
 			c.logger.Error("Error updating ConfigMap", zap.String("error", err.Error()))
+			return err
 		}
 
 		c.logger.Info("ConfigMap updated successfully", zap.String("configmap", updatedDeploymentConfigMap.Name))
