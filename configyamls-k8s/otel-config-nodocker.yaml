@@ -330,6 +330,9 @@ processors:
       - key: is.k8s.node
         action: insert
         value: "yes"
+      - key: is.k8s.agent
+        action: insert
+        value: "yes"
   
   resource/cluster:
     attributes:
@@ -432,23 +435,23 @@ service:
     pipelines:
       traces:
         receivers: [ otlp ]
-        processors: [ resourcedetection,resource, resource/cluster, attributes/traces, batch, batch/2 ]
+        processors: [ resourcedetection,resource, resource/hostmetrics, resource/cluster, attributes/traces, batch, batch/2 ]
         exporters: [  otlp ]
       logs:
         receivers: [fluentforward, otlp, filelog ]
-        processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, batch, batch/2 ]
+        processors: [ resourcedetection, resource, resource/hostmetrics, resource/cluster, attributes/logs, resource/logs, k8sattributes, batch, batch/2 ]
         exporters: [ otlp ]
       logs/k8s_events:
         receivers: [ k8s_events ]
-        processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, resource/k8s_events, batch, batch/2, ]
+        processors: [ resourcedetection, resource, resource/hostmetrics, resource/cluster, attributes/logs, resource/logs, k8sattributes, resource/k8s_events, batch, batch/2, ]
         exporters: [ otlp ]
       metrics:
         receivers: [ prometheus, otlp, k8s_cluster ]
-        processors: [ resourcedetection, resource, k8sattributes, resource/cluster, batch, batch/2]
+        processors: [ resourcedetection, resource, resource/hostmetrics, k8sattributes, resource/cluster, batch, batch/2]
         exporters: [ otlp ]
       metrics/kubeletstats:
         receivers: [ kubeletstats ]
-        processors: [ resourcedetection, resource, k8sattributes, resource/cluster, metricstransform, cumulativetodelta, deltatorate, batch, batch/2]
+        processors: [ resourcedetection, resource, resource/hostmetrics, k8sattributes, resource/cluster, metricstransform, cumulativetodelta, deltatorate, batch, batch/2]
         exporters: [ otlp ]
       metrics/hostmetrics:
         receivers: [ hostmetrics ]
