@@ -23,13 +23,7 @@ jobs:
       - name: Install all dependencies
         run: go mod tidy
 
-      - name: Run testcases
-        run: make test
-
-      - name: Test case coverage
-        run: make test_coverage
-
-      - name: Calculate the percentage
+      - name: Run test cases and generate code coverage
         run: |
           output=$(make test_coverage)
           
