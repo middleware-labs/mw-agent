@@ -29,7 +29,7 @@ func TestUpdatepgdbConfig(t *testing.T) {
 
 	agent := NewHostAgent(HostConfig{}, WithHostAgentLogger(zap.NewNop()))
 	// Call the updatepgdbConfig function
-	updatedConfig, err := agent.updateConfig(initialConfig, pgdbConfig.Path)
+	updatedConfig, err := agent.updateConfig(initialConfig, pgdbConfig)
 	assert.NoError(t, err)
 
 	// Assert that the updated config contains the expected values
@@ -64,7 +64,7 @@ func TestUpdateMongodbConfig(t *testing.T) {
 
 	agent := NewHostAgent(HostConfig{}, WithHostAgentLogger(zap.NewNop()))
 
-	updatedConfig, err := agent.updateConfig(initialConfig, mongodbConfig.Path)
+	updatedConfig, err := agent.updateConfig(initialConfig, mongodbConfig)
 	assert.NoError(t, err)
 
 	// Assert that the updated config contains the expected values
@@ -100,7 +100,7 @@ func TestUpdateMysqlConfig(t *testing.T) {
 	cfg := HostConfig{}
 	agent := NewHostAgent(cfg, WithHostAgentLogger(zap.NewNop()))
 	// Call the updateMysqlConfig function
-	updatedConfig, err := agent.updateConfig(initialConfig, mysqlConfig.Path)
+	updatedConfig, err := agent.updateConfig(initialConfig, mysqlConfig)
 	assert.NoError(t, err)
 
 	// Assert that the updated config contains the expected values
@@ -134,7 +134,7 @@ func TestUpdateRedisConfig(t *testing.T) {
 	cfg := HostConfig{}
 	agent := NewHostAgent(cfg, WithHostAgentLogger(zap.NewNop()))
 	// Call the updateRedisConfig function
-	updatedConfig, err := agent.updateConfig(initialConfig, redisConfig.Path)
+	updatedConfig, err := agent.updateConfig(initialConfig, redisConfig)
 	assert.NoError(t, err)
 
 	// Assert that the updated config contains the expected values
@@ -202,7 +202,7 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assert.Contains(t, factories.Extensions, component.Type("health_check"))
 
 	// check if factories contains expected receivers
-	assert.Len(t, factories.Receivers, 13)
+	assert.Len(t, factories.Receivers, 14)
 	assert.Contains(t, factories.Receivers, component.Type("otlp"))
 	assert.Contains(t, factories.Receivers, component.Type("fluentforward"))
 	assert.Contains(t, factories.Receivers, component.Type("filelog"))
@@ -216,6 +216,7 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assert.Contains(t, factories.Receivers, component.Type("elasticsearch"))
 	assert.Contains(t, factories.Receivers, component.Type("awsecscontainermetrics"))
 	assert.Contains(t, factories.Receivers, component.Type("jmx"))
+	assert.Contains(t, factories.Receivers, component.Type("kafkametrics"))
 
 	// check if factories contain expected exporters
 	assert.Len(t, factories.Exporters, 4)

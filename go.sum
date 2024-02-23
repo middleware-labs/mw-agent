@@ -591,6 +591,8 @@ github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8sclusterre
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.84.1-0.20240214105402-9e5ff1016f20/go.mod h1:mAQUTlO+0MDJECxytLltD7srPKrCU5sEIpA0ayAtQgc=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.84.1-0.20240214105402-9e5ff1016f20 h1:ERMQS1Z67x1eCue1Maey1VdtY9WbdsTcAY+4ZhkyA34=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.84.1-0.20240214105402-9e5ff1016f20/go.mod h1:p8WQSh6oMZsdDHsXzpi7iXFGvBT5tHppYK/2ILu9s1U=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kafkametricsreceiver v0.84.1-0.20240214105402-9e5ff1016f20 h1:pLaHimXaB5HX9oR+voOsOFgwO0jE3JTIK5+rouD/7ZQ=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kafkametricsreceiver v0.84.1-0.20240214105402-9e5ff1016f20/go.mod h1:NK8mj0jPnLquSwPjYb539yTRlZZ1zb48HaUZVubGJzc=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.84.1-0.20240214105402-9e5ff1016f20 h1:F2mOJ1TbSPSA0yh+qAGvF0S/1EnEKfsz6XKAskZQp1M=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.84.1-0.20240214105402-9e5ff1016f20/go.mod h1:/k0JeS6fM6+o3I7rE4kO3NlrTVwxJNWWCcLjcBWtmVA=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.84.1-0.20240214105402-9e5ff1016f20 h1:633kW96IFOw8812TXYbSoLt3FMXCuJmWcvAnXa8eZis=
