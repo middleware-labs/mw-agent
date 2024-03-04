@@ -114,12 +114,27 @@ receivers:
     timeout: 20s
   filelog:
     include:
-    - /var/log/**/*.log*
-    - /var/lib/docker/containers/**/*.log*
+    # - /var/log/**/*.log*
+    - /home/keval/Downloads/test-keval.log
+    # - /var/lib/docker/containers/**/*.log*
     include_file_name_resolved: true
+    start_at: beginning
     include_file_path: true
     include_file_path_resolved: true
     operators:
+    - field: attributes.regex_identifiedd
+      id: adding_regex_to_attributess
+      if: 'body matches "\\[.+\\] \\[.+\\] \\[(FATAL|ERROR|WARN|INFO|DEBUG|TRACE)\\] .+"'
+      # output: extract_metadata_from_findingfive_format
+      type: add
+      value: \\[.+\\] \\[.+\\] \\[(FATAL|ERROR|WARN|INFO|DEBUG|TRACE)\\] .+
+    - id: extract_metadata_from_findingfive_format
+      if: 'body matches "\\[.+\\] \\[.+\\] \\[(FATAL|ERROR|WARN|INFO|DEBUG|TRACE)\\] .+"'
+      regex: \[(?P<xxx>.+)\] \[(?P<yyy>.+)\] \[(?P<www>.*)\] (?P<zzz>.+)
+      type: regex_parser
+      parse_from: body
+      parse_to: attributes
+      output: backup_unresolved_body
     - field: attributes.regex_identified
       id: adding_regex_to_attributes
       if: body matches "ts=.+ caller=.+ level=.+ msg=.+ name=systemd duration_seconds=.+
@@ -152,6 +167,7 @@ receivers:
       if: attributes.regex_resolved_body != nil
       to: body
       type: move
+    
   fluentforward:
     endpoint: 127.0.0.1:8006
   hostmetrics:
@@ -204,6 +220,7 @@ service:
     logs:
       exporters:
       - otlp/2
+      - logging
       processors:
       - resource/logs
       - resourcedetection
@@ -214,30 +231,30 @@ service:
       - otlp
       - fluentforward
       - filelog
-    metrics:
-      exporters:
-      - otlp/2
-      processors:
-      - resource
-      - resourcedetection
-      - resource/hostid
-      - batch
-      receivers:
-      - hostmetrics
-      - docker_stats
-      - otlp
-      - prometheus
-    traces:
-      exporters:
-      - otlp/2
-      processors:
-      - resource/traces
-      - resourcedetection
-      - resource/hostid
-      - attributes/traces
-      - batch
-      receivers:
-      - otlp
+    # metrics:
+    #   exporters:
+    #   - otlp/2
+    #   processors:
+    #   - resource
+    #   - resourcedetection
+    #   - resource/hostid
+    #   - batch
+    #   receivers:
+    #   - hostmetrics
+    #   - docker_stats
+    #   - otlp
+    #   - prometheus
+    # traces:
+    #   exporters:
+    #   - otlp/2
+    #   processors:
+    #   - resource/traces
+    #   - resourcedetection
+    #   - resource/hostid
+    #   - attributes/traces
+    #   - batch
+    #   receivers:
+    #   - otlp
   telemetry:
     logs:
-      level: fatal
+      level: debug
