@@ -226,13 +226,14 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assert.Contains(t, factories.Exporters, component.Type("kafka"))
 
 	// check if factories contain expected processors
-	assert.Len(t, factories.Processors, 6)
+	assert.Len(t, factories.Processors, 7)
 	assert.Contains(t, factories.Processors, component.Type("batch"))
 	assert.Contains(t, factories.Processors, component.Type("filter"))
 	assert.Contains(t, factories.Processors, component.Type("memory_limiter"))
 	assert.Contains(t, factories.Processors, component.Type("resource"))
 	assert.Contains(t, factories.Processors, component.Type("resourcedetection"))
 	assert.Contains(t, factories.Processors, component.Type("attributes"))
+	assert.Contains(t, factories.Processors, component.Type("transform"))
 
 }
 
