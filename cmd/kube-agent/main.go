@@ -86,6 +86,21 @@ func getFlags(cfg *agent.KubeConfig) []cli.Flag {
 			Destination: &cfg.AgentFeatures.InfraMonitoring,
 			Value:       true, // infra monitoring is enabled by default
 		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "mw-agent-self-profiling",
+			Usage:       "For Profiling the agent itself",
+			EnvVars:     []string{"MW_AGENT_SELF_PROFILING"},
+			Destination: &cfg.SelfProfiling,
+			Value:       false,
+		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "mw-profiling-server-url",
+			Usage:       "Server Address for redirecting profiling data",
+			EnvVars:     []string{"MW_PROFILING_SERVER_URL"},
+			Destination: &cfg.ProfilngServerURL,
+			Value:       "https://profiling.middleware.io",
+			DefaultText: "https://profiling.middleware.io",
+		}),
 
 		&cli.StringFlag{
 			Name:    "config-file",
@@ -162,9 +177,11 @@ func main() {
 				Usage: "Start Middleware Kubernetes agent",
 				Flags: flags,
 				Action: func(c *cli.Context) error {
-					profiler := agent.NewProfiler(logger)
-					// start profiling
-					go profiler.ProfileKubeAgent(cfg)
+					if cfg.SelfProfiling {
+						profiler := agent.NewProfiler(logger, cfg.ProfilngServerURL)
+						// start profiling
+						go profiler.ProfileKubeAgent(cfg)
+					}
 
 					var wg sync.WaitGroup
 					ctx, cancel := context.WithCancel(c.Context)

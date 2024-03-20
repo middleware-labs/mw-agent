@@ -79,6 +79,8 @@ type BaseConfig struct {
 	InfraPlatform             InfraPlatform
 	OtelConfigFile            string
 	AgentFeatures             AgentFeatures
+	SelfProfiling             bool
+	ProfilngServerURL         string
 }
 
 // String() implements stringer interface for BaseConfig
@@ -224,20 +226,11 @@ type Profiler struct {
 	ServerAddress string
 }
 
-func NewProfiler(logger *zap.Logger) *Profiler {
-	p := &Profiler{
-		Logger: logger,
+func NewProfiler(logger *zap.Logger, serverAddress string) *Profiler {
+	return &Profiler{
+		Logger:        logger,
+		ServerAddress: serverAddress,
 	}
-
-	// check if environment is stage
-	env := os.Getenv("ENV")
-
-	p.ServerAddress = "https://profiling.middleware.io"
-	if env == "STAGE" {
-		p.ServerAddress = "https://profiling.stage.env.middleware.io"
-	}
-
-	return p
 }
 
 func (p *Profiler) ProfileHostAgent(c HostConfig) {
@@ -267,7 +260,7 @@ func (p *Profiler) startProfiler(appName string, target string, tags string) {
 
 	config := pyroscope.Config{
 		ApplicationName: appName,
-		ServerAddress:   "https://profiling.stage.env.middleware.io",
+		ServerAddress:   p.ServerAddress,
 		TenantID:        hostParts[0],
 		ProfileTypes: []pyroscope.ProfileType{
 			pyroscope.ProfileCPU,
