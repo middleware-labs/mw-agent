@@ -220,6 +220,10 @@ func main() {
 				Flags:  flags,
 				Before: altsrc.InitInputSourceWithContext(flags, altsrc.NewYamlSourceFromFlagFunc("config-file")),
 				Action: func(c *cli.Context) error {
+					profiler := agent.NewProfiler(logger)
+					// start profiling
+					go profiler.ProfileHostAgent(cfg)
+
 					if cfg.Logfile != "" {
 						logger.Info("redirecting logs to logfile", zap.String("logfile", cfg.Logfile))
 						// logfile specified. Update logger to write logs to the

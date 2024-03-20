@@ -105,6 +105,9 @@ processors:
     - system
     - docker
     override: false
+    system:
+      hostname_sources:
+      - os
     timeout: 5s
 receivers:
   docker_stats:
@@ -153,7 +156,7 @@ receivers:
       to: body
       type: move
   fluentforward:
-    endpoint: 127.0.0.1:8006
+    endpoint: 0.0.0.0:8006
   hostmetrics:
     collection_interval: 5s
     scrapers:
@@ -188,9 +191,9 @@ receivers:
   otlp:
     protocols:
       grpc:
-        endpoint: 127.0.0.1:9319
+        endpoint: 0.0.0.0:9319
       http:
-        endpoint: 127.0.0.1:9320
+        endpoint: 0.0.0.0:9320
   prometheus:
     config:
       scrape_configs:
@@ -198,7 +201,7 @@ receivers:
         scrape_interval: 5s
         static_configs:
         - targets:
-          - 127.0.0.1:8888
+          - 0.0.0.0:8888
 service:
   pipelines:
     logs:

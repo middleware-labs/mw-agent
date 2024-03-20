@@ -162,6 +162,9 @@ func main() {
 				Usage: "Start Middleware Kubernetes agent",
 				Flags: flags,
 				Action: func(c *cli.Context) error {
+					profiler := agent.NewProfiler(logger)
+					// start profiling
+					go profiler.ProfileKubeAgent(cfg)
 
 					var wg sync.WaitGroup
 					ctx, cancel := context.WithCancel(c.Context)
