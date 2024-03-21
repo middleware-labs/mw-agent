@@ -1,0 +1,536 @@
+{
+  "resourceMetrics": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "runtime.metrics.kafka",
+            "value": {
+              "intValue": "1"
+            }
+          },
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "kafka-1"
+            }
+          },
+          {
+            "key": "telemetry.sdk.language",
+            "value": {
+              "boolValue": "java"
+            }
+          },
+          {
+            "key": "telemetry.sdk.name",
+            "value": {
+              "stringValue": "opentelemetry"
+            }
+          },
+          {
+            "key": "telemetry.sdk.version",
+            "value": {
+              "doubleValue": "1.20.1"
+            }
+          },
+          {
+            "key": "mw.account_key",
+            "value": {
+              "stringValue": "wvxelajjewfotrpbhkluwcayatjrzgimfmne"
+            }
+          },
+          {
+            "key": "host.name",
+            "value": {
+              "stringValue": "parth"
+            }
+          },
+          {
+            "key": "os.type",
+            "value": {
+              "stringValue": "linux"
+            }
+          },
+          {
+            "key": "host.id",
+            "value": {
+              "stringValue": "parth"
+            }
+          }
+        ]
+      },
+      "scopeMetrics": [
+        {
+          "scope": {
+            "name": "io.opentelemetry.contrib.jmxmetrics",
+            "version": "1.20.0-alpha"
+          },
+          "metrics": [
+            {
+              "name": "kafka.request.count",
+              "description": "The number of requests received by the broker",
+              "unit": "{requests}",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "type",
+                        "value": {
+                          "stringValue": "fetch"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asInt": "0"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "type",
+                        "value": {
+                          "stringValue": "produce"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asInt": "0"
+                  }
+                ],
+                "aggregationTemporality": 2,
+                "isMonotonic": true
+              }
+            },
+            {
+              "name": "kafka.controller.active.count",
+              "description": "controller is active on broker",
+              "unit": "{controllers}",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asInt": "1"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "kafka.partition.count",
+              "description": "The number of partitions on the broker",
+              "unit": "{partitions}",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asInt": "17"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "kafka.partition.under_replicated",
+              "description": "The number of under replicated partitions",
+              "unit": "{partitions}",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asInt": "0"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "kafka.request.time.50p",
+              "description": "The 50th percentile time the broker has taken to service requests",
+              "unit": "ms",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "type",
+                        "value": {
+                          "stringValue": "fetchfollower"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asDouble": 0
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "type",
+                        "value": {
+                          "stringValue": "produce"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asDouble": 0
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "type",
+                        "value": {
+                          "stringValue": "fetchconsumer"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asDouble": 0
+                  }
+                ]
+              }
+            },
+            {
+              "name": "kafka.request.queue",
+              "description": "size of the request queue",
+              "unit": "{requests}",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asInt": "0"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "kafka.leader.election.rate",
+              "description": "leader election rate - increasing indicates broker failures",
+              "unit": "{elections}",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asInt": "1"
+                  }
+                ],
+                "aggregationTemporality": 2,
+                "isMonotonic": true
+              }
+            },
+            {
+              "name": "kafka.isr.operation.count",
+              "description": "The number of in-sync replica shrink and expand operations",
+              "unit": "{operations}",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "expand"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asInt": "0"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "shrink"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asInt": "0"
+                  }
+                ],
+                "aggregationTemporality": 2,
+                "isMonotonic": true
+              }
+            },
+            {
+              "name": "kafka.max.lag",
+              "description": "max lag in messages between follower and leader replicas",
+              "unit": "{messages}",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asInt": "0"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "kafka.network.io",
+              "description": "The bytes received or sent by the broker",
+              "unit": "by",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "state",
+                        "value": {
+                          "stringValue": "out"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asInt": "0"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "state",
+                        "value": {
+                          "stringValue": "in"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asInt": "0"
+                  }
+                ],
+                "aggregationTemporality": 2,
+                "isMonotonic": true
+              }
+            },
+            {
+              "name": "kafka.request.time.99p",
+              "description": "The 99th percentile time the broker has taken to service requests",
+              "unit": "ms",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "type",
+                        "value": {
+                          "stringValue": "fetchfollower"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asDouble": 0
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "type",
+                        "value": {
+                          "stringValue": "produce"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asDouble": 0
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "type",
+                        "value": {
+                          "stringValue": "fetchconsumer"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asDouble": 0
+                  }
+                ]
+              }
+            },
+            {
+              "name": "kafka.request.failed",
+              "description": "The number of requests to the broker resulting in a failure",
+              "unit": "{requests}",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "type",
+                        "value": {
+                          "stringValue": "fetch"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asInt": "0"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "type",
+                        "value": {
+                          "stringValue": "produce"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asInt": "0"
+                  }
+                ],
+                "aggregationTemporality": 2,
+                "isMonotonic": true
+              }
+            },
+            {
+              "name": "kafka.message.count",
+              "description": "The number of messages received by the broker",
+              "unit": "{messages}",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asInt": "0"
+                  }
+                ],
+                "aggregationTemporality": 2,
+                "isMonotonic": true
+              }
+            },
+            {
+              "name": "kafka.partition.offline",
+              "description": "The number of partitions offline",
+              "unit": "{partitions}",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asInt": "0"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "kafka.request.time.total",
+              "description": "The total time the broker has taken to service requests",
+              "unit": "ms",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "type",
+                        "value": {
+                          "stringValue": "fetchfollower"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asInt": "0"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "type",
+                        "value": {
+                          "stringValue": "produce"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asInt": "0"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "type",
+                        "value": {
+                          "stringValue": "fetchconsumer"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asInt": "0"
+                  }
+                ],
+                "aggregationTemporality": 2,
+                "isMonotonic": true
+              }
+            },
+            {
+              "name": "kafka.unclean.election.rate",
+              "description": "unclean leader election rate - increasing indicates broker failures",
+              "unit": "{elections}",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asInt": "0"
+                  }
+                ],
+                "aggregationTemporality": 2,
+                "isMonotonic": true
+              }
+            },
+            {
+              "name": "kafka.purgatory.size",
+              "description": "The number of requests waiting in purgatory",
+              "unit": "{requests}",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "type",
+                        "value": {
+                          "stringValue": "fetch"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asInt": "0"
+                  },
+                  {
+                    "attributes": [
+                      {
+                        "key": "type",
+                        "value": {
+                          "stringValue": "produce"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709025433285000000",
+                    "timeUnixNano": "1709025434289000000",
+                    "asInt": "0"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "schemaUrl": "https://opentelemetry.io/schemas/1.13.0"
+    }
+  ]
+}

@@ -1,0 +1,441 @@
+{
+  "resourceMetrics": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "runtime.metrics.kafka",
+            "value": {
+              "stringValue": "true"
+            }
+          },
+          {
+            "key": "mw.account_key",
+            "value": {
+              "stringValue": "wvxelajjewfotrpbhkluwcayatjrzgimfmne"
+            }
+          },
+          {
+            "key": "host.name",
+            "value": {
+              "stringValue": "parth"
+            }
+          },
+          {
+            "key": "os.type",
+            "value": {
+              "stringValue": "linux"
+            }
+          },
+          {
+            "key": "host.id",
+            "value": {
+              "stringValue": "parth"
+            }
+          }
+        ]
+      },
+      "scopeMetrics": [
+        {
+          "scope": {
+            "name": "otelcol/kafkametricsreceiver"
+          },
+          "metrics": [
+            {
+              "name": "kafka.brokers",
+              "description": "Number of brokers in the cluster.",
+              "unit": "{brokers}",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "startTimeUnixNano": "1709026422133964431",
+                    "timeUnixNano": "1709026423136988334",
+                    "asInt": "3"
+                  }
+                ],
+                "aggregationTemporality": 2
+              }
+            }
+          ]
+        }
+      ],
+      "schemaUrl": "https://opentelemetry.io/schemas/1.6.1"
+    },
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "runtime.metrics.kafka",
+            "value": {
+              "stringValue": "true"
+            }
+          },
+          {
+            "key": "mw.account_key",
+            "value": {
+              "stringValue": "wvxelajjewfotrpbhkluwcayatjrzgimfmne"
+            }
+          },
+          {
+            "key": "host.name",
+            "value": {
+              "stringValue": "parth"
+            }
+          },
+          {
+            "key": "os.type",
+            "value": {
+              "stringValue": "linux"
+            }
+          },
+          {
+            "key": "host.id",
+            "value": {
+              "stringValue": "parth"
+            }
+          }
+        ]
+      },
+      "scopeMetrics": [
+        {
+          "scope": {
+            "name": "otelcol/kafkametricsreceiver"
+          },
+          "metrics": [
+            {
+              "name": "kafka.partition.current_offset",
+              "description": "Current offset of partition of topic.",
+              "unit": "1",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "topic",
+                        "value": {
+                          "stringValue": "mw-kafka-topic-1"
+                        }
+                      },
+                      {
+                        "key": "partition",
+                        "value": {
+                          "intValue": "0"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709026422133970162",
+                    "timeUnixNano": "1709026423137600058",
+                    "asInt": "5811"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "kafka.partition.oldest_offset",
+              "description": "Oldest offset of partition of topic",
+              "unit": "1",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "topic",
+                        "value": {
+                          "stringValue": "mw-kafka-topic-1"
+                        }
+                      },
+                      {
+                        "key": "partition",
+                        "value": {
+                          "intValue": "0"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709026422133970162",
+                    "timeUnixNano": "1709026423137600058",
+                    "asInt": "0"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "kafka.partition.replicas",
+              "description": "Number of replicas for partition of topic",
+              "unit": "{replicas}",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "topic",
+                        "value": {
+                          "stringValue": "mw-kafka-topic-1"
+                        }
+                      },
+                      {
+                        "key": "partition",
+                        "value": {
+                          "intValue": "0"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709026422133970162",
+                    "timeUnixNano": "1709026423137600058",
+                    "asInt": "1"
+                  }
+                ],
+                "aggregationTemporality": 2
+              }
+            },
+            {
+              "name": "kafka.partition.replicas_in_sync",
+              "description": "Number of synchronized replicas of partition",
+              "unit": "{replicas}",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "topic",
+                        "value": {
+                          "stringValue": "mw-kafka-topic-1"
+                        }
+                      },
+                      {
+                        "key": "partition",
+                        "value": {
+                          "intValue": "0"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709026422133970162",
+                    "timeUnixNano": "1709026423137600058",
+                    "asInt": "1"
+                  }
+                ],
+                "aggregationTemporality": 2
+              }
+            },
+            {
+              "name": "kafka.topic.partitions",
+              "description": "Number of partitions in topic.",
+              "unit": "{partitions}",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "topic",
+                        "value": {
+                          "stringValue": "mw-kafka-topic-1"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709026422133970162",
+                    "timeUnixNano": "1709026423137600058",
+                    "asInt": "1"
+                  }
+                ],
+                "aggregationTemporality": 2
+              }
+            }
+          ]
+        }
+      ],
+      "schemaUrl": "https://opentelemetry.io/schemas/1.6.1"
+    },
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "runtime.metrics.kafka",
+            "value": {
+              "stringValue": "true"
+            }
+          },
+          {
+            "key": "mw.account_key",
+            "value": {
+              "stringValue": "wvxelajjewfotrpbhkluwcayatjrzgimfmne"
+            }
+          },
+          {
+            "key": "host.name",
+            "value": {
+              "stringValue": "parth"
+            }
+          },
+          {
+            "key": "os.type",
+            "value": {
+              "stringValue": "linux"
+            }
+          },
+          {
+            "key": "host.id",
+            "value": {
+              "stringValue": "parth"
+            }
+          }
+        ]
+      },
+      "scopeMetrics": [
+        {
+          "scope": {
+            "name": "otelcol/kafkametricsreceiver"
+          },
+          "metrics": [
+            {
+              "name": "kafka.consumer_group.lag",
+              "description": "Current approximate lag of consumer group at partition of topic",
+              "unit": "1",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "group",
+                        "value": {
+                          "stringValue": "mw-consumer-group"
+                        }
+                      },
+                      {
+                        "key": "topic",
+                        "value": {
+                          "stringValue": "mw-kafka-topic-1"
+                        }
+                      },
+                      {
+                        "key": "partition",
+                        "value": {
+                          "intValue": "0"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709026422133971484",
+                    "timeUnixNano": "1709026423142305993",
+                    "asInt": "1"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "kafka.consumer_group.lag_sum",
+              "description": "Current approximate sum of consumer group lag across all partitions of topic",
+              "unit": "1",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "group",
+                        "value": {
+                          "stringValue": "mw-consumer-group"
+                        }
+                      },
+                      {
+                        "key": "topic",
+                        "value": {
+                          "stringValue": "mw-kafka-topic-1"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709026422133971484",
+                    "timeUnixNano": "1709026423142305993",
+                    "asInt": "1"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "kafka.consumer_group.members",
+              "description": "Count of members in the consumer group",
+              "unit": "{members}",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "group",
+                        "value": {
+                          "stringValue": "mw-consumer-group"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709026422133971484",
+                    "timeUnixNano": "1709026423142305993",
+                    "asInt": "1"
+                  }
+                ],
+                "aggregationTemporality": 2
+              }
+            },
+            {
+              "name": "kafka.consumer_group.offset",
+              "description": "Current offset of the consumer group at partition of topic",
+              "unit": "1",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "group",
+                        "value": {
+                          "stringValue": "mw-consumer-group"
+                        }
+                      },
+                      {
+                        "key": "topic",
+                        "value": {
+                          "stringValue": "mw-kafka-topic-1"
+                        }
+                      },
+                      {
+                        "key": "partition",
+                        "value": {
+                          "intValue": "0"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709026422133971484",
+                    "timeUnixNano": "1709026423142305993",
+                    "asInt": "5810"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "kafka.consumer_group.offset_sum",
+              "description": "Sum of consumer group offset across partitions of topic",
+              "unit": "1",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "group",
+                        "value": {
+                          "stringValue": "mw-consumer-group"
+                        }
+                      },
+                      {
+                        "key": "topic",
+                        "value": {
+                          "stringValue": "mw-kafka-topic-1"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1709026422133971484",
+                    "timeUnixNano": "1709026423142305993",
+                    "asInt": "5810"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "schemaUrl": "https://opentelemetry.io/schemas/1.6.1"
+    }
+  ]
+}
