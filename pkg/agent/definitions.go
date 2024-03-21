@@ -233,15 +233,7 @@ func NewProfiler(logger *zap.Logger, serverAddress string) *Profiler {
 	}
 }
 
-func (p *Profiler) ProfileHostAgent(c HostConfig) {
-	p.startProfiler("mw-host-agent", c.Target, c.HostTags)
-}
-
-func (p *Profiler) ProfileKubeAgent(k KubeConfig) {
-	p.startProfiler("mw-kube-agent", k.Target, "")
-}
-
-func (p *Profiler) startProfiler(appName string, target string, tags string) {
+func (p *Profiler) StartProfiling(appName string, target string, tags string) {
 	parsedURL, err := url.Parse(target)
 
 	if err != nil {

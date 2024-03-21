@@ -236,7 +236,7 @@ func main() {
 					if cfg.SelfProfiling {
 						profiler := agent.NewProfiler(logger, cfg.ProfilngServerURL)
 						// start profiling
-						go profiler.ProfileHostAgent(cfg)
+						go profiler.StartProfiling("mw-host-agent", cfg.Target, cfg.HostTags)
 					}
 
 					if cfg.Logfile != "" {

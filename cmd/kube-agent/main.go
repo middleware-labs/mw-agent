@@ -180,7 +180,7 @@ func main() {
 					if cfg.SelfProfiling {
 						profiler := agent.NewProfiler(logger, cfg.ProfilngServerURL)
 						// start profiling
-						go profiler.ProfileKubeAgent(cfg)
+						go profiler.StartProfiling("mw-kube-agent", cfg.Target, "")
 					}
 
 					var wg sync.WaitGroup
