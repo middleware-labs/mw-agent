@@ -10,6 +10,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
@@ -63,6 +64,7 @@ func (c *HostAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 		elasticsearchreceiver.NewFactory(),
 		redisreceiver.NewFactory(),
 		jmxreceiver.NewFactory(),
+		apachereceiver.NewFactory(),
 	}
 
 	// if the host agent is running on ECS EC2, add

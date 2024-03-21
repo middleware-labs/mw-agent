@@ -25,6 +25,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsec
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kafkametricsreceiver v0.84.1-0.20240223064920-4c2d7278a9f0
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/apachereceiver v0.84.1-0.20240223064920-4c2d7278a9f0
+
 require (
 	// checkagent v0.0.0-00010101000000-000000000000
 	github.com/k8sgpt-ai/k8sgpt v0.1.8
@@ -52,6 +54,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.84.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.84.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.84.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver v0.84.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.84.0

@@ -10,6 +10,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
@@ -65,6 +66,7 @@ func (c *HostAgent) GetFactories(ctx context.Context) (otelcol.Factories, error)
 		mysqlreceiver.NewFactory(),
 		elasticsearchreceiver.NewFactory(),
 		redisreceiver.NewFactory(),
+		apachereceiver.NewFactory(),
 	}...)
 	if err != nil {
 		return otelcol.Factories{}, err
