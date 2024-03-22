@@ -1,0 +1,48 @@
+name: Run Code Analysis
+
+on:
+  pull_request:
+
+jobs:
+  code-analysis:
+    name: Run all the testcases and analyze the code coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.20.0
+
+      - name: Install all dependencies
+        run: go mod tidy
+
+      - name: Run test cases and generate code coverage
+        run: |
+          output=$(make test_coverage)
+          
+          # Extract coverage percentages using grep and awk
+          coverage_percentages=$(echo "$output" | grep -o 'coverage: [0-9.]*%' | awk '{print $2}' | sed 's/%//g')
+          
+          # Initialize variables for sum and count
+          sum=0
+          count=0
+
+          # Loop through the coverage percentages and calculate sum and count
+          for percentage in $coverage_percentages; do
+              sum=$(awk "BEGIN {print $sum + $percentage}")
+              count=$((count + 1))
+          done
+
+          # Calculate the average coverage percentage
+          average=$(awk "BEGIN {print $sum / $count}")
+          
+          echo "Code coverage: $average%"
+          
+          # Check if the code coverage percentage is less than 80
+          if (( $(awk "BEGIN {print ($average < 80)}") )); then
+            echo "::warning::Code coverage is below 80%"
+          fi
