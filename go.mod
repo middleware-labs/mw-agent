@@ -42,6 +42,7 @@ require (
 require (
 	github.com/grafana/pyroscope-go v1.1.1
 	github.com/kardianos/service v1.2.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.84.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.84.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.84.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.84.0
