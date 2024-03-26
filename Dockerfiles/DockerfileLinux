@@ -1,20 +1,18 @@
-FROM golang:1.20 as build
-WORKDIR /app
+FROM golang:1.22.1 as build
 RUN apt-get update && apt-get install -y ca-certificates openssl
 RUN update-ca-certificates
 COPY . .
-ENV CGO_ENABLED=0
-RUN go get -d -v ./... && go mod tidy
-
 ARG AGENT_VERSION
 ENV AGENT_VERSION=$AGENT_VERSION
-
+ENV GOPATH=/
+RUN go mod tidy
 RUN CGO_ENABLED=0 go build -ldflags "-s -w -X main.agentVersion=${AGENT_VERSION}" -o /tmp/mw-agent cmd/host-agent/main.go
 
 FROM busybox:glibc as prod
 RUN mkdir -p /var/log
-WORKDIR /opt/mw-host-agent
+RUN mkdir -p /opt/mw-agent/bin
+WORKDIR /opt/mw-agent
 COPY --from=build /etc/ssl/certs /etc/ssl/certs
-COPY --from=build /tmp/mw-agent /opt/mw-host-agent/mw-agent
-COPY --from=build /app/otel-config.yaml /etc/mw-agent/otel-config.yaml
-CMD ["/opt/mw-host-agent/mw-agent", "start"]
+COPY --from=build /tmp/mw-agent /opt/mw-agent/bin/mw-agent
+COPY --from=build /package-tooling/linux/otel-config.yaml.sample /etc/mw-agent/otel-config.yaml
+CMD ["/opt/mw-agent/bin/mw-agent", "start"]

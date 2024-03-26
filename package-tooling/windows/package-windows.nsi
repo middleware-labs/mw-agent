@@ -7,6 +7,7 @@
 
 ;--------------------------------
 ;Including Header Files
+!include "FileFunc.nsh"
 !include "nsDialogs.nsh"
 !include "MUI2.nsh"
 !include "LogicLib.nsh"
@@ -132,11 +133,19 @@ Function .onInit
   StrCpy $InstallerMessage "installer loaded"
   StrCpy $InstallServiceStatus "not yet installed"
   StrCpy $StartServiceStatus "not yet started"
+
+  # Get input arguments if passed
+  ${GetParameters} $0
+  ${GetOptions} "$0" "/MW_API_KEY=" $1
+  ${GetOptions} "$0" "/MW_TARGET=" $2
+
+  StrCpy $MWAPIKey $1
+  StrCpy $MWTarget $2
 FunctionEnd
 
 Function onManualInstallClick
     pop $R9
-    ExecShell "open" "https://app.middleware.io/installation#infrastructures/windows" 
+    ExecShell "open" "https://app.middleware.io" 
 FunctionEnd
 
 Function pgPageCreate
@@ -155,13 +164,13 @@ Function pgPageCreate
         ${NSD_CreateLabel} 10% 26u 30% 13u "API Key (MW_API_KEY)     :"
         Pop $0
 
-        ${NSD_CreateText} 40% 24u 50% 14u ""
+        ${NSD_CreateText} 40% 24u 50% 14u "$MWAPIKey"
         Pop $TextAPIKey
 
         ${NSD_CreateLabel} 10% 55u 30% 13u "Target URL (MW_TARGET) :"
         Pop $0
 
-        ${NSD_CreateText} 40% 53u 50% 14u ""
+        ${NSD_CreateText} 40% 53u 50% 14u "$MWTarget"
         Pop $TextTarget
     
     ${NSD_CreateLabel} 5% 86u 90% 34u "API Key and Target URL can be found in the installation section of your Middleware account."
@@ -190,10 +199,9 @@ Function PgPageLeave
 FunctionEnd
 
 Function UpdateConfigFile
-
     FileOpen $4 "$INSTDIR\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}" w
-    FileWrite $4 "api-key: $0 $\r$\n"
-    FileWrite $4 "target: $1 $\r$\n"
+    FileWrite $4 "api-key: $MWAPIKey $\r$\n"
+    FileWrite $4 "target: $MWTarget $\r$\n"
     FileWrite $4 "config-check-interval: $\"5m$\"$\r$\n"
     Strcpy $LogFilePath "$INSTDIR\mw-agent.log"
     ${StrRep} $R0 $LogFilePath "\" "\\"
@@ -217,8 +225,7 @@ Section "install"
   file "${REPO_ROOT_DIR}\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}"
 
   Call UpdateConfigFile
-  ;ExecWait 'sc create ${APP_NAME_IN_INSTALLED_DIR} error= "severe" displayname= "${APPNAME}" type= "own" start= "auto" binpath= "$INSTDIR\${APP_NAME_IN_INSTALLED_DIR}.exe start --config-file $INSTDIR\config.yaml"'
-  ;ExecWait 'net start ${APP_NAME_IN_INSTALLED_DIR}'
+ 
   SimpleSC::InstallService ${APP_NAME_IN_INSTALLED_DIR} "Middleware Agent" "16" "2" "$\"$INSTDIR\${APP_NAME_IN_INSTALLED_DIR}.exe$\" start --config-file $\"$INSTDIR\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}$\"" "" "" ""
   Pop $0 ; returns an errorcode (<>0) otherwise success (0)
   StrCpy $InstallServiceStatus $0
@@ -309,7 +316,6 @@ Section "uninstall"
   #Delete installation folder from registry if available - this will only happen if it is empty
   rmDir /r "$INSTDIR"
 
-
   DeleteRegKey /ifempty HKLM "Software\${APPNAME}"
 
   # Remove uninstaller information from the registry
@@ -337,5 +343,6 @@ Function .onGUIEnd
 
   NScurl::http POST "$MWTarget/api/v1/agent/tracking/$MWAPIKey" MEMORY /HEADER "Content-Type: application/json" /DATA '$data' /END
   Pop $0
+
 FunctionEnd
 ;--------------------------------

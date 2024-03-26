@@ -1,0 +1,14 @@
+[Unit]
+Description=Middleware Agent Service
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/mw-agent
+User=mw-agent
+ExecStart=/opt/mw-agent/bin/mw-agent start --config-file=/etc/mw-agent/agent-config.yaml
+Type=simple
+TimeoutStopSec=10
+Restart=on-failure
+RestartSec=5
+[Install]
+WantedBy=multi-user.target
