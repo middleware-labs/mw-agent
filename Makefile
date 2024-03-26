@@ -9,7 +9,20 @@ build: build-linux build-windows build-kube
 
 #package-windows only works on Linux
 package-windows: build-windows
-	makensis -DVERSION=0.0.0 scripts/package-windows/package-windows.nsi 
+	makensis -DVERSION=0.0.0 package-tooling/windows/package-windows.nsi 
+
+package-linux-deb: build-linux
+	act -W .github/workflows/host-agent-deb-apt.yaml --input release_version=0.0.0 --container-options "-v ${PWD}/build:${PWD}/build"
+
+package-linux-rpm: build-linux
+	act -W .github/workflows/host-agent-rpm.yaml --input release_version=0.0.0 --container-options "-v ${PWD}/build:${PWD}/build"
+
+package-linux: package-linux-deb package-linux-rpm package-linux-docker
+
+package-linux-docker:
+	Dockerfiles/docker-build.sh prod local Dockerfiles/DockerfileLinux
+
+package: package-windows package-linux
 
 clean:
 	go clean

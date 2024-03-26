@@ -1,6 +1,6 @@
 module github.com/middleware-labs/mw-agent
 
-go 1.20
+go 1.21
 
 // replace checkagent => github.com/middleware-labs/check-agent v0.0.0-20230411103956-f67eb953ba5e
 replace checkagent => ./check-agent

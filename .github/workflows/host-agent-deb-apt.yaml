@@ -1,4 +1,4 @@
-name: Host Agent - DEB - APT
+name: host-dpkg
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     strategy:
       matrix:
@@ -22,7 +22,7 @@ jobs:
 
     steps:
     - name: Checkout Repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         token: ${{ secrets.GHCR_TOKEN }}
         ssh-key: ${{ secrets.CHECK_AGENT_ACCESS }}
@@ -36,7 +36,7 @@ jobs:
         echo "::set-env name=ARCH::${{ matrix.arch }}"
         echo "release-version"
         echo $RELEASE_VERSION
-
+      
     # - uses: actions/cache@v3
     #   with:
     #     path: |
@@ -47,9 +47,9 @@ jobs:
     # Reference : https://www.debian.org/doc/debian-policy/ch-controlfields.html
     - name: Creating Required Folder Structure
       run: |
-        mkdir -p example/apt-repo
-        mkdir -p example/mw-agent_$RELEASE_VERSION-1_$ARCH/usr/bin
-        mkdir -p example/mw-agent_$RELEASE_VERSION-1_$ARCH/DEBIAN
+        mkdir -p build/apt-repo
+        mkdir -p build/mw-agent_$RELEASE_VERSION-1_$ARCH/opt/mw-agent/bin
+
         mkdir -p controlsetup
         touch controlsetup/control
 
@@ -60,40 +60,49 @@ jobs:
         Depends: libc6
         Architecture: $ARCH
         Homepage: https://middleware.io
-        Description: Middleware Agent
+        Description: Middleware Agent(mw-agent) Service
         EOF
 
     - name: Set up Go
-      uses: actions/setup-go@v3
+      if: ${{ github.actor != 'nektos/act' }}
+      uses: actions/setup-go@v4
       with:
-        go-version: 1.20.0
+        go-version: 1.21.0
 
     # Building with CGO_ENABLED=0 so that we can build static binary which is not dependent on any external libraries
     # Building with -ldflags="-s -w" to reduce the size of binary
     - name: Go Build
+      if: ${{ github.actor != 'nektos/act' }}
       run: |
         CGO_ENABLED=0 GOOS=linux GOARCH=${{ matrix.arch }} go build -ldflags="-s -w -X main.agentVersion=${RELEASE_VERSION}" -v -a -o $BINARY_SOURCE cmd/host-agent/main.go
-
-    - name: Copying Code Binary into target location
+        
+    - name: Copying code binary into target location
       run: |
-          cp $BINARY_SOURCE example/mw-agent_$RELEASE_VERSION-1_$ARCH/usr/bin/.
+          if [ ${{ github.actor }} == "nektos/act" ]
+          then
+              cp build/mw-host-agent build/mw-agent_$RELEASE_VERSION-1_$ARCH/opt/mw-agent/bin/mw-agent
+          else 
+            cp $BINARY_SOURCE build/mw-agent_$RELEASE_VERSION-1_$ARCH/mw-agent/bin/mw-agent
+          fi
 
-    - name: Creating Control File
+    - name: Copy Linux root files & dpkg Control file
       run: |
-          cp controlsetup/$CONTROL_FILE example/mw-agent_$RELEASE_VERSION-1_$ARCH/DEBIAN/control
+          mkdir -p build/mw-agent_$RELEASE_VERSION-1_$ARCH/etc/mw-agent
+          cp -r package-tooling/linux/deb/* build/mw-agent_$RELEASE_VERSION-1_$ARCH/
+          cp package-tooling/agent-config.yaml.sample build/mw-agent_$RELEASE_VERSION-1_$ARCH/etc/mw-agent/agent-config.yaml.sample
+          cp package-tooling/otel-config.yaml.sample build/mw-agent_$RELEASE_VERSION-1_$ARCH/etc/mw-agent/otel-config.yaml.sample
+          chmod 0755 build/mw-agent_$RELEASE_VERSION-1_$ARCH/DEBIAN/postinst
+          chmod 0755 build/mw-agent_$RELEASE_VERSION-1_$ARCH/DEBIAN/postrm
+          cp controlsetup/$CONTROL_FILE build/mw-agent_$RELEASE_VERSION-1_$ARCH/DEBIAN/control
 
-    - name: Add YAML Files
-      run: |
-          mkdir -p example/mw-agent_$RELEASE_VERSION-1_$ARCH/etc/mw-agent
-          cp otel-config.yaml example/mw-agent_$RELEASE_VERSION-1_$ARCH/etc/mw-agent/
-    
     - name: Creating DEB package
       run: |
-          dpkg --build example/mw-agent_$RELEASE_VERSION-1_$ARCH
-          dpkg-deb --info example/mw-agent_$RELEASE_VERSION-1_$ARCH.deb
-          dpkg-deb --contents example/mw-agent_$RELEASE_VERSION-1_$ARCH.deb
+          dpkg --build build/mw-agent_$RELEASE_VERSION-1_$ARCH
+          dpkg-deb --info build/mw-agent_$RELEASE_VERSION-1_$ARCH.deb
+          dpkg-deb --contents build/mw-agent_$RELEASE_VERSION-1_$ARCH.deb
 
     - name: Set up aptly
+      if: ${{ github.actor != 'nektos/act' }}
       run: |
         # Download aptly binary
         wget https://github.com/aptly-dev/aptly/releases/download/v1.5.0/aptly_1.5.0_linux_amd64.tar.gz
@@ -105,10 +114,12 @@ jobs:
 
     
     - name: Verify aptly version
+      if: ${{ github.actor != 'nektos/act' }}
       run: aptly version
 
     # Reference : https://www.aptly.info/doc/
     - name: Add DEB to MW APT Repo
+      if: ${{ github.actor != 'nektos/act' }}
       run: |
         sudo apt-get install -y gnupg
         git clone https://.:${{ secrets.GHCR_TOKEN }}@github.com/middleware-labs/apt.middleware.io.git
@@ -154,3 +165,5 @@ jobs:
 # distribution = stable, wheezy
 # architectures = all, amd64, arm64
 # component = main, contrib, non-free
+
+   

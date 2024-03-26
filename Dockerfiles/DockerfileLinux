@@ -1,5 +1,4 @@
-FROM golang:1.20 as build
-WORKDIR /app
+FROM golang:1.21 as build
 RUN apt-get update && apt-get install -y ca-certificates openssl
 RUN update-ca-certificates
 COPY . .
@@ -16,5 +15,5 @@ RUN mkdir -p /var/log
 WORKDIR /opt/mw-host-agent
 COPY --from=build /etc/ssl/certs /etc/ssl/certs
 COPY --from=build /tmp/mw-agent /opt/mw-host-agent/mw-agent
-COPY --from=build /app/otel-config.yaml /etc/mw-agent/otel-config.yaml
+COPY --from=build /package-tooling/linux/deb/etc/mw-agent/otel-config.yaml.sample /etc/mw-agent/otel-config.yaml
 CMD ["/opt/mw-host-agent/mw-agent", "start"]
