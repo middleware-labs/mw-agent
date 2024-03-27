@@ -180,5 +180,12 @@
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/elasticsearchreceiver/metadata.yaml"
         ]
-    }       
+    },
+    {
+        "type": "apachereceiver",
+        "prefixes": ["apachereceiver"],
+        "files": [
+            "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/apachereceiver/metadata.yaml"
+        ]
+    }
 ]
