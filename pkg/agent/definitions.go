@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"net/url"
 	"os"
 	"strings"
 
+	"github.com/grafana/pyroscope-go"
 	"go.opentelemetry.io/collector/otelcol"
+	"go.uber.org/zap"
 )
 
 // Agent interface provides common methods for different agents
@@ -76,6 +79,8 @@ type BaseConfig struct {
 	InfraPlatform             InfraPlatform
 	OtelConfigFile            string
 	AgentFeatures             AgentFeatures
+	SelfProfiling             bool
+	ProfilngServerURL         string
 }
 
 // String() implements stringer interface for BaseConfig
@@ -214,4 +219,59 @@ func GetAPIURLForConfigCheck(target string) (string, error) {
 	}
 
 	return "", ErrInvalidTarget
+}
+
+type Profiler struct {
+	Logger        *zap.Logger
+	ServerAddress string
+}
+
+func NewProfiler(logger *zap.Logger, serverAddress string) *Profiler {
+	return &Profiler{
+		Logger:        logger,
+		ServerAddress: serverAddress,
+	}
+}
+
+func (p *Profiler) StartProfiling(appName string, target string, tags string) {
+	parsedURL, err := url.Parse(target)
+
+	if err != nil {
+		p.Logger.Error("PROFILER: Invalid URL - MW_TARGET")
+		return
+	}
+
+	hostParts := strings.Split(parsedURL.Hostname(), ".")
+
+	if len(hostParts) <= 1 {
+		p.Logger.Error("PROFILER: Subdomain doesn't exist - MW_TARGET")
+		return
+	}
+
+	p.Logger.Info("PROFILER: TenantID-" + hostParts[0])
+
+	config := pyroscope.Config{
+		ApplicationName: appName,
+		ServerAddress:   p.ServerAddress,
+		TenantID:        hostParts[0],
+		ProfileTypes: []pyroscope.ProfileType{
+			pyroscope.ProfileCPU,
+			pyroscope.ProfileInuseObjects,
+			pyroscope.ProfileAllocObjects,
+			pyroscope.ProfileInuseSpace,
+			pyroscope.ProfileAllocSpace,
+		},
+	}
+
+	if len(tags) > 0 {
+		config.Tags = map[string]string{tags: tags}
+	}
+
+	_, err = pyroscope.Start(config)
+
+	if err != nil {
+		p.Logger.Error("PROFILER: Couldn't run profiler on mw-agent", zap.Error(err))
+	}
+
+	p.Logger.Info("PROFILER: Running on mw-agent")
 }

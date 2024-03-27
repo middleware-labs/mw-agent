@@ -219,11 +219,12 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assert.Contains(t, factories.Receivers, component.Type("kafkametrics"))
 
 	// check if factories contain expected exporters
-	assert.Len(t, factories.Exporters, 4)
+	assert.Len(t, factories.Exporters, 5)
 	assert.Contains(t, factories.Exporters, component.Type("logging"))
 	assert.Contains(t, factories.Exporters, component.Type("otlp"))
 	assert.Contains(t, factories.Exporters, component.Type("otlphttp"))
 	assert.Contains(t, factories.Exporters, component.Type("kafka"))
+	assert.Contains(t, factories.Exporters, component.Type("file "))
 
 	// check if factories contain expected processors
 	assert.Len(t, factories.Processors, 7)

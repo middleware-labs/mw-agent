@@ -168,6 +168,13 @@
         ]
     },
     {
+        "type": "oracledb",
+        "prefixes": ["oracledb"],
+        "files": [
+            "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/oracledbreceiver/metadata.yaml"
+        ]
+    },
+    {
         "type": "elasticsearch",
         "prefixes": ["elasticsearch"],
         "files": [

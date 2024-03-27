@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"time"
 
 	yaml "gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -182,27 +181,12 @@ func (k *KubeAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 // agent on the Middleware backend and restarts the agent if configuration
 // has changed.
 func (c *KubeAgentMonitor) ListenForKubeOtelConfigChanges(ctx context.Context) error {
-
-	restartInterval, err := time.ParseDuration(c.ConfigCheckInterval)
+	err := c.callRestartStatusAPI(ctx)
 	if err != nil {
-		return err
+		c.logger.Info("error restarting agent on config change",
+			zap.Error(err))
 	}
-
-	ticker := time.NewTicker(restartInterval)
-
-	for {
-		c.logger.Info("check for config changes after", zap.Duration("restartInterval", restartInterval))
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-ticker.C:
-			err = c.callRestartStatusAPI(ctx)
-			if err != nil {
-				c.logger.Info("error restarting agent on config change",
-					zap.Error(err))
-			}
-		}
-	}
+	return nil
 }
 
 // callRestartStatusAPI checks if there is an update in the otel-config at Middleware Backend

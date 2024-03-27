@@ -20,6 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
@@ -67,6 +68,7 @@ func (c *HostAgent) GetFactories(ctx context.Context) (otelcol.Factories, error)
 		elasticsearchreceiver.NewFactory(),
 		redisreceiver.NewFactory(),
 		apachereceiver.NewFactory(),
+		oracledbreceiver.NewFactory(),
 	}...)
 	if err != nil {
 		return otelcol.Factories{}, err

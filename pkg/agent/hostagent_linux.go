@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
@@ -21,6 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
@@ -65,6 +67,7 @@ func (c *HostAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 		redisreceiver.NewFactory(),
 		jmxreceiver.NewFactory(),
 		apachereceiver.NewFactory(),
+		oracledbreceiver.NewFactory(),
 	}
 
 	// if the host agent is running on ECS EC2, add
@@ -91,6 +94,7 @@ func (c *HostAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
 		kafkaexporter.NewFactory(),
+		fileexporter.NewFactory(),
 	}...)
 	if err != nil {
 		return otelcol.Factories{}, err
