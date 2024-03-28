@@ -22,6 +22,12 @@ jobs:
           - aarch64
 
     steps:
+    - name: Install rpm build for ACT runs
+      if: ${{ github.actor == 'nektos/act' }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y rpm
+        
     - name: Checkout Repo
       uses: actions/checkout@v3
       with:
@@ -132,7 +138,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
-        go-version: 1.20.0
+        go-version: 1.21.0
 
     # Building with CGO_ENABLED=0 so that we can build static binary which is not dependent on any external libraries
     # Building with -ldflags="-s -w" to reduce the size of binary
@@ -169,9 +175,11 @@ jobs:
         fi
 
     - name: Acquire lock
+      if: ${{ github.actor != 'nektos/act' }}
       run: flock upload.lock -c "echo Lock acquired"
 
     - name: Upload artifacts to Github Pages (yum.middleware.io)
+      if: ${{ github.actor != 'nektos/act' }}
       run: |
         git clone https://.:${{ secrets.GHCR_TOKEN }}@github.com/middleware-labs/yum.middleware.io.git    
         if [ ${{ matrix.arch }} == "x64" ]; then
@@ -193,6 +201,8 @@ jobs:
         git push origin master
     
     - name: Release lock
+      if: ${{ github.actor != 'nektos/act' }}
       run: flock upload.lock -c "echo Lock released"
     - name: Delay
+      if: ${{ github.actor != 'nektos/act' }}
       run: sleep 10

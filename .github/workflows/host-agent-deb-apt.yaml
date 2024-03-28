@@ -13,7 +13,6 @@ env:
 jobs:
   build:
     runs-on: ubuntu-22.04
-
     strategy:
       matrix:
         arch:
@@ -30,12 +29,11 @@ jobs:
 
     - name: Set Architecture Variables
       run: |
+        echo "::set-env name=PACKAGE_NAME::mw-agent"
         echo "::set-env name=BINARY_SOURCE::release/mw-agent"
         echo "::set-env name=RELEASE_VERSION::$(echo "${{ github.event.inputs.release_version }}" | tr -d '\n')"
         echo "::set-env name=CONTROL_FILE::control"
-        echo "::set-env name=ARCH::${{ matrix.arch }}"
-        echo "release-version"
-        echo $RELEASE_VERSION
+    
       
     # - uses: actions/cache@v3
     #   with:
@@ -48,19 +46,19 @@ jobs:
     - name: Creating Required Folder Structure
       run: |
         mkdir -p build/apt-repo
-        mkdir -p build/mw-agent_$RELEASE_VERSION-1_$ARCH/opt/mw-agent/bin
+        mkdir -p build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/opt/${PACKAGE_NAME}/bin
 
         mkdir -p controlsetup
         touch controlsetup/control
 
         cat << EOF > controlsetup/control
-        Package: mw-agent
+        Package: ${PACKAGE_NAME}
         Version: ${RELEASE_VERSION}
         Maintainer: middleware <dev@middleware.io>
         Depends: libc6
-        Architecture: $ARCH
+        Architecture: ${{ matrix.arch }}
         Homepage: https://middleware.io
-        Description: Middleware Agent(mw-agent) Service
+        Description: Middleware Agent(${PACKAGE_NAME}) Service
         EOF
 
     - name: Set up Go
@@ -80,26 +78,30 @@ jobs:
       run: |
           if [ ${{ github.actor }} == "nektos/act" ]
           then
-              cp build/mw-host-agent build/mw-agent_$RELEASE_VERSION-1_$ARCH/opt/mw-agent/bin/mw-agent
+              cp build/mw-host-agent build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/opt/${PACKAGE_NAME}/bin/${PACKAGE_NAME}
           else 
-            cp $BINARY_SOURCE build/mw-agent_$RELEASE_VERSION-1_$ARCH/mw-agent/bin/mw-agent
+            cp $BINARY_SOURCE build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/${PACKAGE_NAME}/bin/${PACKAGE_NAME}
           fi
 
     - name: Copy Linux root files & dpkg Control file
       run: |
-          mkdir -p build/mw-agent_$RELEASE_VERSION-1_$ARCH/etc/mw-agent
-          cp -r package-tooling/linux/deb/* build/mw-agent_$RELEASE_VERSION-1_$ARCH/
-          cp package-tooling/agent-config.yaml.sample build/mw-agent_$RELEASE_VERSION-1_$ARCH/etc/mw-agent/agent-config.yaml.sample
-          cp package-tooling/otel-config.yaml.sample build/mw-agent_$RELEASE_VERSION-1_$ARCH/etc/mw-agent/otel-config.yaml.sample
-          chmod 0755 build/mw-agent_$RELEASE_VERSION-1_$ARCH/DEBIAN/postinst
-          chmod 0755 build/mw-agent_$RELEASE_VERSION-1_$ARCH/DEBIAN/postrm
-          cp controlsetup/$CONTROL_FILE build/mw-agent_$RELEASE_VERSION-1_$ARCH/DEBIAN/control
+          mkdir -p build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/etc/${PACKAGE_NAME}
+          cp -r package-tooling/linux/deb/* build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/
+          cp package-tooling/agent-config.yaml.sample build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/etc/${PACKAGE_NAME}/agent-config.yaml.sample
+          cp package-tooling/otel-config.yaml.sample build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/etc/${PACKAGE_NAME}/otel-config.yaml.sample
+
+          cp package-tooling/linux/postinst build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/postinst
+          cp package-tooling/linux/postrm build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/postrm
+          chmod 0755 build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/postinst
+          chmod 0755 build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/postrm
+
+          cp controlsetup/$CONTROL_FILE build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/control
 
     - name: Creating DEB package
       run: |
-          dpkg --build build/mw-agent_$RELEASE_VERSION-1_$ARCH
-          dpkg-deb --info build/mw-agent_$RELEASE_VERSION-1_$ARCH.deb
-          dpkg-deb --contents build/mw-agent_$RELEASE_VERSION-1_$ARCH.deb
+          dpkg --build build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}
+          dpkg-deb --info build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}.deb
+          dpkg-deb --contents build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}.deb
 
     - name: Set up aptly
       if: ${{ github.actor != 'nektos/act' }}
@@ -142,7 +144,7 @@ jobs:
         cp -r apt.middleware.io/public/* $APTLY_HOME/public/
         cp -r apt.middleware.io/pool/* $APTLY_HOME/pool/
         aptly repo list
-        aptly repo add mw-repo example/mw-agent_$RELEASE_VERSION-1_$ARCH.deb
+        aptly repo add mw-repo example/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}.deb
         aptly repo list
         gpg --list-keys
         gpg --list-secret-keys
