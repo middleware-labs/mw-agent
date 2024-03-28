@@ -1,0 +1,12 @@
+#!/bin/sh
+
+set -e
+case "$1" in
+    0)
+        # Actions to perform when the package is purged
+        echo "Configuration files in /etc/mw-agent will be removed..."
+        rm -rf /etc/mw-agent
+        ;;
+esac
+
+

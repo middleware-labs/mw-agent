@@ -1,7 +1,7 @@
 Name: %{package_name}
 Version: %{release_version}
 BuildArch: x86_64 aarch64
-Release: 1
+Release: %{release_number}
 Summary: Middleware Agent(%{package_name}) Service
 License: GPL
 Group: Development/Tools
@@ -22,13 +22,19 @@ cp -rfa ~/build/rpmbuild/SOURCES/%{arch}/%{package_name}-%{release_version}/%{pa
 cp -rfa ~/build/rpmbuild/SOURCES/%{arch}/%{package_name}-%{release_version}/agent-config.yaml.sample %{buildroot}/etc/%{package_name}/
 cp -rfa ~/build/rpmbuild/SOURCES/%{arch}/%{package_name}-%{release_version}/otel-config.yaml.sample %{buildroot}/etc/%{package_name}/
 cp -rfa ~/build/rpmbuild/SOURCES/%{arch}/%{package_name}-%{release_version}/postinstall.sh %{buildroot}/opt/%{package_name}/.postinstall.sh
+cp -rfa ~/build/rpmbuild/SOURCES/%{arch}/%{package_name}-%{release_version}/postuninstall.sh %{buildroot}/opt/%{package_name}/.postuninstall.sh
 
 %files
 /opt/%{package_name}/bin/%{package_name}
 /etc/%{package_name}/agent-config.yaml.sample
 /etc/%{package_name}/otel-config.yaml.sample
 /opt/%{package_name}/.postinstall.sh
+/opt/%{package_name}/.postuninstall.sh
 
 %post
 chmod u+x /opt/%{package_name}/.postinstall.sh
 /opt/%{package_name}/.postinstall.sh
+
+%postun
+chmod u+x /apt/%{package_name}/.postuninstall.sh
+/apt/%{package_name}/.postuninstall.sh $1
