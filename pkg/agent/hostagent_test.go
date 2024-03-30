@@ -202,7 +202,7 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assert.Contains(t, factories.Extensions, component.Type("health_check"))
 
 	// check if factories contains expected receivers
-	assert.Len(t, factories.Receivers, 14)
+	assert.Len(t, factories.Receivers, 16)
 	assert.Contains(t, factories.Receivers, component.Type("otlp"))
 	assert.Contains(t, factories.Receivers, component.Type("fluentforward"))
 	assert.Contains(t, factories.Receivers, component.Type("filelog"))
@@ -217,6 +217,8 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assert.Contains(t, factories.Receivers, component.Type("awsecscontainermetrics"))
 	assert.Contains(t, factories.Receivers, component.Type("jmx"))
 	assert.Contains(t, factories.Receivers, component.Type("kafkametrics"))
+	assert.Contains(t, factories.Receivers, component.Type("apache"))
+	assert.Contains(t, factories.Receivers, component.Type("oracledb"))
 
 	// check if factories contain expected exporters
 	assert.Len(t, factories.Exporters, 5)
@@ -224,7 +226,7 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assert.Contains(t, factories.Exporters, component.Type("otlp"))
 	assert.Contains(t, factories.Exporters, component.Type("otlphttp"))
 	assert.Contains(t, factories.Exporters, component.Type("kafka"))
-	assert.Contains(t, factories.Exporters, component.Type("file "))
+	assert.Contains(t, factories.Exporters, component.Type("file"))
 
 	// check if factories contain expected processors
 	assert.Len(t, factories.Processors, 7)

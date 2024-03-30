@@ -3,15 +3,16 @@ package agent
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
@@ -55,7 +56,7 @@ func TestKubeAgentGetFactories(t *testing.T) {
 	assert.Contains(t, factories.Exporters, component.Type("kafka"))
 
 	// check if factories contain expected processors
-	assert.Len(t, factories.Processors, 10)
+	assert.Len(t, factories.Processors, 11)
 	assert.Contains(t, factories.Processors, component.Type("batch"))
 	assert.Contains(t, factories.Processors, component.Type("memory_limiter"))
 	assert.Contains(t, factories.Processors, component.Type("filter"))
@@ -66,6 +67,7 @@ func TestKubeAgentGetFactories(t *testing.T) {
 	assert.Contains(t, factories.Processors, component.Type("cumulativetodelta"))
 	assert.Contains(t, factories.Processors, component.Type("deltatorate"))
 	assert.Contains(t, factories.Processors, component.Type("metricstransform"))
+	assert.Contains(t, factories.Processors, component.Type("transform"))
 }
 
 func TestListenForKubeOtelConfigChanges(t *testing.T) {
