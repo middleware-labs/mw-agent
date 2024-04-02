@@ -116,7 +116,6 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			DefaultText: "",
 			Value:       "",
 		}),
-
 		altsrc.NewIntFlag(&cli.IntFlag{
 			Name:        "logfile-size",
 			Usage:       "Log file size to store Middleware agent logs. This flag only applifes if logfile flag is specified",
@@ -124,13 +123,27 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			Destination: &cfg.LogfileSize,
 			Value:       1, // default value is 1MB
 		}),
-
 		altsrc.NewBoolFlag(&cli.BoolFlag{
 			Name:        "agent-features.infra-monitoring",
 			Usage:       "Flag to enable or disable infrastructure monitoring",
 			EnvVars:     []string{"MW_AGENT_FEATURES_INFRA_MONITORING"},
 			Destination: &cfg.AgentFeatures.InfraMonitoring,
 			Value:       true, // infra monitoring is enabled by default
+		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "mw-agent-self-profiling",
+			Usage:       "For Profiling the agent itself",
+			EnvVars:     []string{"MW_AGENT_SELF_PROFILING"},
+			Destination: &cfg.SelfProfiling,
+			Value:       false,
+		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "mw-profiling-server-url",
+			Usage:       "Server Address for redirecting profiling data",
+			EnvVars:     []string{"MW_PROFILING_SERVER_URL"},
+			Destination: &cfg.ProfilngServerURL,
+			Value:       "https://profiling.middleware.io",
+			DefaultText: "https://profiling.middleware.io",
 		}),
 
 		&cli.StringFlag{
@@ -212,6 +225,12 @@ func main() {
 				Flags:  flags,
 				Before: altsrc.InitInputSourceWithContext(flags, altsrc.NewYamlSourceFromFlagFunc("config-file")),
 				Action: func(c *cli.Context) error {
+					if cfg.SelfProfiling {
+						profiler := agent.NewProfiler(logger, cfg.ProfilngServerURL)
+						// start profiling
+						go profiler.StartProfiling("mw-host-agent", cfg.Target, cfg.HostTags)
+					}
+
 					if cfg.Logfile != "" {
 						logger.Info("redirecting logs to logfile", zap.String("logfile", cfg.Logfile))
 						// logfile specified. Update logger to write logs to the

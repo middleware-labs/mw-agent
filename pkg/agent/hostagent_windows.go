@@ -3,18 +3,24 @@ package agent
 import (
 	"context"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
@@ -46,6 +52,8 @@ func (c *HostAgent) GetFactories(ctx context.Context) (otelcol.Factories, error)
 	}
 
 	factories.Receivers, err = receiver.MakeFactoryMap([]receiver.Factory{
+		kafkametricsreceiver.NewFactory(),
+		jmxreceiver.NewFactory(),
 		otlpreceiver.NewFactory(),
 		fluentforwardreceiver.NewFactory(),
 		filelogreceiver.NewFactory(),
@@ -59,6 +67,8 @@ func (c *HostAgent) GetFactories(ctx context.Context) (otelcol.Factories, error)
 		mysqlreceiver.NewFactory(),
 		elasticsearchreceiver.NewFactory(),
 		redisreceiver.NewFactory(),
+		apachereceiver.NewFactory(),
+		oracledbreceiver.NewFactory(),
 	}...)
 	if err != nil {
 		return otelcol.Factories{}, err
@@ -68,6 +78,7 @@ func (c *HostAgent) GetFactories(ctx context.Context) (otelcol.Factories, error)
 		loggingexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
+		kafkaexporter.NewFactory(),
 	}...)
 	if err != nil {
 		return otelcol.Factories{}, err
@@ -81,6 +92,7 @@ func (c *HostAgent) GetFactories(ctx context.Context) (otelcol.Factories, error)
 		resourceprocessor.NewFactory(),
 		resourcedetectionprocessor.NewFactory(),
 		attributesprocessor.NewFactory(),
+		transformprocessor.NewFactory(),
 	}...)
 	if err != nil {
 		return otelcol.Factories{}, err

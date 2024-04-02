@@ -3,12 +3,15 @@ package agent
 import (
 	"context"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
@@ -16,8 +19,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
@@ -49,6 +54,7 @@ func (c *HostAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 	}
 
 	receiverfactories := []receiver.Factory{
+		kafkametricsreceiver.NewFactory(),
 		otlpreceiver.NewFactory(),
 		fluentforwardreceiver.NewFactory(),
 		filelogreceiver.NewFactory(),
@@ -60,6 +66,8 @@ func (c *HostAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 		elasticsearchreceiver.NewFactory(),
 		redisreceiver.NewFactory(),
 		jmxreceiver.NewFactory(),
+		apachereceiver.NewFactory(),
+		oracledbreceiver.NewFactory(),
 	}
 
 	// if the host agent is running on ECS EC2, add
@@ -86,6 +94,7 @@ func (c *HostAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
 		kafkaexporter.NewFactory(),
+		fileexporter.NewFactory(),
 	}...)
 	if err != nil {
 		return otelcol.Factories{}, err
@@ -99,6 +108,7 @@ func (c *HostAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 		resourceprocessor.NewFactory(),
 		resourcedetectionprocessor.NewFactory(),
 		attributesprocessor.NewFactory(),
+		transformprocessor.NewFactory(),
 	}...)
 	if err != nil {
 		return otelcol.Factories{}, err
