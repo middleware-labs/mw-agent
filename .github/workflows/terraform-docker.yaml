@@ -14,7 +14,7 @@ on:
 
 jobs:
   push_to_docker_registry:
-    name: Build & Push Docker Image for Host Agent
+    name: Build & Push Docker Image for Terraform
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
