@@ -6,18 +6,61 @@ terraform {
     }
   }
 }
+variable "do_token" {
+  type  = string
+}
 
-resource "digitalocean_droplet" "example" {
+variable "ssh_private_key" {
+  type  = string
+}
+
+variable "ssh_public_key" {
+  type  = string
+}
+
+variable "mw_api_key" {
+  type  = string
+}
+
+variable "mw_target" {
+  type  = string
+}
+
+
+provider "digitalocean" {
+  token = var.do_token
+}
+
+resource "digitalocean_ssh_key" "default" {
+  name       = "terraform-key"
+  public_key = var.ssh_public_key
+}
+
+resource "digitalocean_droplet" "docker" {
   name   = "terraform-droplet"
   region = "nyc3"
   size   = "s-1vcpu-1gb"
   image  = "ubuntu-20-04-x64"
-}
+  ssh_keys = [digitalocean_ssh_key.default.fingerprint]
 
-provisioner "remote-exec" {
-  inline = [
-    "sleep 60",
-    "sudo apt-get update",
-    "MW_AGENT_DOCKER_IMAGE=ghcr.io/middleware-labs/terraform-agent MW_API_KEY=e3g4p2dkmoee09mmlwql64q2oornpyupht4c MW_TARGET=https://gh5k31l.middleware.io:443 bash -c '$(curl -L https://install.middleware.io/scripts/docker-install.sh)'",
-  ]
+  connection {
+    host = self.ipv4_address
+    user = "root"
+    type = "ssh"
+    private_key = var.ssh_private_key
+    timeout = "100m"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo sleep 60",
+      "sudo apt-get update",
+      "sudo apt install bash",
+      "sudo apt-get install -y docker.io docker-compose",
+      "sudo MW_AGENT_DOCKER_IMAGE=ghcr.io/middleware-labs/terraform-agent MW_API_KEY=${var.mw_api_key} MW_TARGET=${var.mw_target} bash -c \"$(curl -L https://install.middleware.io/scripts/docker-install.sh)\"",
+      "sudo sleep 20",
+      "docker ps -a --filter ancestor=ghcr.io/middleware-labs/terraform-agent:master"
+    ]
+  }
+
 }
