@@ -68,12 +68,10 @@ jobs:
           terraform_version: 1.1.0
 
       - name: Terraform Init
-        run: terraform init
-
-      - name: Terraform Plan
-        run: terraform plan
+        run: terraform init  -var "do_token=${{ secrets.DIGITALOCEAN_TOKEN }}" -var "ssh_private_key=${{ secrets.TERRAFORM_SSH_PRIVATE_KEY }}" -var "ssh_public_key=${{ secrets.TERRAFORM_SSH_PUBLIC_KEY }}" -var "mw_api_key=${{ secrets.TERRAFORM_MW_API_KEY }}" -var "mw_target=${{ secrets.TERRAFORM_MW_TARGET }}"
 
       - name: Terraform Apply
-        run: terraform apply -auto-approve
-        env:
-          DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+        run: terraform apply -auto-approve  -var "do_token=${{ secrets.DIGITALOCEAN_TOKEN }}" -var "ssh_private_key=${{ secrets.TERRAFORM_SSH_PRIVATE_KEY }}" -var "ssh_public_key=${{ secrets.TERRAFORM_SSH_PUBLIC_KEY }}" -var "mw_api_key=${{ secrets.TERRAFORM_MW_API_KEY }}" -var "mw_target=${{ secrets.TERRAFORM_MW_TARGET }}"
+
+      - name: Terraform Destroy
+        run: terraform destroy -auto-approve  -var "do_token=${{ secrets.DIGITALOCEAN_TOKEN }}" -var "ssh_private_key=${{ secrets.TERRAFORM_SSH_PRIVATE_KEY }}" -var "ssh_public_key=${{ secrets.TERRAFORM_SSH_PUBLIC_KEY }}" -var "mw_api_key=${{ secrets.TERRAFORM_MW_API_KEY }}" -var "mw_target=${{ secrets.TERRAFORM_MW_TARGET }}"
