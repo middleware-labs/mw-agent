@@ -58,8 +58,8 @@ resource "digitalocean_droplet" "docker" {
       "sudo apt install bash",
       "sudo apt-get install -y docker.io docker-compose",
       "sudo MW_AGENT_DOCKER_IMAGE=ghcr.io/middleware-labs/terraform-agent MW_API_KEY=${var.mw_api_key} MW_TARGET=${var.mw_target} bash -c \"$(curl -L https://install.middleware.io/scripts/docker-install.sh)\"",
-      "sudo sleep 20",
-      "docker ps -a --filter ancestor=ghcr.io/middleware-labs/terraform-agent:master"
+      "sudo sleep 40",
+      "docker ps -a --filter ancestor=ghcr.io/middleware-labs/terraform-agent:latest"
     ]
   }
 
