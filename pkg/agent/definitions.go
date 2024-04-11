@@ -119,7 +119,6 @@ func (h HostConfig) String() string {
 // KubeConfig stores configuration for all the host agent
 type KubeConfig struct {
 	BaseConfig
-	InsightRefreshDuration string
 }
 
 type KubeAgentMonitorConfig struct {
@@ -175,9 +174,6 @@ func WithKubeAgentMonitorDeploymentConfigMap(v string) KubeAgentMonitorOptions {
 // String() implements stringer interface for KubeConfig
 func (k KubeConfig) String() string {
 	s := k.BaseConfig.String()
-	s += fmt.Sprintf("insight-refresh-duration: %s",
-		k.InsightRefreshDuration)
-
 	return s
 }
 
