@@ -17,8 +17,8 @@ jobs:
         with:
           go-version: 1.22.0
 
-      - name: Install all dependencies
-        run: go mod tidy
+      - name: Download dependencies
+        run: go mod download
 
       - name: Run test cases and generate code coverage
         run: |
