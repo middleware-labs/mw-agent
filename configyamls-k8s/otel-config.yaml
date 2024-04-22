@@ -100,7 +100,6 @@ receivers:
     endpoint: "${K8S_NODE_IP}:10250"
     k8s_api_config:
       auth_type: serviceAccount
-    extra_metadata_labels: [container.id, k8s.volume.type]
     insecure_skip_verify: true
     resource_attributes:
       k8s.node.uid:

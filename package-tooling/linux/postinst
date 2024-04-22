@@ -1,0 +1,145 @@
+#!/bin/bash
+
+# Set path to your Middleware agent configuration file
+CONFIG_FILE="/etc/mw-agent/agent-config.yaml"
+
+# Function to restart the Middleware agent service
+restart_service() {
+    # Reload systemd manager configuration
+    systemctl daemon-reload
+
+    # Enable the Middleware agent to start on boot
+    systemctl enable mw-agent
+
+    # Restart the Middleware agent
+    systemctl restart mw-agent
+}
+
+# Function to update configuration values
+update_config() {
+    local key=$1
+    local value=$2
+    local file=$3
+
+    # Update configuration file with the provided key and value
+    sed -i "s|^\s*${key}:.*|${key}: ${value}|" "$file"
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to update configuration file."
+        exit 1
+    fi
+}
+
+# Function to extract environment variables from old execuable file
+extract_environment_variables() {
+    local script_file="$1"
+    
+    # Extract lines that set environment variables along with their values
+    local variables=$(grep -Eo '^\s*export\s+([a-zA-Z_][a-zA-Z0-9_]*)=\S+' "$script_file" | sed -E 's/^\s*export\s+([a-zA-Z_][a-zA-Z0-9_]*)=(\S+)/\1=\2/')
+
+    # Print the extracted environment variables and their values
+    echo "$variables"
+}
+
+# Function to handle each environment variable
+handle_variable() {
+    local key="$1"
+    local value="$2"
+    
+    case "$key" in
+        MW_API_KEY)
+            update_config "api-key" "$value" "${CONFIG_FILE}"            
+            ;;
+        MW_TARGET)
+            update_config "target" "$value" "${CONFIG_FILE}"
+            ;;
+        MW_ENABLE_SYNTHETIC_MONITORING)
+            update_config "enable-synthetic-monitoring" "$value" "${CONFIG_FILE}"
+            ;;
+        MW_CONFIG_CHECK_INTERVAL)
+            update_config "config-check-interval" "$value" "${CONFIG_FILE}"
+            ;;
+        MW_API_URL_FOR_CONFIG_CHECK)
+            update_config "api-url-for-config-check" "$value" "${CONFIG_FILE}"
+            ;;
+        PATH)
+            ;;
+        *)
+            echo "Unknown key: $key"
+            ;;
+    esac
+}
+
+# Create mw-agent group
+if ! getent group mw-agent >/dev/null 2>&1; then
+  groupadd --system mw-agent
+fi
+
+# Create mw-agent user
+if ! getent passwd mw-agent >/dev/null 2>&1; then
+  useradd --system --no-create-home --gid mw-agent \
+  --group root mw-agent
+fi
+
+# Set proper permissions for the Middleware agent configuration directory
+chown -R mw-agent:mw-agent /etc/mw-agent
+
+if [ -f "${CONFIG_FILE}" ]; then
+  echo "/etc/mw-agent/agent-config.yaml file already exists. Not modifying it."
+  restart_service
+  exit 0
+fi
+
+# Create agent-config.yaml from sample
+cp /etc/mw-agent/agent-config.yaml.sample "${CONFIG_FILE}"
+# Ensure proper permissions for the configuration file
+chmod 644 "${CONFIG_FILE}"
+chown mw-agent:mw-agent "${CONFIG_FILE}"
+
+# Check if environment variables are set
+if [ -z "${MW_API_KEY}" ] || [ -z "${MW_TARGET}" ]; then
+    # MW_API_KEY and MW_TARGET are not set
+
+    # Check for old installation and convert it to config file
+    # This is the case user is upgrading mw-agent <= 1.5 to latest
+    if [ -f /etc/systemd/system/mwservice.service ]; then
+        # Stop the old Middleware agent service
+        systemctl stop mwservice
+
+        # Disable the old Middleware agent service
+        systemctl disable mwservice
+
+        # Old executable path
+        OLD_EXECUTABLE_DIR=$(grep -oP 'ExecStart=\K.*' /etc/systemd/system/mwservice.service | xargs dirname | xargs dirname)
+        OLD_EXECUTABLE_PATH=$(grep -oP 'ExecStart=\K.*' /etc/systemd/system/mwservice.service)
+        # Check for old executable and convert it config file
+        # Extract environment variables and their values from the script
+        extracted_vars=$(extract_environment_variables "${OLD_EXECUTABLE_PATH}")
+
+        # Loop through each extracted variable and get the key and value separately
+        while IFS='=' read -r key value; do
+            trimmed_value=$(echo "$value" | xargs)
+            if [ -n "$trimmed_value" ]
+            then
+                handle_variable "$key" "$value"
+            fi
+        done <<< "$extracted_vars"
+
+        # Remove old Middleware agent executable
+        rm -fr $OLD_EXECUTABLE_DIR
+
+        # Remove the old Middleware agent service file
+        rm -f /etc/systemd/system/mwservice.service
+    else
+        echo "Middleware Agent (mw-agent) is installed successfully but needs to be configured."
+        echo "Please set 'api-key' and 'target' in ${CONFIG_FILE} and restart the mw-agent service."
+        echo "mw-agent service can be restarted using the following command: systemctl restart mw-agent."
+        echo "For more information, refer to the Middleware agent documentation at https://docs.middleware.io/docs/agent/installation/linux"
+        exit 0
+    fi
+else 
+    # Update configuration file with environment variable values
+    handle_variable "MW_API_KEY" "${MW_API_KEY}"
+    handle_variable "MW_TARGET" "${MW_TARGET}"
+fi
+
+restart_service

@@ -1,0 +1,5 @@
+#!/bin/sh
+
+set -e
+systemctl stop mw-agent
+systemctl disable mw-agent
