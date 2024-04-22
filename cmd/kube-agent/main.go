@@ -23,6 +23,8 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+var agentVersion = "0.0.1"
+
 func getFlags(cfg *agent.KubeConfig) []cli.Flag {
 	return []cli.Flag{
 		altsrc.NewStringFlag(&cli.StringFlag{
@@ -267,6 +269,7 @@ func main() {
 						agent.WithKubeAgentMonitorDeployment("mw-kube-agent"),
 						agent.WithKubeAgentMonitorDaemonsetConfigMap("mw-daemonset-otel-config"),
 						agent.WithKubeAgentMonitorDeploymentConfigMap("mw-deployment-otel-config"),
+						agent.WithKubeAgentMonitorVersion(agentVersion),
 					)
 
 					err := kubeAgentMonitor.SetClientSet()
