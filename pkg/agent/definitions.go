@@ -129,6 +129,13 @@ type KubeAgentMonitorConfig struct {
 	DeploymentConfigMap string
 }
 
+// WithKubeAgentMonitorVersion sets the agent version
+func WithKubeAgentMonitorVersion(v string) KubeAgentMonitorOptions {
+	return func(h *KubeAgentMonitor) {
+		h.Version = v
+	}
+}
+
 // WithKubeAgentMonitorClusterName sets the cluster name
 func WithKubeAgentMonitorClusterName(v string) KubeAgentMonitorOptions {
 	return func(k *KubeAgentMonitor) {
