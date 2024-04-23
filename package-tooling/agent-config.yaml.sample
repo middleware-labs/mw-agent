@@ -19,7 +19,7 @@ config-check-interval: "5m"
 
 # The tags required to identify / categorize the host in the Middleware UI.
 # The tags are comma separated key:value pairs.
-host-tags: "name:my-machine,env:production"
+# host-tags: "name:my-machine,env:production"
 
 # log file to store agent logs in a given file. If left empty,
 # the logs will be directed to stdout & stderr. 
@@ -33,6 +33,5 @@ host-tags: "name:my-machine,env:production"
 #
 # infra-monitoring: By setting this flag to false, you can disable infrastructure
 # monitoring from this agent. infra-monitoring is set to true by default.
-
-agent-features:
-  infra-monitoring: false
+#agent-features:
+#  infra-monitoring: false

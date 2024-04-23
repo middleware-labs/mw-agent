@@ -1,0 +1,7 @@
+Package: ${PACKAGE}
+Version: ${VERSION}
+Maintainer: middleware <dev@middleware.io>
+Depends: libc6
+Architecture: ${ARCHITECTURE}
+Homepage: https://middleware.io
+Description: Middleware Agent(${PACKAGE}) Service
