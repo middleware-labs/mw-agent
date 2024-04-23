@@ -2,8 +2,7 @@ module github.com/middleware-labs/mw-agent
 
 go 1.22
 
-// replace checkagent => github.com/middleware-labs/check-agent v0.0.0-20230411103956-f67eb953ba5e
-replace checkagent => ./check-agent
+toolchain go1.22.0
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => github.com/middleware-labs/opentelemetry-collector-contrib/pkg/ottl v0.84.1-0.20240418231912-3359b6225e2e
 
