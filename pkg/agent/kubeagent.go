@@ -59,6 +59,7 @@ type KubeAgentMonitor struct {
 	KubeConfig
 	ClusterName string
 	logger      *zap.Logger
+	Version     string
 }
 
 type ComponentType int
@@ -206,6 +207,7 @@ func (c *KubeAgentMonitor) callRestartStatusAPI(ctx context.Context) error {
 	params.Add("platform", "k8s")
 	params.Add("host_id", c.ClusterName)
 	params.Add("cluster", c.ClusterName)
+	params.Add("agent_version", c.Version)
 
 	// Add Query Parameters to the URL
 	baseURL.RawQuery = params.Encode() // Escape Query Parameters
@@ -323,6 +325,7 @@ func (c *KubeAgentMonitor) updateConfigMap(ctx context.Context, componentType Co
 	params.Add("component_type", componentType.String())
 	params.Add("host_id", c.ClusterName)
 	params.Add("cluster", c.ClusterName)
+	params.Add("agent_version", c.Version)
 
 	// Add Query Parameters to the URL
 	baseURL.RawQuery = params.Encode() // Escape Query Parameters
