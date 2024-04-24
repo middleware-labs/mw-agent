@@ -135,7 +135,7 @@ jobs:
         cp -r apt.middleware.io/public/* $APTLY_HOME/public/
         cp -r apt.middleware.io/pool/* $APTLY_HOME/pool/
         aptly repo list
-        aptly repo add mw-repo example/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}.deb
+        aptly repo add mw-repo build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}.deb
         aptly repo list
         gpg --list-keys
         gpg --list-secret-keys
