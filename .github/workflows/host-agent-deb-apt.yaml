@@ -1,4 +1,4 @@
-name: host-dpkg
+name: Host Agent DEB + APT Package
 
 on:
   workflow_dispatch:
@@ -65,7 +65,7 @@ jobs:
           then
               cp build/mw-host-agent-${{ matrix.arch }} build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/opt/${PACKAGE_NAME}/bin/${PACKAGE_NAME}
           else 
-            cp $BINARY_SOURCE build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/${PACKAGE_NAME}/bin/${PACKAGE_NAME}
+            cp $BINARY_SOURCE build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/opt/${PACKAGE_NAME}/bin/${PACKAGE_NAME}
           fi
 
     - name: Copy Linux root files & generate dpkg Control file
