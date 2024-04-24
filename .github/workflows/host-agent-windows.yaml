@@ -33,7 +33,7 @@ jobs:
     - name: Build MW Agent for Windows
       run: |
         GOOS=windows CGO_ENABLED=0 go build -ldflags "-s -w -X main.agentVersion=${{ github.event.inputs.release_version }}" -o build/mw-windows-agent.exe cmd/host-agent/main.go
-        makensis -DVERSION=${{ github.event.inputs.release_version }} scripts/package-windows/package-windows.nsi
+        makensis -DVERSION=${{ github.event.inputs.release_version }} package-tooling/windows/package-windows.nsi
        
     - name: Install jsign Tool For Microsoft Authenticode
       run: |
@@ -52,4 +52,4 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: mw-windows-agent-${{ github.event.inputs.release_version }}-setup.exe
-        path: scripts/package-windows/mw-windows-agent-${{ github.event.inputs.release_version }}-setup.exe
+        path: package-tooling/windows/mw-windows-agent-${{ github.event.inputs.release_version }}-setup.exe
