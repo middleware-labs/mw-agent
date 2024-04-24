@@ -20,7 +20,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
         with:
-          dockerfile: DockerfileWindows
+          dockerfile: Dockerfiles/DockerfileWindows
           context: .
           push: true
           tags: | 
