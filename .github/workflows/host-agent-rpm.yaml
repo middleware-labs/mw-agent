@@ -109,7 +109,7 @@ jobs:
       if: ${{ github.actor != 'nektos/act' }}
       run: |
         git clone https://.:${{ secrets.GHCR_TOKEN }}@github.com/middleware-labs/yum.middleware.io.git    
-        cp -r ~/build/rpmbuild/RPMS/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}.${{ matrix.arch }}.rpm \
+        cp -r ~/build/rpmbuild/RPMS/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}-${RELEASE_NUMBER}.${{ matrix.arch }}.rpm \
         yum.middleware.io/${{ matrix.arch }}/Packages/
        
         cd yum.middleware.io
