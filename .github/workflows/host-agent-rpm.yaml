@@ -72,17 +72,18 @@ jobs:
     # Building with -ldflags="-s -w" to reduce the size of binary
     - name: Go Build
       run: |
+        buildarch="amd64"
+        if [ ${{ matrix.arch }} == "aarch64" ]
+        then
+            buildarch="arm64"
+        fi
+        
         if [ ${{ github.actor }} != "nektos/act" ]
         then
-          CGO_ENABLED=0 GOOS=linux GOARCH=${{ matrix.arch }} go build \
+          CGO_ENABLED=0 GOOS=linux GOARCH=${buildarch} go build \
           -ldflags="-s -w -X main.agentVersion=${RELEASE_VERSION}" \
           -v -a -o ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/${PACKAGE_NAME} cmd/host-agent/main.go
         else
-          buildarch="amd64"
-          if [ ${{ matrix.arch }} == "aarch64" ]
-          then
-            buildarch="arm64"
-          fi
           cp ~/build/mw-host-agent-${buildarch} ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/${PACKAGE_NAME}
         fi
         
