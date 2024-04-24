@@ -125,11 +125,11 @@ jobs:
         cat ~/.aptly.conf
 
         echo $APTLY_HOME
-        sudo mkdir -p $APTLY_HOME/public
-        sudo mkdir -p $APTLY_HOME/db
-        sudo mkdir -p $APTLY_HOME/pool
-        sudo chmod 755 $APTLY_HOME
-        sudo chmod 755 $APTLY_HOME/*
+        mkdir -p $APTLY_HOME/public
+        mkdir -p $APTLY_HOME/db
+        mkdir -p $APTLY_HOME/pool
+        chmod 755 $APTLY_HOME
+        chmod 755 $APTLY_HOME/*
         ls -l apt.middleware.io
         cp -r apt.middleware.io/db/* $APTLY_HOME/db/
         cp -r apt.middleware.io/public/* $APTLY_HOME/public/
