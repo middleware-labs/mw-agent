@@ -222,7 +222,7 @@ Section "install"
   # Files add here should be removed by the uninstaller (see section "uninstall")
   file "${BUILD_DIR}\${APP_NAME_IN_INSTALLED_DIR}.exe"
   file "logo.ico"
-  file "${REPO_ROOT_DIR}\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}"
+  file /oname=${CONFIG_FILE_NAME_IN_INSTALLED_DIR} "..\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}.sample"
 
   Call UpdateConfigFile
  
