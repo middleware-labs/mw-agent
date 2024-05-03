@@ -3,14 +3,18 @@
 # Set path to your Middleware agent configuration file
 CONFIG_FILE="/etc/mw-agent/agent-config.yaml"
 
-# Function to restart the Middleware agent service
-restart_service() {
+# Enable Middleware agent service
+enable_service () {
     # Reload systemd manager configuration
     systemctl daemon-reload
 
     # Enable the Middleware agent to start on boot
     systemctl enable mw-agent
-
+}
+# Function to restart the Middleware agent service
+restart_service() {
+    # Enable the Middleware agent service
+    enable_service
     # Restart the Middleware agent
     systemctl restart mw-agent
 }
@@ -95,51 +99,53 @@ cp /etc/mw-agent/agent-config.yaml.sample "${CONFIG_FILE}"
 chmod 644 "${CONFIG_FILE}"
 chown mw-agent:mw-agent "${CONFIG_FILE}"
 
-# Check if environment variables are set
-if [ -z "${MW_API_KEY}" ] || [ -z "${MW_TARGET}" ]; then
-    # MW_API_KEY and MW_TARGET are not set
 
-    # Check for old installation and convert it to config file
-    # This is the case user is upgrading mw-agent <= 1.5 to latest
-    if [ -f /etc/systemd/system/mwservice.service ]; then
-        # Stop the old Middleware agent service
-        systemctl stop mwservice
+# Check for old installation and convert it to config file
+# This is the case user is upgrading mw-agent <= 1.5 to latest
+if [ -f /etc/systemd/system/mwservice.service ]; then
+    # Stop the old Middleware agent service
+    systemctl stop mwservice
 
-        # Disable the old Middleware agent service
-        systemctl disable mwservice
+    # Disable the old Middleware agent service
+    systemctl disable mwservice
 
-        # Old executable path
-        OLD_EXECUTABLE_DIR=$(grep -oP 'ExecStart=\K.*' /etc/systemd/system/mwservice.service | xargs dirname | xargs dirname)
-        OLD_EXECUTABLE_PATH=$(grep -oP 'ExecStart=\K.*' /etc/systemd/system/mwservice.service)
-        # Check for old executable and convert it config file
-        # Extract environment variables and their values from the script
-        extracted_vars=$(extract_environment_variables "${OLD_EXECUTABLE_PATH}")
+    # Old executable path
+    OLD_EXECUTABLE_DIR=$(grep -oP 'ExecStart=\K.*' /etc/systemd/system/mwservice.service | xargs dirname | xargs dirname)
+    OLD_EXECUTABLE_PATH=$(grep -oP 'ExecStart=\K.*' /etc/systemd/system/mwservice.service)
+    # Check for old executable and convert it config file
+    # Extract environment variables and their values from the script
+    extracted_vars=$(extract_environment_variables "${OLD_EXECUTABLE_PATH}")
 
-        # Loop through each extracted variable and get the key and value separately
-        while IFS='=' read -r key value; do
-            trimmed_value=$(echo "$value" | xargs)
-            if [ -n "$trimmed_value" ]
-            then
-                handle_variable "$key" "$value"
-            fi
-        done <<< "$extracted_vars"
+    # Loop through each extracted variable and get the key and value separately
+    while IFS='=' read -r key value; do
+        trimmed_value=$(echo "$value" | xargs)
+        if [ -n "$trimmed_value" ]
+        then
+            handle_variable "$key" "$value"
+        fi
+    done <<< "$extracted_vars"
 
-        # Remove old Middleware agent executable
-        rm -fr $OLD_EXECUTABLE_DIR
+    # Remove old Middleware agent executable
+    rm -fr $OLD_EXECUTABLE_DIR
 
-        # Remove the old Middleware agent service file
-        rm -f /etc/systemd/system/mwservice.service
-    else
+    # Remove the old Middleware agent service file
+    rm -f /etc/systemd/system/mwservice.service
+else
+    # Check if environment variables are set
+    if [ -z "${MW_API_KEY}" ] || [ -z "${MW_TARGET}" ]; then
+        # MW_API_KEY and MW_TARGET are not set
+        enable_service
+        
         echo "Middleware Agent (mw-agent) is installed successfully but needs to be configured."
         echo "Please set 'api-key' and 'target' in ${CONFIG_FILE} and restart the mw-agent service."
         echo "mw-agent service can be restarted using the following command: systemctl restart mw-agent."
         echo "For more information, refer to the Middleware agent documentation at https://docs.middleware.io/docs/agent/installation/linux"
         exit 0
+    else 
+        # Update configuration file with environment variable values
+        handle_variable "MW_API_KEY" "${MW_API_KEY}"
+        handle_variable "MW_TARGET" "${MW_TARGET}"
     fi
-else 
-    # Update configuration file with environment variable values
-    handle_variable "MW_API_KEY" "${MW_API_KEY}"
-    handle_variable "MW_TARGET" "${MW_TARGET}"
 fi
 
 restart_service
