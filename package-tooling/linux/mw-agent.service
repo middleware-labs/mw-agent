@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 WorkingDirectory=/opt/mw-agent
-User=mw-agent
+User=root
 ExecStart=/opt/mw-agent/bin/mw-agent start --config-file=/etc/mw-agent/agent-config.yaml
 Type=simple
 TimeoutStopSec=10
