@@ -591,8 +591,8 @@ github.com/middleware-labs/opentelemetry-collector-contrib/pkg/ottl v0.84.1-0.20
 github.com/middleware-labs/opentelemetry-collector-contrib/pkg/ottl v0.84.1-0.20240430095321-03aeafdcf725/go.mod h1:0us3rAudWnHES0nOtmTsUjgQtlKJyiozaC5osgJM7cU=
 github.com/middleware-labs/opentelemetry-collector-contrib/processor/transformprocessor v0.84.1-0.20240430095321-03aeafdcf725 h1:cpU0KKSbdiCvW3/sG1Fr1x18PhAfd5pLdH+/x8o/bvk=
 github.com/middleware-labs/opentelemetry-collector-contrib/processor/transformprocessor v0.84.1-0.20240430095321-03aeafdcf725/go.mod h1:2A2By9RbrjOrFO2u4rn+hq0NTSgMdUZKeKH7wchoAe8=
-github.com/middleware-labs/opentelemetry-collector-contrib/receiver/apachereceiver v0.84.1-0.20240430095321-03aeafdcf725 h1:BNvTHwu4AQPC5ITlIi697Sm9lDb4XYoblLPjSv319LE=
-github.com/middleware-labs/opentelemetry-collector-contrib/receiver/apachereceiver v0.84.1-0.20240430095321-03aeafdcf725/go.mod h1:zLVxefrBZUVrCHk711ZVBzt1XcmFYtwol65IcJOkeDE=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/apachereceiver v0.84.1-0.20240506045930-da9659b4b57a h1:3k91VTddZIibi2fxnBlDO7wEAoJvnoL6W1Snm9mU33E=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/apachereceiver v0.84.1-0.20240506045930-da9659b4b57a/go.mod h1:zLVxefrBZUVrCHk711ZVBzt1XcmFYtwol65IcJOkeDE=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.84.1-0.20240430095321-03aeafdcf725 h1:9c9B5jkmBnZ5izbUMaMZ1s2Px0QCGPbgrdVxzTOEtrQ=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.84.1-0.20240430095321-03aeafdcf725/go.mod h1:4XvEwcWJGIjfuFZz64dY1vpseVJlQHt21/olsAPi4/U=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.84.1-0.20240430095321-03aeafdcf725 h1:VGjqtTUJ7LKEg9Ln0qhEDi8gRPH0mz6uMHCJanQ7jGw=

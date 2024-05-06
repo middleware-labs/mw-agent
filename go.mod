@@ -32,7 +32,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsec
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kafkametricsreceiver v0.84.1-0.20240430095321-03aeafdcf725
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/apachereceiver v0.84.1-0.20240430095321-03aeafdcf725
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/apachereceiver v0.84.1-0.20240506045930-da9659b4b57a
 
 require (
 	github.com/prometheus/common v0.44.0
