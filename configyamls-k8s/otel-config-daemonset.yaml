@@ -92,6 +92,11 @@ receivers:
     insecure_skip_verify: true
     k8s_api_config:
       auth_type: serviceAccount
+    metric_groups:
+      - volume
+      - node
+      - pod
+      - container
   hostmetrics:
     collection_interval: 5s
     scrapers:
