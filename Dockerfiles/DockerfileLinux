@@ -14,5 +14,5 @@ RUN mkdir -p /opt/mw-agent/bin
 WORKDIR /opt/mw-agent
 COPY --from=build /etc/ssl/certs /etc/ssl/certs
 COPY --from=build /tmp/mw-agent /opt/mw-agent/bin/mw-agent
-COPY --from=build /package-tooling/linux/otel-config.yaml.sample /etc/mw-agent/otel-config.yaml
+COPY --from=build /package-tooling/otel-config.yaml.sample /etc/mw-agent/otel-config.yaml
 CMD ["/opt/mw-agent/bin/mw-agent", "start"]
