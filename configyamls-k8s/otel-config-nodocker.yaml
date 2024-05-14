@@ -119,6 +119,9 @@ receivers:
         enabled: true
       k8s.container.memory_request_utilization:
         enabled: true
+    extra_metadata_labels: 
+      - container.id
+      - k8s.volume.type
     metric_groups:
       - volume
       - node

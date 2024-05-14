@@ -17,6 +17,8 @@ COPY --from=build /etc/ssl/certs /etc/ssl/certs
 COPY --from=build /tmp/mw-agent /usr/bin/mw-agent
 COPY --from=build /app/configyamls-k8s/otel-config.yaml /app/otel-config.yaml
 COPY --from=build /app/configyamls-k8s/otel-config-nodocker.yaml /app/otel-config-nodocker.yaml
+COPY --from=build /app/configyamls-k8s/otel-config-daemonset.yaml /app/otel-config-daemonset.yaml
+COPY --from=build /app/configyamls-k8s/otel-config-deployment.yaml /app/otel-config-deployment.yaml
 
 # A symlink to support existing k8s agent users
 RUN ln -s /usr/bin/mw-agent /usr/bin/api-server
