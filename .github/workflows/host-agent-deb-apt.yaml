@@ -90,7 +90,7 @@ jobs:
 
     - name: Creating DEB package
       run: |
-          dpkg --build build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}
+          dpkg-deb --build -Z xz build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}
           dpkg-deb --info build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}.deb
           dpkg-deb --contents build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}.deb
 
