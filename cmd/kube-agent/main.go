@@ -264,7 +264,7 @@ func main() {
 
 					kubeAgentMonitor := agent.NewKubeAgentMonitor(cfg,
 						agent.WithKubeAgentMonitorClusterName(os.Getenv("MW_KUBE_CLUSTER_NAME")),
-						agent.WithKubeAgentMonitorAgentNamespace("mw-agent-ns"),
+						agent.WithKubeAgentMonitorAgentNamespace(os.Getenv("MW_NAMESPACE")),
 						agent.WithKubeAgentMonitorDaemonset("mw-kube-agent"),
 						agent.WithKubeAgentMonitorDeployment("mw-kube-agent"),
 						agent.WithKubeAgentMonitorDaemonsetConfigMap("mw-daemonset-otel-config"),
