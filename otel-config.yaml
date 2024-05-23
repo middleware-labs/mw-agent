@@ -1,4 +1,4 @@
-exporters:
+   exporters:
   logging:
     loglevel: debug
   otlp/2:
@@ -112,6 +112,13 @@ receivers:
     collection_interval: 5s
     endpoint: unix:///var/run/docker.sock
     timeout: 20s
+
+  mysql:
+    endpoint: localhost:3306
+    username: root
+    password: root
+
+  
   filelog:
     include:
     - /var/log/**/*.log*
@@ -210,13 +217,14 @@ service:
       - resource/hostid
       - attributes/logs
       - batch
-      receivers:
+      vreceivers:
       - otlp
       - fluentforward
       - filelog
     metrics:
       exporters:
       - otlp/2
+      - logging
       processors:
       - resource
       - resourcedetection
@@ -227,6 +235,8 @@ service:
       - docker_stats
       - otlp
       - prometheus
+      - mysql
+
     traces:
       exporters:
       - otlp/2
