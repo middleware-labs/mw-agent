@@ -34,6 +34,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafka
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/apachereceiver v0.84.1-0.20240523063643-4a068cd7218d
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mysqlreceiver v0.84.1-0.20240524121839-4c201f6d273c
+
 require (
 	github.com/prometheus/common v0.44.0
 	github.com/stretchr/testify v1.8.4
