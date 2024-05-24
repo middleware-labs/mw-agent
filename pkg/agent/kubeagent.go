@@ -5,10 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
+	"time"
 
 	yaml "gopkg.in/yaml.v2"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
@@ -41,9 +45,21 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.uber.org/zap"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
 )
+
+type Response struct {
+	Data []AccountData `json:"data"`
+}
+
+type AccountData struct {
+	AccountID string `json:"accountId"`
+	Region    string `json:"region"`
+	Namespace string `json:"namespace"`
+}
 
 const Timestamp string = "timestamp"
 
@@ -184,70 +200,116 @@ func (k *KubeAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 // agent on the Middleware backend and restarts the agent if configuration
 // has changed.
 func (c *KubeAgentMonitor) ListenForKubeOtelConfigChanges(ctx context.Context) error {
-	err := c.callRestartStatusAPI(ctx)
-	if err != nil {
-		c.logger.Info("error restarting agent on config change",
-			zap.Error(err))
-	}
+	fmt.Println("Listening...")
+	c.callRestartStatusAPI(ctx)
 	return nil
+}
+
+// divideData divides data into n almost equal parts
+func divideData(data []AccountData, n int) [][]AccountData {
+	fmt.Println("dividedata....")
+	var divided [][]AccountData
+	chunkSize := (len(data) + n - 1) / n
+
+	for i := 0; i < len(data); i += chunkSize {
+		end := i + chunkSize
+		if end > len(data) {
+			end = len(data)
+		}
+		divided = append(divided, data[i:end])
+	}
+
+	return divided
 }
 
 // callRestartStatusAPI checks if there is an update in the otel-config at Middleware Backend
 // For a particular account
-func (c *KubeAgentMonitor) callRestartStatusAPI(ctx context.Context) error {
+func (c *KubeAgentMonitor) callRestartStatusAPI(ctx context.Context) {
+	fmt.Println("Restarting...")
+	// Create a shared informer factory for HPA resources
+	factory := informers.NewSharedInformerFactory(c.Clientset, time.Minute)
+	hpaInformer := factory.Autoscaling().V1().HorizontalPodAutoscalers().Informer()
 
-	u, err := url.Parse(c.APIURLForConfigCheck)
-	if err != nil {
-		return err
-	}
+	stopCh := make(chan struct{})
+	defer close(stopCh)
 
-	baseURL := u.JoinPath(apiPathForRestart)
-	baseURL = baseURL.JoinPath(c.APIKey)
-	params := url.Values{}
-	params.Add("platform", "k8s")
-	params.Add("host_id", c.ClusterName)
-	params.Add("cluster", c.ClusterName)
-	params.Add("agent_version", c.Version)
+	hpaInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			oldHPA := oldObj.(*autoscalingv1.HorizontalPodAutoscaler)
+			newHPA := newObj.(*autoscalingv1.HorizontalPodAutoscaler)
+			if oldHPA.Status.CurrentReplicas != newHPA.Status.CurrentReplicas {
+				fmt.Printf("HPA updated: %s/%s, replicas: %d -> %d\n", newHPA.Namespace, newHPA.Name, oldHPA.Status.CurrentReplicas, newHPA.Status.CurrentReplicas)
 
-	// Add Query Parameters to the URL
-	baseURL.RawQuery = params.Encode() // Escape Query Parameters
+				resp, err := http.Get(os.Getenv("MW_AWS_JOBS_LIST_URL"))
+				if err != nil {
+					fmt.Printf("Error making GET request: %v\n", err)
+					return
+				}
+				defer resp.Body.Close()
 
-	resp, err := http.Get(baseURL.String())
-	if err != nil {
-		c.logger.Error("failed to call Restart-API", zap.String("url", baseURL.String()), zap.Error(err))
-		return err
-	}
+				// Read the response body
+				body, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					fmt.Printf("Error reading response body: %v\n", err)
+					return
+				}
 
-	defer resp.Body.Close()
+				// Parse the JSON response into the custom struct
+				var response Response
+				err = json.Unmarshal(body, &response)
+				if err != nil {
+					fmt.Printf("Error unmarshalling JSON response: %v\n", err)
+					return
+				}
 
-	if resp.StatusCode != http.StatusOK {
-		c.logger.Error("failed to call Restart-API", zap.Int("code", resp.StatusCode))
-		return ErrRestartStatusAPINotOK
-	}
+				// Print the parsed data
+				for _, data := range response.Data {
+					fmt.Printf("AccountID: %s, Region: %s, Namespace: %s\n", data.AccountID, data.Region, data.Namespace)
+				}
 
-	var apiResponse apiResponseForRestart
-	if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
-		c.logger.Error("failed unmarshal Restart-API response", zap.Error(err))
-		return err
-	}
+				// Divide the data into N almost equal parts
+				dividedData := divideData(response.Data, int(newHPA.Status.CurrentReplicas))
 
-	if apiResponse.Rollout.Daemonset {
-		c.logger.Info("restarting mw-agent")
-		if err := c.restartKubeAgent(ctx, DaemonSet); err != nil {
-			c.logger.Error("error restarting mw-agent daemonset", zap.Error(err))
-			return err
-		}
-	}
+				// Create receivers for each part
+				for i, part := range dividedData {
 
-	if apiResponse.Rollout.Deployment {
-		c.logger.Info("restarting mw-agent")
-		if err := c.restartKubeAgent(ctx, Deployment); err != nil {
-			c.logger.Error("error restarting mw-agent deployment", zap.Error(err))
-			return err
-		}
-	}
+					// todo: create / delete configmaps based on new replicas, connect them with statefulset pods
 
-	return err
+					fmt.Printf("Receiver %d:\n", i+1)
+					for _, data := range part {
+						fmt.Printf("awscloudwatchmetrics/%s_%s_%s:\n", data.AccountID, data.Region, data.Namespace)
+						fmt.Printf("    region: %s\n", data.Region)
+						fmt.Printf("    profile: \"default\"\n")
+						fmt.Printf("    imds_endpoint: \"\"\n")
+						fmt.Printf("    poll_interval: \"5m\"\n")
+						fmt.Printf("    metrics:\n")
+						fmt.Printf("      named:\n")
+						fmt.Printf("      - namespace: \"AWS/%s\"\n", data.Namespace)
+						fmt.Printf("        metric_name: \"CPUUtilization\"\n")
+						fmt.Printf("        period: \"5m\"\n")
+						fmt.Printf("        aws_aggregation: \"Sum\"\n")
+					}
+				}
+			}
+
+		},
+	})
+
+	// Start the informer
+	factory.Start(stopCh)
+	factory.WaitForCacheSync(stopCh)
+
+	// Block forever
+	<-stopCh
+	// if apiResponse.Rollout.Deployment {
+	// 	c.logger.Info("restarting mw-agent")
+	// 	if err := c.restartKubeAgent(ctx, Deployment); err != nil {
+	// 		c.logger.Error("error restarting mw-agent deployment", zap.Error(err))
+	// 		return err
+	// 	}
+	// }
+
+	// return err
 }
 
 // restartKubeAgent rewrites the configmaps and rollout restarts agent's data scraping components
