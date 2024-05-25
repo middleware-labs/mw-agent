@@ -221,7 +221,7 @@ func (c *HostAgent) updateConfig(config map[string]interface{}, cnf integrationC
 	return config, nil
 }
 
-func (c *HostAgent) updateYAML(configType, yamlPath string) error {
+func (c *HostAgent) updateConfigFile(configType string) error {
 	// _, apiURLForYAML := checkForConfigURLOverrides()
 
 	hostname := getHostname()
@@ -334,14 +334,14 @@ func (c *HostAgent) updateYAML(configType, yamlPath string) error {
 }
 
 // GetUpdatedYAMLPath gets the correct otel configuration file
-func (c *HostAgent) GetUpdatedYAMLPath() (string, error) {
+func (c *HostAgent) GetOtelConfig() (string, error) {
 	configType := "docker"
 	dockerSocketPath := strings.Split(c.DockerEndpoint, "//")
 	if len(dockerSocketPath) != 2 || !isSocketFn(dockerSocketPath[1]) {
 		configType = "nodocker"
 	}
 
-	if err := c.updateYAML(configType, c.OtelConfigFile); err != nil {
+	if err := c.updateConfigFile(configType); err != nil {
 		return "", err
 	}
 
@@ -384,7 +384,7 @@ func (c *HostAgent) checkIntConfigValidity(integrationType IntegrationType, cnf 
 }
 
 func (c *HostAgent) restartHostAgent() error {
-	c.GetUpdatedYAMLPath()
+	c.GetOtelConfig()
 	cmd := exec.Command("kill", "-SIGHUP", fmt.Sprintf("%d", os.Getpid()))
 	err := cmd.Run()
 	if err != nil {
@@ -435,7 +435,7 @@ func (c *HostAgent) callRestartStatusAPI() error {
 
 	if apiResponse.Restart {
 		c.logger.Info("restarting mw-agent")
-		if _, err := c.GetUpdatedYAMLPath(); err != nil {
+		if _, err := c.GetOtelConfig(); err != nil {
 			c.logger.Error("error getting Updated YAML", zap.Error(err))
 			return err
 		}

@@ -6,11 +6,6 @@ api-key:
 # target is your unique Middleware account URL
 target: 
 
-# Synthetic monitoring using the Middleware agent is disabled by default.
-# Set enable-synthetic-monitoring to true if you want this agent to be
-# able to perform synthetic tests.
-enable-synthetic-monitoring: false
-
 # The duration for the agent to check for configuration changes from the
 # backend. We recommend to keep this change to 5 minutes or higher. Keeping 
 # this duration to a smaller value will impact resource consumption on the
@@ -18,8 +13,15 @@ enable-synthetic-monitoring: false
 config-check-interval: "5m"
 
 # The tags required to identify / categorize the host in the Middleware UI.
-# The tags are comma separated key:value pairs.
+# The tags are comma separated key:value pairs. Empty host-tag should always
+# be a double quoted string ("").
+# Examples:
+# host-tags: "" 
 # host-tags: "name:my-machine,env:production"
+host-tags: ""
+
+# This is the port where MW Agent exposes its internal metrics.
+agent-internal-metrics-port: 8888
 
 # log file to store agent logs in a given file. If left empty,
 # the logs will be directed to stdout & stderr. 
@@ -33,5 +35,5 @@ config-check-interval: "5m"
 #
 # infra-monitoring: By setting this flag to false, you can disable infrastructure
 # monitoring from this agent. infra-monitoring is set to true by default.
-#agent-features:
+# agent-features:
 #  infra-monitoring: false

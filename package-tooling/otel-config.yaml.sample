@@ -198,7 +198,7 @@ receivers:
         scrape_interval: 5s
         static_configs:
         - targets:
-          - 127.0.0.1:8888
+          - 127.0.0.1:${MW_AGENT_INTERNAL_METRICS_PORT}
 service:
   pipelines:
     logs:
@@ -239,5 +239,7 @@ service:
       receivers:
       - otlp
   telemetry:
+    metrics:
+      address: 127.0.0.1:${MW_AGENT_INTERNAL_METRICS_PORT}
     logs:
       level: fatal

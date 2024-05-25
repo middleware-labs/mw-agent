@@ -81,6 +81,7 @@ type BaseConfig struct {
 	AgentFeatures             AgentFeatures
 	SelfProfiling             bool
 	ProfilngServerURL         string
+	InternalMetricsPort       uint
 }
 
 // String() implements stringer interface for BaseConfig
