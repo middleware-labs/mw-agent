@@ -613,8 +613,8 @@ github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mongodbrecei
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.84.1-0.20240523063643-4a068cd7218d/go.mod h1:K0bwcocVHvvXYwxvAE/xEOWoj9HmbJSp3atuUI73qPI=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mysqlreceiver v0.84.1-0.20240524121839-4c201f6d273c h1:szYCZiGigbqfeGr4NPCjff3WXn5fGBsqUBN1sZGmFZ8=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mysqlreceiver v0.84.1-0.20240524121839-4c201f6d273c/go.mod h1:2kSgRWH24wOS2NUvfTvg2f9y6kD+7S/Z0aPrPxRIqiA=
-github.com/middleware-labs/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.84.1-0.20240523063643-4a068cd7218d h1:VZxfgM6BW4ZtS/kuJwgqhxLVUv2z3gIelVMTK0NqjGc=
-github.com/middleware-labs/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.84.1-0.20240523063643-4a068cd7218d/go.mod h1:dx+hmIy1AAXaf1JIUy6/KPS0x8fuTnCg3io3oLzlqxY=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.84.1-0.20240525085126-b08d2a62105b h1:x/QkOgdEDUtau1qSZqUSYDMN5O0Vmw4yyiEOzdVe0vM=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.84.1-0.20240525085126-b08d2a62105b/go.mod h1:dx+hmIy1AAXaf1JIUy6/KPS0x8fuTnCg3io3oLzlqxY=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.84.1-0.20240523063643-4a068cd7218d h1:C6PqPgDdzpHmfFygV9jAGvmBbo/HSobRJxAal0qyD+Q=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.84.1-0.20240523063643-4a068cd7218d/go.mod h1:YMp5AJQiuDQwdEBGebj/MH/AGgLH/S5uEPEPsRZnXXs=
 github.com/miekg/dns v1.1.26/go.mod h1:bPDLeHnStXmXAq1m/Ch/hvfNHr14JKNPMBo3VZKjuso=
