@@ -20,6 +20,7 @@ restart_service() {
 }
 
 # Function to update configuration values
+
 update_config() {
     local key=$1
     local value=$2
@@ -27,9 +28,20 @@ update_config() {
 
     # Update configuration file with the provided key and value
     sed -i "s|^\s*${key}:.*|${key}: ${value}|" "$file"
+    
     if [ $? -ne 0 ]; then
         echo "Error: Failed to update configuration file."
         exit 1
+    fi
+
+    # Check if the key was updated. If not, append the key-value pair to the file.
+    grep -q "^\s*${key}:" "$file"
+    if [ $? -ne 0 ]; then
+        echo "${key}: ${value}" >> "$file"
+        if [ $? -ne 0 ]; then
+            echo "Error: Failed to append to configuration file."
+            exit 1
+        fi
     fi
 }
 
@@ -56,15 +68,26 @@ handle_variable() {
         MW_TARGET)
             update_config "target" "$value" "${CONFIG_FILE}"
             ;;
-        MW_ENABLE_SYNTHETIC_MONITORING)
-            update_config "enable-synthetic-monitoring" "$value" "${CONFIG_FILE}"
-            ;;
         MW_CONFIG_CHECK_INTERVAL)
             update_config "config-check-interval" "$value" "${CONFIG_FILE}"
             ;;
+        MW_HOST_TAGS)
+            update_config "host-tags" "$value" "${CONFIG_FILE}"
+            ;;
+        MW_AGENT_INTERNAL_METRICS_PORT)
+            update_config "agent-internal-metrics-port" "$value" "${CONFIG_FILE}"
+            ;;
+        # Advanced configuration options
         MW_API_URL_FOR_CONFIG_CHECK)
             update_config "api-url-for-config-check" "$value" "${CONFIG_FILE}"
             ;;
+        MW_FETCH_ACCOUNT_OTEL_CONFIG)
+            update_config "fetch-account-otel-config" "$value" "${CONFIG_FILE}"
+            ;; 
+        MW_ENABLE_SYNTHETIC_MONITORING)
+            # synthetic monitoring feature has been removed from the agent
+            ;;
+        
         PATH)
             ;;
         *)
@@ -145,6 +168,31 @@ else
         # Update configuration file with environment variable values
         handle_variable "MW_API_KEY" "${MW_API_KEY}"
         handle_variable "MW_TARGET" "${MW_TARGET}"
+
+        if [ -n "${MW_CONFIG_CHECK_INTERVAL}" ]; then
+            handle_variable "MW_CONFIG_CHECK_INTERVAL" "${MW_CONFIG_CHECK_INTERVAL}"
+        fi
+
+        if [ -n "${MW_HOST_TAGS}" ]; then
+            handle_variable "MW_HOST_TAGS" "${MW_HOST_TAGS}"
+        fi
+
+        if [ -n "${MW_AGENT_INTERNAL_METRICS_PORT}" ]; then
+            handle_variable "MW_AGENT_INTERNAL_METRICS_PORT" "${MW_AGENT_INTERNAL_METRICS_PORT}"
+        fi
+
+        if [ -n "${MW_API_URL_FOR_CONFIG_CHECK}" ]; then
+            handle_variable "MW_API_URL_FOR_CONFIG_CHECK" "${MW_API_URL_FOR_CONFIG_CHECK}"
+        fi
+
+        if [ -n "${MW_ENABLE_SYNTHETIC_MONITORING}" ]; then
+            handle_variable "MW_ENABLE_SYNTHETIC_MONITORING" "${MW_ENABLE_SYNTHETIC_MONITORING}"
+        fi 
+
+        if [ -n "${MW_FETCH_ACCOUNT_OTEL_CONFIG}" ]; then
+            handle_variable "MW_FETCH_ACCOUNT_OTEL_CONFIG" "${MW_FETCH_ACCOUNT_OTEL_CONFIG}"
+        fi
+        
     fi
 fi
 

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 
 	"github.com/middleware-labs/mw-agent/pkg/agent"
 	"github.com/prometheus/common/version"
@@ -53,6 +54,7 @@ func (p *program) Stop(s service.Service) error {
 func (p *program) run() {
 	if err := p.collector.Run(context.Background()); err != nil {
 		p.logger.Error("collector server run finished with error", zap.Error(err))
+		os.Exit(1)
 	}
 }
 
@@ -73,7 +75,7 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:    "config-check-interval",
 			EnvVars: []string{"MW_CONFIG_CHECK_INTERVAL"},
-			Usage: "Duration string to periodically check for configuration updates." +
+			Usage: "Duration string to periodically check for configuration updates. " +
 				"Setting the value to 0 disables this feature.",
 			Destination: &cfg.ConfigCheckInterval,
 			DefaultText: "60s",
@@ -82,7 +84,7 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 		altsrc.NewBoolFlag(&cli.BoolFlag{
 			Name:        "fetch-account-otel-config",
 			EnvVars:     []string{"MW_FETCH_ACCOUNT_OTEL_CONFIG"},
-			Usage:       "Get the otel-config from Middleware backend",
+			Usage:       "Get the otel-config from Middleware backend.",
 			Destination: &cfg.FetchAccountOtelConfig,
 			DefaultText: "true",
 			Value:       true,
@@ -90,7 +92,7 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "docker-endpoint",
 			EnvVars:     []string{"MW_DOCKER_ENDPOINT"},
-			Usage:       "Set the endpoint for Docker socket if different from default",
+			Usage:       "Set the endpoint for Docker socket if different from default.",
 			Destination: &cfg.DockerEndpoint,
 			DefaultText: "unix:///var/run/docker.sock",
 			Value:       "unix:///var/run/docker.sock",
@@ -105,20 +107,21 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "host-tags",
-			Usage:       "Tags for this host",
+			Usage:       "Tags for this host.",
 			EnvVars:     []string{"MW_HOST_TAGS"},
 			Destination: &cfg.HostTags,
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "fluent-port",
-			Usage:       "Fluent receiver will listen to this port",
+			Usage:       "Fluent receiver will listen to this port.",
 			EnvVars:     []string{"MW_FLUENT_PORT"},
 			Destination: &cfg.FluentPort,
+			DefaultText: "8006",
 			Value:       "8006",
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "logfile",
-			Usage:       "Log file to store Middleware agent logs",
+			Usage:       "Log file to store Middleware agent logs.",
 			EnvVars:     []string{"MW_LOGFILE"},
 			Destination: &cfg.Logfile,
 			DefaultText: "",
@@ -126,28 +129,31 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 		}),
 		altsrc.NewIntFlag(&cli.IntFlag{
 			Name:        "logfile-size",
-			Usage:       "Log file size to store Middleware agent logs. This flag only applifes if logfile flag is specified",
+			Usage:       "Log file size to store Middleware agent logs. This flag only applifes if logfile flag is specified.",
 			EnvVars:     []string{"MW_LOGFILE_SIZE"},
 			Destination: &cfg.LogfileSize,
+			DefaultText: "1",
 			Value:       1, // default value is 1MB
 		}),
 		altsrc.NewBoolFlag(&cli.BoolFlag{
 			Name:        "agent-features.infra-monitoring",
-			Usage:       "Flag to enable or disable infrastructure monitoring",
+			Usage:       "Flag to enable or disable infrastructure monitoring.",
 			EnvVars:     []string{"MW_AGENT_FEATURES_INFRA_MONITORING"},
 			Destination: &cfg.AgentFeatures.InfraMonitoring,
+			DefaultText: "true",
 			Value:       true, // infra monitoring is enabled by default
 		}),
 		altsrc.NewBoolFlag(&cli.BoolFlag{
 			Name:        "mw-agent-self-profiling",
-			Usage:       "For Profiling the agent itself",
+			Usage:       "For Profiling MW Agent itself.",
 			EnvVars:     []string{"MW_AGENT_SELF_PROFILING"},
 			Destination: &cfg.SelfProfiling,
+			DefaultText: "false",
 			Value:       false,
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "mw-profiling-server-url",
-			Usage:       "Server Address for redirecting profiling data",
+			Usage:       "Server Address for redirecting profiling data.",
 			EnvVars:     []string{"MW_PROFILING_SERVER_URL"},
 			Destination: &cfg.ProfilngServerURL,
 			Value:       "https://profiling.middleware.io",
@@ -191,6 +197,15 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 				return ""
 			}(),
 		},
+
+		altsrc.NewUintFlag(&cli.UintFlag{
+			Name:        "agent-internal-metrics-port",
+			Usage:       "Port where mw-agent will expose its Prometheus metrics.",
+			EnvVars:     []string{"MW_AGENT_INTERNAL_METRICS_PORT"},
+			Destination: &cfg.InternalMetricsPort,
+			DefaultText: "8888",
+			Value:       8888,
+		}),
 	}
 }
 
@@ -266,7 +281,14 @@ func main() {
 						infraPlatform = agent.InfraPlatformECSFargate
 					}
 
-					logger.Info("starting host agent", zap.String("agent location", execPath))
+					hostname, err := os.Hostname()
+					if err != nil {
+						logger.Error("error getting hostname", zap.Error(err))
+						hostname = "unknown"
+					}
+
+					logger.Info("starting host agent", zap.String("agent location", execPath),
+						zap.String("hostname", hostname))
 
 					logger.Info("host agent config", zap.Stringer("config", cfg),
 						zap.String("version", agentVersion),
@@ -295,15 +317,6 @@ func main() {
 					ctx, cancel := context.WithCancel(c.Context)
 					defer cancel()
 
-					// Listen to the config changes provided by Middleware API
-					if cfg.ConfigCheckInterval != "0" {
-						err = hostAgent.ListenForConfigChanges(ctx)
-						if err != nil {
-							logger.Info("error for listening for config changes", zap.Error(err))
-							return err
-						}
-					}
-
 					u, err := url.Parse(cfg.Target)
 					if err != nil {
 						return err
@@ -318,6 +331,7 @@ func main() {
 					os.Setenv("MW_TARGET", target)
 					os.Setenv("MW_API_KEY", cfg.APIKey)
 					os.Setenv("MW_FLUENT_PORT", cfg.FluentPort)
+					os.Setenv("MW_AGENT_INTERNAL_METRICS_PORT", strconv.Itoa(int(cfg.InternalMetricsPort)))
 
 					// TODO: check if on Windows, socket scheme is different than "unix"
 					os.Setenv("MW_DOCKER_ENDPOINT", cfg.DockerEndpoint)
@@ -331,12 +345,19 @@ func main() {
 					}
 
 					if cfg.FetchAccountOtelConfig {
-						yamlPath, err := hostAgent.GetUpdatedYAMLPath()
+						otelConfigFile, err := hostAgent.GetOtelConfig()
 						if err != nil {
 							logger.Error("error getting config file path", zap.Error(err))
 							return err
 						}
-						logger.Info("yaml path loaded", zap.String("path", yamlPath))
+						logger.Info("otel config file", zap.String("path", otelConfigFile))
+
+						// Listen to the config changes provided by Middleware API
+						err = hostAgent.ListenForConfigChanges(ctx)
+						if err != nil {
+							logger.Info("error for listening for config changes", zap.Error(err))
+							return err
+						}
 					}
 
 					configProvider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{
