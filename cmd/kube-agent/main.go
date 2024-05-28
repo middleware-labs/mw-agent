@@ -262,9 +262,14 @@ func main() {
 					ctx, cancel := context.WithCancel(c.Context)
 					defer cancel()
 
+					mwNamespace := os.Getenv("MW_NAMESPACE")
+					if mwNamespace == "" {
+						mwNamespace = "mw-agent-ns"
+					}
+
 					kubeAgentMonitor := agent.NewKubeAgentMonitor(cfg,
 						agent.WithKubeAgentMonitorClusterName(os.Getenv("MW_KUBE_CLUSTER_NAME")),
-						agent.WithKubeAgentMonitorAgentNamespace(os.Getenv("MW_NAMESPACE")),
+						agent.WithKubeAgentMonitorAgentNamespace(mwNamespace),
 						agent.WithKubeAgentMonitorDaemonset("mw-kube-agent"),
 						agent.WithKubeAgentMonitorDeployment("mw-kube-agent"),
 						agent.WithKubeAgentMonitorDaemonsetConfigMap("mw-daemonset-otel-config"),
