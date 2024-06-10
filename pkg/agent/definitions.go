@@ -204,25 +204,7 @@ func getHostname() string {
 }
 
 func GetAPIURLForConfigCheck(target string) (string, error) {
-	url := strings.TrimRight(target, "/")
-
-	// There should at least be two "." in the URL
-	parts := strings.Split(url, ".")
-	if len(parts) < 3 {
-		return "", ErrInvalidTarget
-	}
-
-	// Find the index of the last "/" and first "."
-	firstSlash := strings.LastIndex(url, "/")
-	firstDot := strings.Index(url, ".")
-
-	// Check if both "/" and "." exist in the URL
-	if firstSlash != -1 && firstDot != -1 {
-		// Replace the string between "/" and the first "."
-		return url[:firstSlash+1] + "app" + url[firstDot:], nil
-	}
-
-	return "", ErrInvalidTarget
+	return target, nil
 }
 
 type Profiler struct {
