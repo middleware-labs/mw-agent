@@ -182,8 +182,8 @@
         ]
     },
     {
-        "type": "apachereceiver",
-        "prefixes": ["apachereceiver"],
+        "type": "apache",
+        "prefixes": ["apache"],
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/apachereceiver/metadata.yaml"
         ]
