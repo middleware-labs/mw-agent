@@ -360,7 +360,7 @@ func main() {
 						}
 					}
 
-					configProvider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{
+					configProviderSetting := otelcol.ConfigProviderSettings{
 						ResolverSettings: confmap.ResolverSettings{
 							ProviderFactories: []confmap.ProviderFactory{
 								fileprovider.NewFactory(),
@@ -373,17 +373,6 @@ func main() {
 							},
 							URIs: []string{cfg.OtelConfigFile},
 						},
-					})
-
-					if err != nil {
-						logger.Error("config provider error", zap.Error(err))
-						return err
-					}
-
-					factories, err := hostAgent.GetFactories(ctx)
-					if err != nil {
-						logger.Error("failed to get factories", zap.Error(err))
-						return err
 					}
 
 					settings := otelcol.CollectorSettings{
@@ -399,8 +388,8 @@ func main() {
 							Version:     version.Version,
 						},
 
-						Factories:      factories,
-						ConfigProvider: configProvider,
+						Factories:              func() (otelcol.Factories, error) { return hostAgent.GetFactories(ctx) },
+						ConfigProviderSettings: configProviderSetting,
 					}
 
 					collector, _ := otelcol.NewCollector(settings)
