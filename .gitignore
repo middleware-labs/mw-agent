@@ -2,3 +2,4 @@
 **/node_modules
 otelstruct.go
 build
+otel-config.yaml
