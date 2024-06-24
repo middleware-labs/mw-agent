@@ -362,18 +362,19 @@ func main() {
 
 					configProvider, err := otelcol.NewConfigProvider(otelcol.ConfigProviderSettings{
 						ResolverSettings: confmap.ResolverSettings{
-							Providers: map[string]confmap.Provider{
-								"file": fileprovider.New(),
-								"yaml": yamlprovider.New(),
-								"env":  envprovider.New(),
+							ProviderFactories: []confmap.ProviderFactory{
+								fileprovider.NewFactory(),
+								yamlprovider.NewFactory(),
+								envprovider.NewFactory(),
 							},
-							Converters: []confmap.Converter{
-								expandconverter.New(),
+							ConverterFactories: []confmap.ConverterFactory{
+								expandconverter.NewFactory(),
 								//overwritepropertiesconverter.New(getSetFlag()),
 							},
 							URIs: []string{cfg.OtelConfigFile},
 						},
 					})
+
 					if err != nil {
 						logger.Error("config provider error", zap.Error(err))
 						return err
