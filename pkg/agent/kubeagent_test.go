@@ -15,7 +15,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	kubetesting "k8s.io/client-go/testing"
@@ -38,36 +37,36 @@ func TestKubeAgentGetFactories(t *testing.T) {
 
 	// check if factories contains expected receivers
 	assert.Len(t, factories.Receivers, 9)
-	assert.Contains(t, factories.Receivers, component.Type("otlp"))
-	assert.Contains(t, factories.Receivers, component.Type("fluentforward"))
-	assert.Contains(t, factories.Receivers, component.Type("filelog"))
-	assert.Contains(t, factories.Receivers, component.Type("docker_stats"))
-	assert.Contains(t, factories.Receivers, component.Type("hostmetrics"))
-	assert.Contains(t, factories.Receivers, component.Type("k8s_cluster"))
-	assert.Contains(t, factories.Receivers, component.Type("k8s_events"))
-	assert.Contains(t, factories.Receivers, component.Type("kubeletstats"))
-	assert.Contains(t, factories.Receivers, component.Type("prometheus"))
+	assertContainsComponent(t, factories.Receivers, "otlp")
+	assertContainsComponent(t, factories.Receivers, "fluentforward")
+	assertContainsComponent(t, factories.Receivers, "filelog")
+	assertContainsComponent(t, factories.Receivers, "docker_stats")
+	assertContainsComponent(t, factories.Receivers, "hostmetrics")
+	assertContainsComponent(t, factories.Receivers, "k8s_cluster")
+	assertContainsComponent(t, factories.Receivers, "k8s_events")
+	assertContainsComponent(t, factories.Receivers, "kubeletstats")
+	assertContainsComponent(t, factories.Receivers, "prometheus")
 
 	// check if factories contain expected exporters
 	assert.Len(t, factories.Exporters, 4)
-	assert.Contains(t, factories.Exporters, component.Type("logging"))
-	assert.Contains(t, factories.Exporters, component.Type("otlp"))
-	assert.Contains(t, factories.Exporters, component.Type("otlphttp"))
-	assert.Contains(t, factories.Exporters, component.Type("kafka"))
+	assertContainsComponent(t, factories.Exporters, "logging")
+	assertContainsComponent(t, factories.Exporters, "otlp")
+	assertContainsComponent(t, factories.Exporters, "otlphttp")
+	assertContainsComponent(t, factories.Exporters, "kafka")
 
 	// check if factories contain expected processors
 	assert.Len(t, factories.Processors, 11)
-	assert.Contains(t, factories.Processors, component.Type("batch"))
-	assert.Contains(t, factories.Processors, component.Type("memory_limiter"))
-	assert.Contains(t, factories.Processors, component.Type("filter"))
-	assert.Contains(t, factories.Processors, component.Type("resource"))
-	assert.Contains(t, factories.Processors, component.Type("resourcedetection"))
-	assert.Contains(t, factories.Processors, component.Type("attributes"))
-	assert.Contains(t, factories.Processors, component.Type("k8sattributes"))
-	assert.Contains(t, factories.Processors, component.Type("cumulativetodelta"))
-	assert.Contains(t, factories.Processors, component.Type("deltatorate"))
-	assert.Contains(t, factories.Processors, component.Type("metricstransform"))
-	assert.Contains(t, factories.Processors, component.Type("transform"))
+	assertContainsComponent(t, factories.Processors, "batch")
+	assertContainsComponent(t, factories.Processors, "memory_limiter")
+	assertContainsComponent(t, factories.Processors, "filter")
+	assertContainsComponent(t, factories.Processors, "resource")
+	assertContainsComponent(t, factories.Processors, "resourcedetection")
+	assertContainsComponent(t, factories.Processors, "attributes")
+	assertContainsComponent(t, factories.Processors, "k8sattributes")
+	assertContainsComponent(t, factories.Processors, "cumulativetodelta")
+	assertContainsComponent(t, factories.Processors, "deltatorate")
+	assertContainsComponent(t, factories.Processors, "metricstransform")
+	assertContainsComponent(t, factories.Processors, "transform")
 }
 
 func TestListenForKubeOtelConfigChanges(t *testing.T) {
