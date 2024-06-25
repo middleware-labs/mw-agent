@@ -204,7 +204,14 @@ func getHostname() string {
 }
 
 func GetAPIURLForConfigCheck(target string) (string, error) {
-	return target, nil
+
+	// There should at least be two "." in the URL
+	parts := strings.Split(target, ".")
+	if len(parts) < 3 {
+		return "", ErrInvalidTarget
+	}
+
+	return strings.TrimSuffix(target, "/"), nil
 }
 
 type Profiler struct {

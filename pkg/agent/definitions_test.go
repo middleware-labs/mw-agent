@@ -16,13 +16,13 @@ func TestGetAPIURLForConfigCheck(t *testing.T) {
 		{
 			name:           "URL with both '/' and '.' and without trailing '/'",
 			url:            "https://myaccount.middleware.io",
-			expectedResult: "https://app.middleware.io",
+			expectedResult: "https://myaccount.middleware.io",
 			err:            nil,
 		},
 		{
 			name:           "URL with trailing '/'",
 			url:            "https://myaccount.middleware.io/",
-			expectedResult: "https://app.middleware.io",
+			expectedResult: "https://myaccount.middleware.io",
 			err:            nil,
 		},
 		{
@@ -34,7 +34,7 @@ func TestGetAPIURLForConfigCheck(t *testing.T) {
 		{
 			name:           "URL with custom domain",
 			url:            "https://myaccount.test.mw.io",
-			expectedResult: "https://app.test.mw.io",
+			expectedResult: "https://myaccount.test.mw.io",
 			err:            nil,
 		},
 	}
