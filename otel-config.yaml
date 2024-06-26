@@ -1,0 +1,35 @@
+exporters:
+  logging:
+    loglevel: debug
+  otlp/2:
+    endpoint: ${MW_TARGET}
+    headers:
+      authorization: ${MW_API_KEY}
+    sending_queue:
+      enabled: true
+      num_consumers: 100
+      queue_size: 10000
+
+receivers:
+  awscloudwatchmetrics/378448125786_us-east-1_AWS-EC2:
+    region: us-east-1
+    profile: "default"
+    imds_endpoint: ""
+    poll_interval: "5m"
+    metrics:
+      named:
+      - namespace: "AWS/EC2"
+        metric_name: "CPUUtilization"
+        period: "5m"
+        aws_aggregation: "Sum"
+
+service:
+  pipelines:
+    metrics:
+      exporters:
+      - logging
+      receivers:
+      - awscloudwatchmetrics/378448125786_us-east-1_ec2
+  telemetry:
+    logs:
+      level: debug
