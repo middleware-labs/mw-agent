@@ -4,37 +4,27 @@ go 1.22
 
 toolchain go1.22.0
 
-// replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => github.com/middleware-labs/opentelemetry-collector-contrib/pkg/ottl v0.91.1-0.20240619062913-ad4b5a5ae94e
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => github.com/middleware-labs/opentelemetry-collector-contrib/pkg/ottl v0.91.1-0.20240627102233-eb12dd128f1e
 
-// replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor => github.com/middleware-labs/opentelemetry-collector-contrib/processor/transformprocessor v0.84.1-0.20240523063643-4a068cd7218d
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => github.com/middleware-labs/opentelemetry-collector-contrib/internal/filter v0.91.1-0.20240627102233-eb12dd128f1e
 
-// replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => github.com/middleware-labs/opentelemetry-collector-contrib/internal/filter v0.91.1-0.20240619062913-ad4b5a5ae94e
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.91.1-0.20240627102233-eb12dd128f1e
 
-// replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.91.1-0.20240619062913-ad4b5a5ae94e
+// replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.91.1-0.20240627102233-eb12dd128f1e
 
-// replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.91.1-0.20240619062913-ad4b5a5ae94e
+// replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.91.1-0.20240627102233-eb12dd128f1e
 
-// replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.91.1-0.20240619062913-ad4b5a5ae94e
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.91.1-0.20240627102233-eb12dd128f1e
 
-// replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.91.1-0.20240619062913-ad4b5a5ae94e
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.91.1-0.20240627102233-eb12dd128f1e
 
-// replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.91.1-0.20240619062913-ad4b5a5ae94e
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.91.1-0.20240627102233-eb12dd128f1e
 
-// replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.91.1-0.20240619062913-ad4b5a5ae94e
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kafkametricsreceiver v0.91.1-0.20240627102233-eb12dd128f1e
 
-// replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.91.1-0.20240619062913-ad4b5a5ae94e
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/apachereceiver v0.91.1-0.20240627102233-eb12dd128f1e
 
-// replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.91.1-0.20240619062913-ad4b5a5ae94e
-
-// replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.91.1-0.20240619062913-ad4b5a5ae94e
-
-// replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.91.1-0.20240619062913-ad4b5a5ae94e
-
-// replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kafkametricsreceiver v0.91.1-0.20240619062913-ad4b5a5ae94e
-
-// replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/apachereceiver v0.91.1-0.20240619062913-ad4b5a5ae94e
-
-// replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mysqlreceiver v0.91.1-0.20240619062913-ad4b5a5ae94e
+// replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mysqlreceiver v0.91.1-0.20240627102233-eb12dd128f1e
 
 replace go.opentelemetry.io/collector => go.opentelemetry.io/collector v0.102.0
 
@@ -132,6 +122,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.6.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
+	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20240318125728-8a4994d93e50 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.3 // indirect
