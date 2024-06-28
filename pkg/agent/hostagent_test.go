@@ -2,7 +2,6 @@ package agent
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -277,7 +276,6 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assertContainsComponent(t, factories.Exporters, "kafka")
 	assertContainsComponent(t, factories.Exporters, "file")
 
-	fmt.Println("fmt.Processors", factories.Processors)
 	// check if factories contain expected processors
 	assert.Len(t, factories.Processors, 9)
 	assertContainsComponent(t, factories.Processors, "batch")
