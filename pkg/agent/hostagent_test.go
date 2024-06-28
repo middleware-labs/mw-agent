@@ -7,6 +7,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 )
 
@@ -175,6 +179,51 @@ func TestListenForConfigChanges(t *testing.T) {
 	assert.True(t, true)
 }
 
+func assertContainsComponent(t *testing.T, factoryMap interface{}, componentName string) {
+	t.Helper()
+
+	switch m := factoryMap.(type) {
+	case map[component.Type]receiver.Factory:
+		// Check if the componentName exists in the Receivers map
+		for t := range m {
+			if t.String() == componentName {
+				return // Found, test passes
+			}
+		}
+		t.Errorf("Expected to find receiver '%s' in factories.Receivers, but it was not found", componentName)
+
+	case map[component.Type]processor.Factory:
+		// Check if the componentName exists in the Processors map
+		for t := range m {
+			if t.String() == componentName {
+				return // Found, test passes
+			}
+		}
+		t.Errorf("Expected to find processor '%s' in factories.Processors, but it was not found", componentName)
+
+	case map[component.Type]exporter.Factory:
+		// Check if the componentName exists in the Exporters map
+		for t := range m {
+			if t.String() == componentName {
+				return // Found, test passes
+			}
+		}
+		t.Errorf("Expected to find exporter '%s' in factories.Exporters, but it was not found", componentName)
+
+	case map[component.Type]extension.Factory:
+		// Check if the componentName exists in the Extensions map
+		for t := range m {
+			if t.String() == componentName {
+				return // Found, test passes
+			}
+		}
+		t.Errorf("Expected to find extension '%s' in factories.Extensions, but it was not found", componentName)
+
+	default:
+		t.Errorf("Unsupported factory map type")
+	}
+}
+
 func TestHostAgentGetFactories(t *testing.T) {
 	baseConfig := BaseConfig{
 		AgentFeatures: AgentFeatures{
@@ -199,44 +248,45 @@ func TestHostAgentGetFactories(t *testing.T) {
 
 	// check that the returned factories contain the expected factories
 	assert.Len(t, factories.Extensions, 1)
-	assert.Contains(t, factories.Extensions, component.Type("health_check"))
-
+	assertContainsComponent(t, factories.Extensions, "health_check")
 	// check if factories contains expected receivers
 	assert.Len(t, factories.Receivers, 16)
-	assert.Contains(t, factories.Receivers, component.Type("otlp"))
-	assert.Contains(t, factories.Receivers, component.Type("fluentforward"))
-	assert.Contains(t, factories.Receivers, component.Type("filelog"))
-	assert.Contains(t, factories.Receivers, component.Type("docker_stats"))
-	assert.Contains(t, factories.Receivers, component.Type("hostmetrics"))
-	assert.Contains(t, factories.Receivers, component.Type("prometheus"))
-	assert.Contains(t, factories.Receivers, component.Type("postgresql"))
-	assert.Contains(t, factories.Receivers, component.Type("mongodb"))
-	assert.Contains(t, factories.Receivers, component.Type("mysql"))
-	assert.Contains(t, factories.Receivers, component.Type("redis"))
-	assert.Contains(t, factories.Receivers, component.Type("elasticsearch"))
-	assert.Contains(t, factories.Receivers, component.Type("awsecscontainermetrics"))
-	assert.Contains(t, factories.Receivers, component.Type("jmx"))
-	assert.Contains(t, factories.Receivers, component.Type("kafkametrics"))
-	assert.Contains(t, factories.Receivers, component.Type("apache"))
-	assert.Contains(t, factories.Receivers, component.Type("oracledb"))
+	assertContainsComponent(t, factories.Receivers, "otlp")
+	assertContainsComponent(t, factories.Receivers, "fluentforward")
+	assertContainsComponent(t, factories.Receivers, "filelog")
+	assertContainsComponent(t, factories.Receivers, "docker_stats")
+	assertContainsComponent(t, factories.Receivers, "hostmetrics")
+	assertContainsComponent(t, factories.Receivers, "prometheus")
+	assertContainsComponent(t, factories.Receivers, "postgresql")
+	assertContainsComponent(t, factories.Receivers, "mongodb")
+	assertContainsComponent(t, factories.Receivers, "mysql")
+	assertContainsComponent(t, factories.Receivers, "redis")
+	assertContainsComponent(t, factories.Receivers, "elasticsearch")
+	assertContainsComponent(t, factories.Receivers, "awsecscontainermetrics")
+	assertContainsComponent(t, factories.Receivers, "jmx")
+	assertContainsComponent(t, factories.Receivers, "kafkametrics")
+	assertContainsComponent(t, factories.Receivers, "apache")
+	assertContainsComponent(t, factories.Receivers, "oracledb")
 
 	// check if factories contain expected exporters
 	assert.Len(t, factories.Exporters, 5)
-	assert.Contains(t, factories.Exporters, component.Type("logging"))
-	assert.Contains(t, factories.Exporters, component.Type("otlp"))
-	assert.Contains(t, factories.Exporters, component.Type("otlphttp"))
-	assert.Contains(t, factories.Exporters, component.Type("kafka"))
-	assert.Contains(t, factories.Exporters, component.Type("file"))
+	assertContainsComponent(t, factories.Exporters, "logging")
+	assertContainsComponent(t, factories.Exporters, "otlp")
+	assertContainsComponent(t, factories.Exporters, "otlphttp")
+	assertContainsComponent(t, factories.Exporters, "kafka")
+	assertContainsComponent(t, factories.Exporters, "file")
 
 	// check if factories contain expected processors
-	assert.Len(t, factories.Processors, 7)
-	assert.Contains(t, factories.Processors, component.Type("batch"))
-	assert.Contains(t, factories.Processors, component.Type("filter"))
-	assert.Contains(t, factories.Processors, component.Type("memory_limiter"))
-	assert.Contains(t, factories.Processors, component.Type("resource"))
-	assert.Contains(t, factories.Processors, component.Type("resourcedetection"))
-	assert.Contains(t, factories.Processors, component.Type("attributes"))
-	assert.Contains(t, factories.Processors, component.Type("transform"))
+	assert.Len(t, factories.Processors, 9)
+	assertContainsComponent(t, factories.Processors, "batch")
+	assertContainsComponent(t, factories.Processors, "filter")
+	assertContainsComponent(t, factories.Processors, "memory_limiter")
+	assertContainsComponent(t, factories.Processors, "resource")
+	assertContainsComponent(t, factories.Processors, "resourcedetection")
+	assertContainsComponent(t, factories.Processors, "attributes")
+	assertContainsComponent(t, factories.Processors, "transform")
+	assertContainsComponent(t, factories.Processors, "cumulativetodelta")
+	assertContainsComponent(t, factories.Processors, "deltatorate")
 
 }
 

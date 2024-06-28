@@ -108,7 +108,6 @@ processors:
     timeout: 5s
 receivers:
   docker_stats:
-    api_version: 1.24
     collection_interval: 5s
     endpoint: unix:///var/run/docker.sock
     timeout: 20s
