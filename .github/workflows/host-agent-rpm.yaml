@@ -67,6 +67,12 @@ jobs:
       with:
         go-version: 1.22.1
         cache: false
+    
+    - name: Set up Git credentials for Go
+      run: |
+        git config --global url."https://${{ secrets.GHCR_TOKEN }}:@github.com/".insteadOf "https://github.com/"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
 
     # Building with CGO_ENABLED=0 so that we can build static binary which is not dependent on any external libraries
     # Building with -ldflags="-s -w" to reduce the size of binary
@@ -80,7 +86,7 @@ jobs:
         
         if [ ${{ github.actor }} != "nektos/act" ]
         then
-          CGO_ENABLED=0 GOOS=linux GOARCH=${buildarch} go build \
+          CGO_ENABLED=0 GOPRIVATE=github.com/middleware-labs GOOS=linux GOARCH=${buildarch} go build \
           -ldflags="-s -w -X main.agentVersion=${RELEASE_VERSION}" \
           -v -a -o ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/${PACKAGE_NAME} cmd/host-agent/main.go
         else

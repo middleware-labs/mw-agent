@@ -1,9 +1,13 @@
-FROM golang:1.22 as build
+FROM golang:1.22.2 AS build
 WORKDIR /app
 RUN apt-get update && apt-get install -y ca-certificates openssl
 RUN update-ca-certificates
 COPY . .
 ENV CGO_ENABLED=0
+ARG GITHUB_TOKEN
+ENV GITHUB_TOKEN=$GITHUB_TOKEN
+RUN git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+RUN GOPRIVATE=github.com/middleware-labs go mod tidy
 RUN go get -d -v ./... && go mod tidy
 
 ARG AGENT_VERSION
@@ -11,7 +15,7 @@ ENV AGENT_VERSION=$AGENT_VERSION
 
 RUN CGO_ENABLED=0 go build -ldflags "-s -w -X main.agentVersion=${AGENT_VERSION}" -o /tmp/mw-agent cmd/kube-agent/main.go
 
-FROM busybox:glibc as prod
+FROM busybox:glibc AS prod
 WORKDIR /app
 COPY --from=build /etc/ssl/certs /etc/ssl/certs
 COPY --from=build /tmp/mw-agent /usr/bin/mw-agent
