@@ -16,6 +16,12 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.22.0
+      
+      - name: Set up Git credentials for Go
+        run: |
+          git config --global url."https://${{ secrets.GHCR_TOKEN }}:@github.com/".insteadOf "https://github.com/"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
 
       - name: Install all dependencies
         run: go mod tidy

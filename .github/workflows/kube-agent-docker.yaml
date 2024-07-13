@@ -23,6 +23,17 @@ jobs:
           token: ${{ secrets.GHCR_TOKEN }}
           ssh-key: ${{ secrets.CHECK_AGENT_ACCESS }}
           submodules: 'recursive'
+
+      - name: Set up GOPRIVATE
+        run: echo "GOPRIVATE=your.private.repo" >> $GITHUB_ENV
+
+      - name: Caching Go Modules and Build Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -50,7 +61,9 @@ jobs:
           file: Dockerfiles/DockerfileKube
           push: true
           platforms: linux/amd64,linux/arm64
-          build-args: AGENT_VERSION=${{  github.event.inputs.tag || steps.meta.outputs.tags }}
+          build-args: |
+            AGENT_VERSION=${{  github.event.inputs.tag || steps.meta.outputs.tags }}
+            GITHUB_TOKEN=${{ secrets.GHCR_TOKEN }}
           tags: | 
             ghcr.io/middleware-labs/mw-kube-agent:${{  github.event.inputs.tag || steps.meta.outputs.tags }}
             ghcr.io/middleware-labs/agent-kube-go:${{  github.event.inputs.tag || steps.meta.outputs.tags }}

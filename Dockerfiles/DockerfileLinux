@@ -1,14 +1,20 @@
-FROM golang:1.22.1 as build
-RUN apt-get update && apt-get install -y ca-certificates openssl
+FROM golang:1.22.2 AS build
+RUN apt-get update && apt-get install -y ca-certificates openssl git openssh-client
+
 RUN update-ca-certificates
 COPY . .
 ARG AGENT_VERSION
 ENV AGENT_VERSION=$AGENT_VERSION
+ARG GITHUB_TOKEN
+ENV GITHUB_TOKEN=$GITHUB_TOKEN
 ENV GOPATH=/
-RUN go mod tidy
+
+RUN git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
+RUN GOPRIVATE=github.com/middleware-labs go mod tidy
 RUN CGO_ENABLED=0 go build -ldflags "-s -w -X main.agentVersion=${AGENT_VERSION}" -o /tmp/mw-agent cmd/host-agent/main.go
 
-FROM busybox:glibc as prod
+FROM busybox:glibc AS prod
 RUN mkdir -p /var/log
 RUN mkdir -p /opt/mw-agent/bin
 WORKDIR /opt/mw-agent
