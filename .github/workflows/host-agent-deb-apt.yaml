@@ -43,7 +43,11 @@ jobs:
       run: |
         echo "::set-env name=PACKAGE_NAME::mw-agent"
         echo "::set-env name=BINARY_SOURCE::release/mw-agent"
-        echo "::set-env name=RELEASE_VERSION::$(echo "${{ github.event.inputs.release_version || steps.meta.output.tags }}" | tr -d '\n')"
+        if [ -n "${{ github.event.inputs.release_version }}" ]; then
+          echo "RELEASE_VERSION=${{ github.event.inputs.release_version }}" >> $GITHUB_ENV
+        else
+          echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+        fi
     
     # Reference : https://www.debian.org/doc/debian-policy/ch-controlfields.html
     - name: Creating Required Folder Structure
