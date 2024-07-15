@@ -53,6 +53,14 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: ghcr.io/middleware-labs/mw-kube-agent
+      
+      - name: Setting Release Number
+        run: |
+          if [ -n "${{ github.event.inputs.release_version }}" ]; then
+            echo "RELEASE_VERSION=${{ github.event.inputs.release_version }}" >> $GITHUB_ENV
+          else
+            echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          fi
 
       - name: Build and Push
         uses: docker/build-push-action@v3
@@ -62,8 +70,8 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           build-args: |
-            AGENT_VERSION=${{  github.event.inputs.tag || steps.meta.outputs.tags }}
+            AGENT_VERSION=$RELEASE_VERSION
             GITHUB_TOKEN=${{ secrets.GHCR_TOKEN }}
           tags: | 
-            ghcr.io/middleware-labs/mw-kube-agent:${{  github.event.inputs.tag || steps.meta.outputs.tags }}
-            ghcr.io/middleware-labs/agent-kube-go:${{  github.event.inputs.tag || steps.meta.outputs.tags }}
+            ghcr.io/middleware-labs/mw-kube-agent:$RELEASE_VERSION
+            ghcr.io/middleware-labs/agent-kube-go:$RELEASE_VERSION
