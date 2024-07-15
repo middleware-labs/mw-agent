@@ -40,11 +40,19 @@ jobs:
         git config --global url."https://${{ secrets.GHCR_TOKEN }}:@github.com/".insteadOf "https://github.com/"
       env:
         GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
+    
+    - name: Setting Release Number
+      run: |
+        if [ -n "${{ github.event.inputs.release_version }}" ]; then
+          echo "RELEASE_VERSION=${{ github.event.inputs.release_version }}" >> $GITHUB_ENV
+        else
+          echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+        fi
 
     - name: Build MW Agent for Windows
       run: |
-        GOOS=windows CGO_ENABLED=0 GOPRIVATE=github.com/middleware-labs go build -ldflags "-s -w -X main.agentVersion=${{ github.event.inputs.release_version || steps.meta.outputs.tags }}" -o build/mw-windows-agent.exe cmd/host-agent/main.go
-        makensis -DVERSION=${{ github.event.inputs.release_version || steps.meta.outputs.tags }} package-tooling/windows/package-windows.nsi
+        GOOS=windows CGO_ENABLED=0 GOPRIVATE=github.com/middleware-labs go build -ldflags "-s -w -X main.agentVersion=$RELEASE_VERSION" -o build/mw-windows-agent.exe cmd/host-agent/main.go
+        makensis -DVERSION=$RELEASE_VERSION package-tooling/windows/package-windows.nsi
        
     - name: Install jsign Tool For Microsoft Authenticode
       run: |
@@ -62,5 +70,5 @@ jobs:
     - name: Upload Artifact
       uses: actions/upload-artifact@v3
       with:
-        name: mw-windows-agent-${{ github.event.inputs.release_version || steps.meta.outputs.tags }}-setup.exe
-        path: package-tooling/windows/mw-windows-agent-${{ github.event.inputs.release_version || steps.meta.outputs.tags }}-setup.exe
+        name: mw-windows-agent-$RELEASE_VERSION-setup.exe
+        path: package-tooling/windows/mw-windows-agent-$RELEASE_VERSION-setup.exe

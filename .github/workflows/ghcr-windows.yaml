@@ -21,6 +21,14 @@ jobs:
           username: ${{ secrets.GHCR_USER }}
           password: ${{ secrets.GHCR_TOKEN }}
 
+      - name: Setting Release Number
+        run: |
+          if [ -n "${{ github.event.inputs.release_version }}" ]; then
+            echo "RELEASE_VERSION=${{ github.event.inputs.release_version }}" >> $GITHUB_ENV
+          else
+            echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          fi
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
         with:
@@ -28,6 +36,6 @@ jobs:
           context: .
           push: true
           tags: | 
-            windows-${{ steps.meta.outputs.tags }}
+            windows-$RELEASE_VERSION
             ghcr.io/middleware-labs/agent-host-go:windows-${{ github.sha }}
           platforms: windows/amd64
