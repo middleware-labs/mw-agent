@@ -6,6 +6,11 @@ on:
       release_version:
         description: 'Release version for DEB + APT package'
         required: true
+  push:
+    paths-ignore:
+      - '.github/**'
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
 
 env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true
@@ -38,7 +43,7 @@ jobs:
       run: |
         echo "::set-env name=PACKAGE_NAME::mw-agent"
         echo "::set-env name=BINARY_SOURCE::release/mw-agent"
-        echo "::set-env name=RELEASE_VERSION::$(echo "${{ github.event.inputs.release_version }}" | tr -d '\n')"
+        echo "::set-env name=RELEASE_VERSION::$(echo "${{ github.event.inputs.release_version || steps.meta.outputs.tags }}" | tr -d '\n')"
     
     # Reference : https://www.debian.org/doc/debian-policy/ch-controlfields.html
     - name: Creating Required Folder Structure

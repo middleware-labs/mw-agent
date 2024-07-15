@@ -6,6 +6,11 @@ on:
       tag:
         description: 'Tag for Metadata Generation'
         required: true
+  push:
+    paths-ignore:
+      - '.github/**'
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
   update_urls:
