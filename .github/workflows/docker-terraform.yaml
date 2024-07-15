@@ -63,7 +63,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: ./
-          file: DockerfileLinux
+          file: Dockerfiles/DockerfileLinux
           push: true
           platforms: linux/amd64,linux/arm64
           build-args: AGENT_VERSION=${{ env.RELEASE_VERSION }}

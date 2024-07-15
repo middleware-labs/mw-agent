@@ -65,7 +65,7 @@ jobs:
 
     - name: Sign MW Agent Installer Package
       run: |
-        jsign --storetype ${{ secrets.SM_CLIENT_CERT_STORE_TYPE }} --alias ${{ secrets.SM_CLIENT_CERT_ALIAS }} --tsaurl ${{ secrets.SM_TIMESTAMP_AUTHORITY_URL }} --storepass "${{ secrets.SM_API_KEY }}|./certificate_pkcs12.p12|${{ secrets.SM_CLIENT_CERT_PASSWORD }}"  package-tooling/windows/mw-windows-agent-${{ github.event.inputs.release_version }}-setup.exe
+        jsign --storetype ${{ secrets.SM_CLIENT_CERT_STORE_TYPE }} --alias ${{ secrets.SM_CLIENT_CERT_ALIAS }} --tsaurl ${{ secrets.SM_TIMESTAMP_AUTHORITY_URL }} --storepass "${{ secrets.SM_API_KEY }}|./certificate_pkcs12.p12|${{ secrets.SM_CLIENT_CERT_PASSWORD }}"  package-tooling/windows/mw-windows-agent-RELEASE_VERSION-setup.exe
              
     - name: Upload Artifact
       uses: actions/upload-artifact@v3
