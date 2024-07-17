@@ -6,6 +6,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
@@ -93,6 +95,8 @@ func (c *HostAgent) GetFactories(ctx context.Context) (otelcol.Factories, error)
 		resourcedetectionprocessor.NewFactory(),
 		attributesprocessor.NewFactory(),
 		transformprocessor.NewFactory(),
+		cumulativetodeltaprocessor.NewFactory(),
+		deltatorateprocessor.NewFactory(),
 	}...)
 	if err != nil {
 		return otelcol.Factories{}, err
