@@ -40,13 +40,21 @@ chmod u+x /opt/%{package_name}/.postinstall.sh
 /opt/%{package_name}/.postinstall.sh
 
 %preun
-systemctl stop %{package_name}
-systemctl disable %{package_name}
+if [ $1 -gt 0 ]; then
+    echo "Upgrade in progress, skipping pre-uninstallation steps."
+else
+    systemctl stop %{package_name}
+    systemctl disable %{package_name}
+fi
 
 %postun
-rm -f /etc/%{package_name}/agent-config.yaml
-rm -f /etc/%{package_name}/otel-config.yaml
-rmdir  /etc/%{package_name}
-rmdir /opt/%{package_name}/bin
-rmdir /opt/%{package_name}
+if [ $1 -gt 0 ]; then
+    echo "Upgrade in progress, skipping post-uninstallation steps."
+else
+    rm -f /etc/%{package_name}/agent-config.yaml
+    rm -f /etc/%{package_name}/otel-config.yaml
+    rmdir  /etc/%{package_name}
+    rmdir /opt/%{package_name}/bin
+    rmdir /opt/%{package_name}
+fi
 
