@@ -20,6 +20,7 @@ import (
 	//	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -243,6 +244,7 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 	// Add Query Parameters to the URL
 	baseURL.RawQuery = params.Encode() // Escape Query Parameters
 
+	c.logger.Info("Fetching Configurations from Middleware Server...", zapcore.StringType{baseURL.String()})
 	resp, err := http.Get(baseURL.String())
 	if err != nil {
 		c.logger.Error("failed to call get configuration api", zap.Error(err))
