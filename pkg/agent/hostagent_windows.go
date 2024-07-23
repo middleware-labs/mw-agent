@@ -53,14 +53,14 @@ func (c *HostAgent) GetFactories(ctx context.Context) (otelcol.Factories, error)
 		return otelcol.Factories{}, err
 	}
 
-	factories.Receivers, err = receiver.MakeFactoryMap([]receiver.Factory{
+	receiverfactories := []receiver.Factory{
 		kafkametricsreceiver.NewFactory(),
 		jmxreceiver.NewFactory(),
 		otlpreceiver.NewFactory(),
-		fluentforwardreceiver.NewFactory(),
-		filelogreceiver.NewFactory(),
-		dockerstatsreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
+		filelogreceiver.NewFactory(),
+		fluentforwardreceiver.NewFactory(),
+		dockerstatsreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
 		postgresqlreceiver.NewFactory(),
 		windowseventlogreceiver.NewFactory(),
@@ -71,7 +71,9 @@ func (c *HostAgent) GetFactories(ctx context.Context) (otelcol.Factories, error)
 		redisreceiver.NewFactory(),
 		apachereceiver.NewFactory(),
 		oracledbreceiver.NewFactory(),
-	}...)
+	}
+
+	factories.Receivers, err = receiver.MakeFactoryMap(receiverfactories...)
 	if err != nil {
 		return otelcol.Factories{}, err
 	}

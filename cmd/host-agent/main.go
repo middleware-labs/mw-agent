@@ -135,13 +135,31 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			DefaultText: "1",
 			Value:       1, // default value is 1MB
 		}),
+		/* infra monitoring flag is deprecated. See log-collection flag */
 		altsrc.NewBoolFlag(&cli.BoolFlag{
 			Name:        "agent-features.infra-monitoring",
-			Usage:       "Flag to enable or disable infrastructure monitoring.",
+			Usage:       "Flag to enable or disable metric collection",
 			EnvVars:     []string{"MW_AGENT_FEATURES_INFRA_MONITORING"},
-			Destination: &cfg.AgentFeatures.InfraMonitoring,
+			Destination: &cfg.AgentFeatures.MetricCollection,
 			DefaultText: "true",
 			Value:       true, // infra monitoring is enabled by default
+		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "agent-features.metric-collection",
+			Usage:       "Flag to enable or disable infrastructure monitoring.",
+			EnvVars:     []string{"MW_AGENT_FEATURES_METRIC_COLLECTION"},
+			Destination: &cfg.AgentFeatures.MetricCollection,
+			Aliases:     []string{"infra-monitoring"},
+			DefaultText: "true",
+			Value:       true, // infra monitoring is enabled by default
+		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "agent-features.log-collection",
+			Usage:       "Flag to enable or disable log collection.",
+			EnvVars:     []string{"MW_AGENT_FEATURES_LOG_COLLECTION"},
+			Destination: &cfg.AgentFeatures.LogCollection,
+			DefaultText: "true",
+			Value:       true, // log collection is enabled by default
 		}),
 		altsrc.NewBoolFlag(&cli.BoolFlag{
 			Name:        "mw-agent-self-profiling",

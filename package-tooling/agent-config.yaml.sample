@@ -33,7 +33,12 @@ agent-internal-metrics-port: 8888
 # agent-features provides feature flags to enable or disable features.
 # The list of agent-features that can be enabled or disabled is given below
 #
-# infra-monitoring: By setting this flag to false, you can disable infrastructure
-# monitoring from this agent. infra-monitoring is set to true by default.
-# agent-features:
-#  infra-monitoring: false
+# metric-collection: By setting this flag to false, you can disable metric 
+# collection from this agent (including custom metrics). log-collection is 
+# set to true by default.
+#
+# log-collection: By setting this flag to false, you can disable log 
+# collection from this agent. log-collection is set to true by default.
+#agent-features:
+#  metric-collection: true
+#  log-collection: true
