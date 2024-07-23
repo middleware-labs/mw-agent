@@ -63,7 +63,8 @@ func (p InfraPlatform) String() string {
 }
 
 type AgentFeatures struct {
-	InfraMonitoring bool
+	MetricCollection bool
+	LogCollection    bool
 }
 
 // BaseConfig stores general configuration for all agent types

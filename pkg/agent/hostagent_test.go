@@ -227,7 +227,8 @@ func assertContainsComponent(t *testing.T, factoryMap interface{}, componentName
 func TestHostAgentGetFactories(t *testing.T) {
 	baseConfig := BaseConfig{
 		AgentFeatures: AgentFeatures{
-			InfraMonitoring: true,
+			MetricCollection: true,
+			LogCollection:    true,
 		},
 	}
 

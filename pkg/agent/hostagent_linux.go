@@ -28,7 +28,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
@@ -59,6 +58,7 @@ func (c *HostAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 		kafkametricsreceiver.NewFactory(),
 		otlpreceiver.NewFactory(),
 		fluentforwardreceiver.NewFactory(),
+		hostmetricsreceiver.NewFactory(),
 		filelogreceiver.NewFactory(),
 		dockerstatsreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
@@ -77,13 +77,6 @@ func (c *HostAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 	if c.InfraPlatform == InfraPlatformECSEC2 || c.InfraPlatform == InfraPlatformECSFargate {
 		receiverfactories = append(receiverfactories,
 			awsecscontainermetricsreceiver.NewFactory())
-	}
-
-	// if infra monitoring is enabled, add hostmetricsreceiver
-	c.logger.Info("InfraMonitoring", zap.Bool("infra-monitoring", c.AgentFeatures.InfraMonitoring))
-	if c.AgentFeatures.InfraMonitoring {
-		receiverfactories = append(receiverfactories,
-			hostmetricsreceiver.NewFactory())
 	}
 
 	factories.Receivers, err = receiver.MakeFactoryMap(receiverfactories...)

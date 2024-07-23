@@ -172,6 +172,50 @@ func convertTabsToSpaces(input []byte, tabWidth int) []byte {
 	return output
 }
 
+func (c *HostAgent) updateConfigWithRestrictions(config map[string]interface{}) (map[string]interface{}, error) {
+
+	receiversData, ok := config[Receivers].(map[string]interface{})
+	if !ok {
+		return nil, ErrParseReceivers
+	}
+
+	serviceData, ok := config[Service].(map[string]interface{})
+	if !ok {
+		return nil, ErrParseService
+	}
+
+	pipelinesData, ok := serviceData[Pipelines].(map[string]interface{})
+	if !ok {
+		return nil, ErrParsePipelines
+	}
+
+	for key, _ := range pipelinesData {
+		if !c.HostConfig.AgentFeatures.LogCollection && strings.HasPrefix(key, "logs") {
+			delete(pipelinesData, key)
+		}
+
+		if !c.HostConfig.AgentFeatures.MetricCollection && strings.HasPrefix(key, "metrics") {
+			delete(pipelinesData, key)
+		}
+	}
+
+	if !c.HostConfig.AgentFeatures.LogCollection {
+		delete(receiversData, "filelog")
+		delete(receiversData, "windowseventlog")
+	}
+
+	if !c.HostConfig.AgentFeatures.MetricCollection {
+		delete(receiversData, "hostmetrics")
+		delete(receiversData, "windowsperfcounters")
+		delete(receiversData, "docker_stats")
+		delete(receiversData, "prometheus")
+		delete(receiversData, "kubeletstats")
+		delete(receiversData, "k8s_cluster")
+	}
+
+	return config, nil
+}
+
 func (c *HostAgent) updateConfig(config map[string]interface{}, cnf integrationConfiguration) (map[string]interface{}, error) {
 
 	if c.isIPPortFormat(cnf.Endpoint) {
@@ -316,6 +360,13 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 			return err
 		}
 
+	}
+
+	if !c.AgentFeatures.LogCollection || !c.AgentFeatures.MetricCollection {
+		apiYAMLConfig, err = c.updateConfigWithRestrictions(apiYAMLConfig)
+		if err != nil {
+			return err
+		}
 	}
 
 	apiYAMLBytes, err := yaml.Marshal(apiYAMLConfig)
