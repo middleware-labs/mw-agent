@@ -4,6 +4,8 @@ go 1.22.2
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => github.com/middleware-labs/opentelemetry-collector-contrib/internal/filter v0.91.1-0.20240730062257-6d8ef6255283
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => github.com/middleware-labs/opentelemetry-collector-contrib/pkg/ottl v0.91.1-0.20240730062257-6d8ef6255283
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.91.1-0.20240730062257-6d8ef6255283
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.91.1-0.20240730062257-6d8ef6255283
