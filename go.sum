@@ -762,6 +762,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.102.0/go.mod h1:cbxye4vCXzz+0qUFaC2UKzTF3u8YGJzuKKBdniWWAGM=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.102.0 h1:M0d06m240oxWbvUA7cVqktNu4kDUKPh8YJPgTyb0SZE=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.102.0/go.mod h1:xrIJ4Sy/0UlTbUoKGAII6GSaAh2tI4QkF+MqtQIiLBM=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver v0.102.0 h1:JHVh3P2pZ7paNJE7t/xQtcMwBIp6kSbeXBmAWDHf13E=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver v0.102.0/go.mod h1:lIK9bCpqEah5d+K+h+HRtqtHTCp6GNh59Gjn1WLYqPU=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver v0.102.0 h1:1AX8sO0n38Uk5TSMFtEWesHzdxP87mvn/MGDrqTkspM=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver v0.102.0/go.mod h1:BoHW0z/ATjlCKFyrySmwl5EP/TnoftRkZ+s9d2iu+Yo=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.102.0 h1:RB12IhSeXEt1y6nGtVvlqWtuzR3q/u33WFkjnot5mVg=
