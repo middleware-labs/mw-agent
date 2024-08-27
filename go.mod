@@ -63,6 +63,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.102.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.102.0

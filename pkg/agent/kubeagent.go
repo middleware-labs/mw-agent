@@ -27,6 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"go.opentelemetry.io/collector/exporter"
@@ -144,6 +145,7 @@ func (k *KubeAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 		k8seventsreceiver.NewFactory(),
 		kubeletstatsreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
+		k8sobjectsreceiver.NewFactory(),
 	}...)
 	if err != nil {
 		return otelcol.Factories{}, err
