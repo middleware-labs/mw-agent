@@ -1,0 +1,163 @@
+#!/bin/bash
+LOG_FILE="/var/log/mw-agent/macos-installation-pkg-$(date +%s).log"
+echo "Running postinstall script..." >> $LOG_FILE
+
+function send_logs {
+  status=$1
+  message=$2
+  api_key=$3
+  macos_version=$(sw_vers -productVersion)
+  macos_product_name=$(sw_vers -productName)
+  kernel_version=$(uname -r)
+  hostname=$(hostname)
+  host_id=$(eval hostname)
+  platform=$(uname -m)
+
+  payload=$(cat <<EOF
+{
+  "status": "$status",
+  "metadata": {
+    "script": "darwin/postinstall",
+    "status": "ok",
+    "message": "$message",
+    "macos_version": "$macos_version",
+    "macos_product_name": "$macos_product_name",
+    "kernel_version": "$kernel_version",
+    "hostname": "$hostname",
+    "host_id": "$host_id",
+    "platform": "$platform",
+    "script_logs": "$(sed 's/$/\\n/' "$LOG_FILE" | tr -d '\n' | sed 's/"/\\\"/g')"
+  }
+}
+EOF
+)
+
+  url=https://app.middleware.io/api/v1/agent/tracking/"$api_key"
+  curl -s --location --request POST "$url" \
+  --header 'Content-Type: application/json' \
+  --data "$payload" >> /dev/null
+}
+
+update_config() {
+    local key=$1
+    local value=$2
+    local file=$3
+
+    # Update configuration file with the provided key and value
+    sed -i '' "s|^\s*${key}:.*|${key}: ${value}|" "${file}"
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to update configuration file." | tee -a $LOG_FILE
+        send_logs "error" "Failed to update configuration file during post install." "$api_key"
+        exit 1
+    fi
+
+    # Check if the key was updated. If not, append the key-value pair to the file.
+    grep -q "^\s*${key}:" "${file}"
+    if [ $? -ne 0 ]; then
+        echo "$key: $value" >> "$file"
+        if [ $? -ne 0 ]; then
+            echo "Error: Failed to append to configuration file." | tee -a $LOG_FILE
+            send_logs "error" "Failed to append to configuration file during post install." "$api_key"
+            exit 1
+        fi
+    fi
+}
+
+config_file=/etc/mw-agent/agent-config.yaml
+echo "Updating configuration file: $config_file" >> $LOG_FILE
+input_file=/tmp/mw_agent_cfg.txt
+echo "Reading input file: $input_file" >> $LOG_FILE
+# Check if input file exists
+if [ ! -f "$input_file" ]; then
+    echo "Error: Input file $input_file does not exist." | tee -a $LOG_FILE
+    send_logs "error" "Input file does not exist during post install." "$api_key"
+    exit 1
+fi
+
+# Initialize variables to check for api-key and target
+api_key_present=false
+target_present=false
+api_key=""
+target=""
+# Read the input file line by line
+while IFS= read -r line; do
+    # Extract key and value from the line
+    key=$(echo "$line" | cut -d ':' -f 1 | xargs)
+    value=$(echo "$line" | cut -d ':' -f 2- | xargs)
+
+    # Check for api-key and target
+    if [ "$key" = "api-key" ] && [ -n "$value" ]; then
+        api_key_present=true
+        api_key=$value
+    elif [ "$key" = "target" ] && [ -n "$value" ]; then
+        target_present=true
+        target=$value
+    fi
+
+    # Call the update_config function with the key, value, and config file path
+    echo "Updating configuration: $key: $value" >> $LOG_FILE
+    update_config "$key" "$value" "$config_file"
+done < "$input_file"
+
+# Check if both api-key and target are present
+if [ "$api_key_present" = false ] || [ "$target_present" = false ]; then
+    echo "Error: api-key and/or target not found in $input_file." | tee -a $LOG_FILE
+    send_logs "error" "api-key and/or target not found in input file during post install." "$api_key"
+    exit 1
+fi
+
+rm -f /tmp/mw_agent_cfg.txt
+
+# Path to the LaunchDaemon plist
+LAUNCHD_PLIST="/Library/LaunchDaemons/io.middleware.mw-agent.plist"
+
+# Check if plist file exists
+if [ ! -f $LAUNCHD_PLIST ]; then
+    echo "LaunchDaemon plist file does not exist: $LAUNCHD_PLIST" | tee -a $LOG_FILE
+    send_logs "error" "LaunchDaemon plist file does not exist during post install." "$api_key"
+    exit 1
+fi
+
+# Validate the plist file
+if ! plutil -lint $LAUNCHD_PLIST >> $LOG_FILE 2>&1; then
+    echo "Invalid LaunchDaemon plist file: $LAUNCHD_PLIST" | tee -a $LOG_FILE
+    send_logs "error" "Invalid LaunchDaemon plist file during post install." "$api_key"
+    exit 1
+fi
+
+# Set correct permissions
+chown root:wheel $LAUNCHD_PLIST
+chmod 644 $LAUNCHD_PLIST
+
+# Load and start the LaunchDaemon
+echo "Running launchctl bootstrap" >> $LOG_FILE
+if sudo launchctl bootstrap system $LAUNCHD_PLIST >> $LOG_FILE 2>&1; then
+    echo "Middleware Agent LaunchDaemon successfully bootstrapped." >> $LOG_FILE
+else
+    echo "Failed to bootstrap Middleware Agent LaunchDaemon." | tee -a $LOG_FILE
+    echo "This could not be a critical error if the agent is already running." | tee -a $LOG_FILE
+fi
+
+# Start the LaunchDaemon
+echo "Running launchctl kickstart" >> $LOG_FILE
+if launchctl kickstart -k system/io.middleware.mw-agent >> $LOG_FILE 2>&1; then
+    echo "Middleware Agent LaunchDaemon successfully kickstarted." >> $LOG_FILE
+    sleep 3
+    if [ -z "$(launchctl list io.middleware.mw-agent | grep PID)" ]; then
+        echo "Error: Middleware Agent LaunchDaemon is not running after kickstart." | tee -a $LOG_FILE
+        log show --predicate 'process == "launchd"' --info --last 5m >> $LOG_FILE 2>&1
+        send_logs "error" "Middleware Agent LaunchDaemon is not running after kickstart." "$api_key"
+        exit 1
+    else 
+        echo "Middleware Agent LaunchDaemon is running." >> $LOG_FILE
+    fi
+else
+    echo "Failed to kickstart Middleware Agent LaunchDaemon." | tee -a $LOG_FILE
+    log show --predicate 'process == "launchd"' --info --last 5m >> $LOG_FILE 2>&1
+    send_logs "error" "Failed to kickstart Middleware Agent LaunchDaemon." "$api_key"
+    exit 1
+fi
+
+echo "Postinstall script completed" >> $LOG_FILE
+send_logs "installed" "Postinstall script completed successfully." "$api_key"
+exit 0

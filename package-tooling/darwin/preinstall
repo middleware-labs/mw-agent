@@ -1,0 +1,107 @@
+#!/bin/bash
+LOG_FILE="/var/log/mw-agent/macos-installation-pkg-$(date +%s).log"
+sudo mkdir -p /var/log/mw-agent
+echo "Running preinstall script..." > $LOG_FILE
+mkdir -p /opt/mw-agent
+mkdir -p /etc/mw-agent
+
+function send_logs {
+  status=$1
+  message=$2
+  api_key=$3
+  macos_version=$(sw_vers -productVersion)
+  macos_product_name=$(sw_vers -productName)
+  kernel_version=$(uname -r)
+  hostname=$(hostname)
+  host_id=$(eval hostname)
+  platform=$(uname -m)
+
+  payload=$(cat <<EOF
+{
+  "status": "$status",
+  "metadata": {
+    "script": "darwin/preinstall",
+    "status": "ok",
+    "message": "$message",
+    "macos_version": "$macos_version",
+    "macos_product_name": "$macos_product_name",
+    "kernel_version": "$kernel_version",
+    "hostname": "$hostname",
+    "host_id": "$host_id",
+    "platform": "$platform",
+    "script_logs": "$(sed 's/$/\\n/' "$LOG_FILE" | tr -d '\n' | sed 's/"/\\\"/g')"
+  }
+}
+EOF
+)
+
+  url=https://app.middleware.io/api/v1/agent/tracking/"$api_key"
+  curl -s --location --request POST "$url" \
+  --header 'Content-Type: application/json' \
+  --data "$payload" >> /dev/null
+}
+
+input_file=/tmp/mw_agent_cfg.txt
+expected_keys=("api-key" "target")
+
+# Check if input file exists and contains the expected keys
+if [ -f "$input_file" ]; then
+    missing_keys=()
+    for key in "${expected_keys[@]}"; do
+        if ! grep -q "^$key" "$input_file"; then
+            missing_keys+=("$key")
+        fi
+    done
+
+    if [ ${#missing_keys[@]} -eq 0 ]; then
+        echo "Input file exists and contains the expected keys. Skipping AppleScript prompt." >> $LOG_FILE
+    else
+        echo "Missing keys in input file: ${missing_keys[*]}. Invoking AppleScript prompt." >> $LOG_FILE
+        osascript prompt_user.applescript
+    fi
+else
+    echo "Input file does not exist. Invoking AppleScript prompt." >> $LOG_FILE
+    osascript prompt_user.applescript
+fi
+
+
+echo "Reading input file in preinstall script: $input_file" >> $LOG_FILE
+# Check if input file exists
+if [ ! -f "$input_file" ]; then
+    echo "Error: Input file $input_file does not exist." | tee -a $LOG_FILE
+    exit 1
+fi
+
+# Initialize variables to check for api-key and target
+api_key_present=false
+target_present=false
+api_key=""
+target=""
+# Read the input file line by line
+while IFS= read -r line; do
+    # Extract key and value sendfrom the line
+    key=$(echo "$line" | cut -d ':' -f 1 | xargs)
+    value=$(echo "$line" | cut -d ':' -f 2- | xargs)
+
+    # Check for api-key and target
+    if [ "$key" = "api-key" ] && [ -n "$value" ]; then
+        api_key_present=true
+        api_key=$value
+    elif [ "$key" = "target" ] && [ -n "$value" ]; then
+        target_present=true
+        target=$value
+    fi
+done < "$input_file"
+
+# Check if both api-key and target are present
+if [ "$api_key_present" = false ] || [ "$target_present" = false ]; then
+    echo "api-key and/or target not found in $input_file during preinstall script." | tee -a $LOG_FILE
+    send_logs "error" "api-key and/or target not found in $input_file during preinstall script." "$api_key"
+    exit 1
+else
+    send_logs "pending" "api_key and target found in during preinstall script." "$api_key"
+fi
+
+# Check if both api-key and target are valid by checking with the Middleware backend
+# TODO
+exit 0
