@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="1">
+    <title>Middleware Agent</title>
+    <welcome mime-type="text/html" file="welcome.html"/>
+    <license file="LICENSE"/>
+    <conclusion mime-type="text/html" file="conclusion.html"/>
+    <background mime-type="image/png" alignment="bottomleft" scaling="proportional" file="logo.png"/>
+    <background-darkAqua mime-type="image/png" alignment="bottomleft" scaling="proportional" file="logo.png"/>
+    <options rootVolumeOnly="true" hostArchitectures="arm64"/>
+    <choices-outline>
+        <line choice="default"/>
+    </choices-outline>
+    <choice id="default" title="Install Middleware Agent">
+        <pkg-ref id="io.middleware.mw-agent"/>
+    </choice>
+
+    <pkg-ref id="io.middleware.mw-agent" version="1.7.6" auth="root" onConclusion="none">#middleware_agent.pkg</pkg-ref>
+</installer-gui-script>

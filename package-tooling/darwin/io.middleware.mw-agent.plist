@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.7.4">
+<dict>
+    <key>Label</key>
+    <string>io.middleware.mw-agent</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/mw-agent/mw-agent</string>
+        <string>start</string>
+        <string>--config-file=/etc/mw-agent/agent-config.yaml</string>
+    </array>
+    <key>UserName</key>
+    <string>root</string>
+    <key>GroupName</key>
+    <string>wheel</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardErrorPath</key>
+    <string>/var/log/mw-agent.log</string>
+    <key>StandardOutPath</key>
+    <string>/var/log/mw-agent.log</string>
+</dict>
+</plist>

@@ -4,6 +4,10 @@ build-windows:
 	GOOS=windows CGO_ENABLED=0 go build -ldflags=${LD_FLAGS} -o build/mw-windows-agent.exe cmd/host-agent/main.go
 build-linux:
 	GOOS=linux CGO_ENABLED=0 go build -ldflags=${LD_FLAGS} -o build/mw-host-agent cmd/host-agent/main.go
+build-darwin-amd64:
+	GOOS=darwin GOARCH=amd64 CGO_ENABLED=1 go build -ldflags=${LD_FLAGS} -o build/mw-host-agent cmd/host-agent/main.go
+build-darwin-arm64:
+	GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 go build -ldflags=${LD_FLAGS} -o build/mw-host-agent cmd/host-agent/main.go
 build-linux-amd64:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags=${LD_FLAGS} -o build/mw-host-agent-amd64 cmd/host-agent/main.go
 build-linux-arm64:
@@ -25,6 +29,9 @@ package-linux: package-linux-deb package-linux-rpm package-linux-docker
 
 package-linux-docker:
 	Dockerfiles/docker-build.sh build local Dockerfiles/DockerfileLinux
+
+package-darwin: build-darwin-arm64
+	package-tooling/darwin/create_installer.sh ${RELEASE_VERSION}
 
 package: package-windows package-linux
 

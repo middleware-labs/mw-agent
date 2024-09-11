@@ -185,7 +185,11 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			DefaultText: func() string {
 				switch runtime.GOOS {
 				case "linux":
-					return filepath.Join("/etc", "mw-agent", "mw-agent.yaml")
+					return filepath.Join("/etc", "mw-agent", "agent-config.yaml")
+				case "darwin":
+					return filepath.Join("/etc", "mw-agent", "agent-config.yaml")
+				case "windows":
+					return filepath.Join(filepath.Dir(execPath), "agent-config.yaml")
 				}
 
 				return ""
@@ -200,6 +204,8 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 				switch runtime.GOOS {
 				case "linux":
 					return filepath.Join("/etc", "mw-agent", "otel-config.yaml")
+				case "darwin":
+					return filepath.Join("/etc", "mw-agent", "otel-config.yaml")
 				case "windows":
 					return filepath.Join(filepath.Dir(execPath), "otel-config.yaml")
 				}
@@ -210,6 +216,10 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 				switch runtime.GOOS {
 				case "linux":
 					return filepath.Join("/etc", "mw-agent", "otel-config.yaml")
+				case "darwin":
+					return filepath.Join("/etc", "mw-agent", "otel-config.yaml")
+				case "windows":
+					return filepath.Join(filepath.Dir(execPath), "otel-config.yaml")
 				}
 
 				return ""
@@ -305,8 +315,11 @@ func main() {
 						hostname = "unknown"
 					}
 
-					logger.Info("starting host agent", zap.String("agent location", execPath),
-						zap.String("hostname", hostname))
+					logger.Info("starting host agent",
+						zap.String("agent location", execPath),
+						zap.String("hostname", hostname),
+						zap.String("OS", runtime.GOOS),
+						zap.String("arch", runtime.GOARCH))
 
 					logger.Info("host agent config", zap.Stringer("config", cfg),
 						zap.String("version", agentVersion),
