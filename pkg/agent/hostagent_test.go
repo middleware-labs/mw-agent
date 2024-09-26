@@ -278,7 +278,7 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assertContainsComponent(t, factories.Exporters, "file")
 
 	// check if factories contain expected processors
-	assert.Len(t, factories.Processors, 9)
+	assert.Len(t, factories.Processors, 10)
 	assertContainsComponent(t, factories.Processors, "batch")
 	assertContainsComponent(t, factories.Processors, "filter")
 	assertContainsComponent(t, factories.Processors, "memory_limiter")
