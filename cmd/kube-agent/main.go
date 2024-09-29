@@ -299,6 +299,45 @@ func main() {
 					return nil
 				},
 			},
+			{
+				Name:  "force-update-configmaps",
+				Usage: "Update the configmaps as per Server settings",
+				Flags: flags,
+				Action: func(c *cli.Context) error {
+
+					ctx, cancel := context.WithCancel(c.Context)
+					defer func() {
+						cancel()
+					}()
+
+					mwNamespace := os.Getenv("MW_NAMESPACE")
+					if mwNamespace == "" {
+						mwNamespace = "mw-agent-ns"
+					}
+
+					kubeAgentMonitor := agent.NewKubeAgentMonitor(cfg,
+						agent.WithKubeAgentMonitorClusterName(os.Getenv("MW_KUBE_CLUSTER_NAME")),
+						agent.WithKubeAgentMonitorAgentNamespace(mwNamespace),
+						agent.WithKubeAgentMonitorDaemonset("mw-kube-agent"),
+						agent.WithKubeAgentMonitorDeployment("mw-kube-agent"),
+						agent.WithKubeAgentMonitorDaemonsetConfigMap("mw-daemonset-otel-config"),
+						agent.WithKubeAgentMonitorDeploymentConfigMap("mw-deployment-otel-config"),
+						agent.WithKubeAgentMonitorVersion(agentVersion),
+					)
+
+					err := kubeAgentMonitor.SetClientSet()
+					if err != nil {
+						logger.Error("collector server run finished with error", zap.Error(err))
+						return err
+					}
+
+					kubeAgentMonitor.UpdateConfigMap(ctx, agent.Deployment)
+					kubeAgentMonitor.UpdateConfigMap(ctx, agent.DaemonSet)
+
+					return nil
+
+				},
+			},
 		},
 	}
 
