@@ -33,10 +33,10 @@ func TestKubeAgentGetFactories(t *testing.T) {
 	assert.NotNil(t, factories.Processors)
 
 	// check that the returned factories contain the expected factories
-	assert.Len(t, factories.Extensions, 0)
+	assert.Len(t, factories.Extensions, 1)
 
 	// check if factories contains expected receivers
-	assert.Len(t, factories.Receivers, 9)
+	assert.Len(t, factories.Receivers, 10)
 	assertContainsComponent(t, factories.Receivers, "otlp")
 	assertContainsComponent(t, factories.Receivers, "fluentforward")
 	assertContainsComponent(t, factories.Receivers, "filelog")
