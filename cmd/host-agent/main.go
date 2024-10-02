@@ -249,6 +249,9 @@ func main() {
 
 		CallerKey:    "caller",
 		EncodeCaller: zapcore.ShortCallerEncoder,
+
+		StacktraceKey: "stacktrace",
+		LineEnding:    zapcore.DefaultLineEnding,
 	}
 	zapCfg := zap.NewProductionConfig()
 	zapCfg.EncoderConfig = zapEncoderCfg
@@ -282,6 +285,7 @@ func main() {
 						go profiler.StartProfiling("mw-host-agent", cfg.Target, cfg.HostTags)
 					}
 
+					var zapFileCore zapcore.Core
 					if cfg.Logfile != "" {
 						logger.Info("redirecting logs to logfile", zap.String("logfile", cfg.Logfile))
 						// logfile specified. Update logger to write logs to the
@@ -292,13 +296,13 @@ func main() {
 							MaxBackups: 1,
 							MaxAge:     7, // days
 						})
-						core := zapcore.NewCore(
+						zapFileCore = zapcore.NewCore(
 							zapcore.NewJSONEncoder(zapEncoderCfg),
 							w,
 							zap.InfoLevel,
 						)
 
-						logger = zap.New(core)
+						logger = zap.New(zapFileCore)
 					}
 
 					infraPlatform := agent.InfraPlatformInstance
@@ -408,10 +412,20 @@ func main() {
 
 					settings := otelcol.CollectorSettings{
 						DisableGracefulShutdown: true,
-						LoggingOptions:          []zap.Option{
-							// zap.Development(),
-							// zap.IncreaseLevel(zap.DebugLevel),
-						},
+						LoggingOptions: func() []zap.Option {
+							// if logfile is specified, then write logs to the file using zapFileCore
+							if cfg.Logfile != "" {
+								return []zap.Option{
+									zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+										return zapFileCore
+									}),
+								}
+							}
+							return []zap.Option{
+								// zap.Development(),
+								// zap.IncreaseLevel(zap.DebugLevel),
+							}
+						}(),
 
 						BuildInfo: component.BuildInfo{
 							Command:     "mw-otelcontribcol",
