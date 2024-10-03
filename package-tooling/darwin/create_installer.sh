@@ -10,6 +10,7 @@ fi
 # Set variables
 REPO_ROOT=$(git rev-parse --show-toplevel)
 BASE_DIR="/tmp/mw-agent-pkg"
+PACKAGE_DIR="$BASE_DIR/package"
 INSTALLER_DIR="$REPO_ROOT/build"
 ROOT_DIR="$BASE_DIR/root"
 SCRIPTS_DIR="$BASE_DIR/scripts"
@@ -22,6 +23,7 @@ RELEASE_VERSION=$1
 security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" $KEYCHAIN_NAME
 # Prepare directories for the installer
 mkdir -p $BASE_DIR
+mkdir -p $PACKAGE_DIR
 mkdir -p $RESOURCE_DIR
 mkdir -p $ROOT_DIR/Library/LaunchDaemons
 mkdir -p $ROOT_DIR/opt/mw-agent/
@@ -53,7 +55,7 @@ sudo pkgbuild --root $ROOT_DIR \
          --version $RELEASE_VERSION \
          --install-location / \
          --scripts $SCRIPTS_DIR \
-         $BASE_DIR/middleware_agent.pkg
+         $PACKAGE_DIR/middleware_agent.pkg
 
 # Check if pkgbuild command failed
 if [ $? -ne 0 ]; then
@@ -61,10 +63,20 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# Sign the installer package
+echo "Signing the inner installer package"
+sudo codesign --sign "$APPLE_DEVELOPER_ID_APPLICATION" --options runtime --timestamp "$PACKAGE_DIR/middleware_agent.pkg"
+
+# Check if productsign command failed
+if [ $? -ne 0 ]; then
+  echo "Error: productsign command failed"
+  exit 1
+fi
+
 # Create and sign the installer package
-echo "Signing the installer package"
+echo "Signing the product installer package"
 sudo productbuild --distribution $BASE_DIR/distribution.xml \
-             --package-path $BASE_DIR \
+             --package-path $PACKAGE_DIR \
              --resources $RESOURCE_DIR \
              --sign "$APPLE_DEVELOPER_ID_INSTALLER" \
              --keychain $KEYCHAIN_NAME \
@@ -75,6 +87,19 @@ if [ $? -ne 0 ]; then
   echo "Error: productbuild command failed"
   exit 1
 fi
+
+echo "Code Signing the final installer package"
+sudo codesign --sign "$APPLE_DEVELOPER_ID_APPLICATION" --options runtime --timestamp $INSTALLER_DIR/$INSTALLER_NAME
+
+# Check if productbuild command failed
+if [ $? -ne 0 ]; then
+  echo "Error: codesign command failed for the final installer package"
+  exit 1
+fi
+
+# Verify the package signature
+pkgutil --check-signature $INSTALLER_DIR/$INSTALLER_NAME
+codesign -dv --verbose=4 $INSTALLER_DIR/$INSTALLER_NAME
 
 echo "Notarizing the installer package, team id: $APPLE_DEVELOPER_TEAM_ID"
 xcrun notarytool store-credentials "$KEYCHAIN_PROFILE" --apple-id $APPLE_ID --password $APPLE_ID_PASSWORD --team-id "$APPLE_DEVELOPER_TEAM_ID"
