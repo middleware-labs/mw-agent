@@ -20,7 +20,7 @@ jobs:
           - arch: arm64
             image: macos-latest
           - arch: amd64
-            image: macos-12-large
+            image: macos-12
       max-parallel: 1
     runs-on: ${{ matrix.image }}   
     steps:
