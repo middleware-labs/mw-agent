@@ -48,6 +48,48 @@ func TestGetAPIURLForConfigCheck(t *testing.T) {
 	}
 }
 
+func TestGetAPIURLForSyntheticMonitoring(t *testing.T) {
+	tests := []struct {
+		name           string
+		url            string
+		expectedResult string
+		err            error
+	}{
+		{
+			name:           "URL with both '/' and '.' and without trailing '/'",
+			url:            "https://myaccount.middleware.io",
+			expectedResult: "wss://myaccount.middleware.io/plsrws/v2",
+			err:            nil,
+		},
+		{
+			name:           "URL with trailing '/'",
+			url:            "https://myaccount.middleware.io/",
+			expectedResult: "wss://myaccount.middleware.io/plsrws/v2",
+			err:            nil,
+		},
+		{
+			name:           "URL with only one '.'",
+			url:            "https://middleware.io",
+			expectedResult: "",
+			err:            ErrInvalidTarget,
+		},
+		{
+			name:           "URL with custom domain",
+			url:            "https://myaccount.test.mw.io",
+			expectedResult: "wss://myaccount.test.mw.io/plsrws/v2",
+			err:            nil,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := GetAPIURLForSyntheticMonitoring(test.url)
+			assert.Equal(t, test.err, err)
+			assert.Equal(t, test.expectedResult, result)
+		})
+	}
+}
+
 func TestWithKubeAgentMonitorClusterName(t *testing.T) {
 	kubeAgentMonitor := &KubeAgentMonitor{}
 	expected := "test-cluster"

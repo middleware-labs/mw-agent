@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/middleware-labs/mw-agent/pkg/agent"
+	"github.com/middleware-labs/synthetics-agent/pkg/worker"
 	"github.com/prometheus/common/version"
 	"gopkg.in/natefinch/lumberjack.v2"
 
@@ -106,6 +107,14 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			Hidden:      true,
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "api-url-for-synthetic-monitoring",
+			EnvVars:     []string{"MW_API_URL_FOR_SYNTHETIC_MONITORING"},
+			Destination: &cfg.APIURLForSyntheticMonitoring,
+			DefaultText: "wss://app.middleware.io/plsrws/v2",
+			Value:       "wss://app.middleware.io/plsrws/v2",
+			Hidden:      true,
+		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "host-tags",
 			Usage:       "Tags for this host.",
 			EnvVars:     []string{"MW_HOST_TAGS"},
@@ -160,6 +169,14 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			Destination: &cfg.AgentFeatures.LogCollection,
 			DefaultText: "true",
 			Value:       true, // log collection is enabled by default
+		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "agent-features.synthetic-monitoring",
+			Usage:       "Flag to enable or disable synthetic monitoring.",
+			EnvVars:     []string{"MW_AGENT_FEATURES_SYNTHETIC_MONITORING"},
+			Destination: &cfg.AgentFeatures.SyntheticMonitoring,
+			DefaultText: "false",
+			Value:       false, // log collection is enabled by default
 		}),
 		altsrc.NewBoolFlag(&cli.BoolFlag{
 			Name:        "mw-agent-self-profiling",
@@ -342,6 +359,19 @@ func main() {
 							zap.String("api-url-for-config-check", cfg.APIURLForConfigCheck))
 					}
 
+					if cfg.APIURLForSyntheticMonitoring == "" {
+						cfg.APIURLForSyntheticMonitoring, err = agent.GetAPIURLForSyntheticMonitoring(cfg.Target)
+						// could not derive api url for synthetic monitoring from target
+						if err != nil {
+							logger.Info("could not derive api url for synthetic monitoring from target",
+								zap.String("target", cfg.Target))
+							return err
+						}
+
+						logger.Info("derived api url for synthetic monitoring",
+							zap.String("api-url-for-synthetic-monitoring", cfg.APIURLForSyntheticMonitoring))
+					}
+
 					hostAgent := agent.NewHostAgent(
 						cfg,
 						agent.WithHostAgentLogger(logger),
@@ -435,6 +465,34 @@ func main() {
 
 						Factories:              func() (otelcol.Factories, error) { return hostAgent.GetFactories(ctx) },
 						ConfigProviderSettings: configProviderSetting,
+					}
+
+					if cfg.AgentFeatures.SyntheticMonitoring {
+						config := worker.Config{
+							Mode:       worker.ModeAgent,
+							Token:      cfg.APIKey,
+							Hostname:   hostname,
+							PulsarHost: cfg.APIURLForSyntheticMonitoring,
+						}
+
+						logger.Info("starting synthetic worker: ")
+						syntheticWorker, err := worker.New(&config)
+						if err != nil {
+							logger.Error("Failed to create worker")
+						}
+
+						go func(ctx context.Context) {
+							for {
+								select {
+								case <-ctx.Done():
+									fmt.Println("Turning off the synthetic monitoring...")
+									return
+								default:
+									syntheticWorker.Run()
+								}
+							}
+						}(ctx)
+
 					}
 
 					collector, _ := otelcol.NewCollector(settings)

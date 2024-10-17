@@ -63,26 +63,28 @@ func (p InfraPlatform) String() string {
 }
 
 type AgentFeatures struct {
-	MetricCollection bool
-	LogCollection    bool
+	MetricCollection    bool
+	LogCollection       bool
+	SyntheticMonitoring bool
 }
 
 // BaseConfig stores general configuration for all agent types
 type BaseConfig struct {
-	APIKey                    string
-	Target                    string
-	EnableSyntheticMonitoring bool
-	ConfigCheckInterval       string
-	FetchAccountOtelConfig    bool
-	DockerEndpoint            string
-	APIURLForConfigCheck      string
-	FluentPort                string
-	InfraPlatform             InfraPlatform
-	OtelConfigFile            string
-	AgentFeatures             AgentFeatures
-	SelfProfiling             bool
-	ProfilngServerURL         string
-	InternalMetricsPort       uint
+	APIKey                       string
+	Target                       string
+	EnableSyntheticMonitoring    bool
+	ConfigCheckInterval          string
+	FetchAccountOtelConfig       bool
+	DockerEndpoint               string
+	APIURLForConfigCheck         string
+	APIURLForSyntheticMonitoring string
+	FluentPort                   string
+	InfraPlatform                InfraPlatform
+	OtelConfigFile               string
+	AgentFeatures                AgentFeatures
+	SelfProfiling                bool
+	ProfilngServerURL            string
+	InternalMetricsPort          uint
 }
 
 // String() implements stringer interface for BaseConfig
@@ -213,6 +215,28 @@ func GetAPIURLForConfigCheck(target string) (string, error) {
 	}
 
 	return strings.TrimSuffix(target, "/"), nil
+}
+
+// GetAPIURLForSyntheticMonitoring constructs the WebSocket URL for synthetic monitoring
+func GetAPIURLForSyntheticMonitoring(target string) (string, error) {
+	// Parse the URL
+	parsedURL, err := url.Parse(target)
+	if err != nil {
+		return "", err
+	}
+
+	// Check if the host part of the URL contains more than one '.'
+	hostParts := strings.Split(parsedURL.Hostname(), ".")
+	if len(hostParts) < 3 {
+		return "", ErrInvalidTarget
+	}
+
+	// Ensure no trailing slash in the path
+	trimmedURL := strings.TrimSuffix(parsedURL.Host, "/")
+
+	// Build the WebSocket URL
+	webSocketURL := "wss://" + trimmedURL + "/plsrws/v2"
+	return webSocketURL, nil
 }
 
 type Profiler struct {
