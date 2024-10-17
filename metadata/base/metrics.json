@@ -11,21 +11,24 @@
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/hostmetricsreceiver/internal/scraper/networkscraper/metadata.yaml",
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/hostmetricsreceiver/internal/scraper/pagingscraper/metadata.yaml",
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/hostmetricsreceiver/internal/scraper/processesscraper/metadata.yaml"
-        ]
+        ],
+        "collection_interval": "15s"
     },
     {
         "type": "container",
         "prefixes": ["container"],
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/dockerstatsreceiver/metadata.yaml"
-        ]
+        ],
+        "collection_interval": "15s"
     },
     {
         "type": "process",
         "prefixes": ["process"],
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/hostmetricsreceiver/internal/scraper/processscraper/metadata.yaml"
-        ]
+        ],
+        "collection_interval": "15s"
     },
     {
         "type": "k8s.service",
@@ -33,7 +36,8 @@
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/kubeletstatsreceiver/metadata.yaml",
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/k8sclusterreceiver/metadata.yaml"
-        ]
+        ],
+        "collection_interval": "30s"
     },
     {
         "type": "k8s.hpa",
@@ -41,7 +45,8 @@
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/kubeletstatsreceiver/metadata.yaml",
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/k8sclusterreceiver/metadata.yaml"
-        ]
+        ],
+        "collection_interval": "30s"
     },
     {
         "type": "k8s.container",
@@ -49,7 +54,8 @@
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/kubeletstatsreceiver/metadata.yaml",
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/k8sclusterreceiver/metadata.yaml"
-        ]
+        ],
+        "collection_interval": "30s"
     },
     {
         "type": "k8s.container",
@@ -57,7 +63,8 @@
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/kubeletstatsreceiver/metadata.yaml",
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/k8sclusterreceiver/metadata.yaml"
-        ]
+        ],
+        "collection_interval": "30s"
     },
     {
         "type": "k8s.pod",
@@ -65,7 +72,8 @@
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/kubeletstatsreceiver/metadata.yaml",
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/k8sclusterreceiver/metadata.yaml"
-        ]
+        ],
+        "collection_interval": "30s"
     },
     {
         "type": "k8s.node",
@@ -73,7 +81,8 @@
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/kubeletstatsreceiver/metadata.yaml",
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/k8sclusterreceiver/metadata.yaml"
-        ]
+        ],
+        "collection_interval" : "30s"
     },
     {
         "type": "k8s.statefulset",
@@ -81,7 +90,8 @@
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/kubeletstatsreceiver/metadata.yaml",
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/k8sclusterreceiver/metadata.yaml"
-        ]
+        ],
+        "collection_interval": "30s"
     },
     {
         "type": "k8s.cronjob",
@@ -89,7 +99,8 @@
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/kubeletstatsreceiver/metadata.yaml",
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/k8sclusterreceiver/metadata.yaml"
-        ]
+        ],
+        "collection_interval": "30s"
     },
     {
         "type": "k8s.cronjob",
@@ -97,7 +108,8 @@
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/kubeletstatsreceiver/metadata.yaml",
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/k8sclusterreceiver/metadata.yaml"
-        ]
+        ],
+        "collection_interval": "30s"
     },
     {
         "type": "k8s.daemonset",
@@ -105,7 +117,8 @@
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/kubeletstatsreceiver/metadata.yaml",
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/k8sclusterreceiver/metadata.yaml"
-        ]
+        ],
+        "collection_interval": "30s"
     },
     {
         "type": "k8s.daemonset",
@@ -113,7 +126,8 @@
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/kubeletstatsreceiver/metadata.yaml",
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/k8sclusterreceiver/metadata.yaml"
-        ]
+        ],
+        "collection_interval": "30s"
     },
     {
         "type": "k8s.deployment",
@@ -121,7 +135,8 @@
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/kubeletstatsreceiver/metadata.yaml",
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/k8sclusterreceiver/metadata.yaml"
-        ]
+        ],
+        "collection_interval": "30s"
     },
     {
         "type": "k8s.replicaset",
@@ -129,7 +144,8 @@
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/kubeletstatsreceiver/metadata.yaml",
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/k8sclusterreceiver/metadata.yaml"
-        ]
+        ],
+        "collection_interval": "30s"
     },
     {
         "type": "k8s.namespace",
@@ -137,55 +153,63 @@
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/kubeletstatsreceiver/metadata.yaml",
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/k8sclusterreceiver/metadata.yaml"
-        ]
+        ],
+        "collection_interval": "30s"
     },
     {
         "type": "kafka",
         "prefixes": ["kafka"],
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/kafkametricsreceiver/metadata.yaml"
-        ]
+        ],
+        "collection_interval": "1m"
     },
     {
         "type": "redis",
         "prefixes": ["redis"],
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/redisreceiver/metadata.yaml"
-        ]
+        ],
+        "collection_interval": "10s"
     },
     {
         "type": "postgresql",
         "prefixes": ["postgresql"],
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/postgresqlreceiver/metadata.yaml"
-        ]
+        ],
+        "collection_interval": "10s"
     },
     {
         "type": "mysql",
         "prefixes": ["mysql"],
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/mysqlreceiver/metadata.yaml"
-        ]
+        ],
+        "collection_interval": "10s"
     },
     {
         "type": "oracledb",
         "prefixes": ["oracledb"],
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/oracledbreceiver/metadata.yaml"
-        ]
+        ],
+        "collection_interval": "10s"
     },
     {
         "type": "elasticsearch",
         "prefixes": ["elasticsearch"],
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/elasticsearchreceiver/metadata.yaml"
-        ]
+        ],
+        "collection_interval": "10s"
     },
     {
         "type": "apache",
         "prefixes": ["apache"],
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/apachereceiver/metadata.yaml"
-        ]
+        ],
+        "collection_interval": "10s"
     }
 ]
