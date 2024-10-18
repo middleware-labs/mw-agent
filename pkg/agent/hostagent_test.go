@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -156,13 +157,13 @@ func TestListenForConfigChanges(t *testing.T) {
 	cfg := HostConfig{}
 	cfg.ConfigCheckInterval = "1s"
 	agent := NewHostAgent(cfg, WithHostAgentLogger(zap.NewNop()))
-
+	errCh := make(chan error)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// Start listening for config changes in a separate goroutine
 	go func() {
-		err := agent.ListenForConfigChanges(ctx)
+		err := agent.ListenForConfigChanges(ctx, errCh)
 		assert.NoError(t, err)
 	}()
 
@@ -294,28 +295,44 @@ func TestHostAgentGetFactories(t *testing.T) {
 func TestHostAgentHasValidTags(t *testing.T) {
 	testCases := []struct {
 		tags    string
-		isValid bool
+		isValid error
 	}{
 		// case 1: host tags not provided
-		{"", true},
+		{"", nil},
 
 		// case 2: tags match with expected pattern
-		{"name:my-machine,env:prod1", true},
+		{"name:my-machine,env:prod1", nil},
 
 		// case 3: tags do not match expected pattern
-		{"name", false},
-		{"name:,", false},
-		{"name:1,", false},
-		{"name:1,test", false},
+		{"name", errors.New("invalid tag format: name")},
+		{"name:,", errors.New("invalid tag format: ")},
+		{"name:1", nil},
+		{"name:1,", errors.New("invalid tag format: ")},
+		{"name:1,test", errors.New("invalid tag format: test")},
 	}
 
 	for i, tc := range testCases {
+		t.Logf("Running test case %d: %s", i+1, tc.tags)
 		agent := NewHostAgent(HostConfig{
 			HostTags: tc.tags,
 		})
 
 		isValid := agent.HasValidTags()
-		if isValid != tc.isValid {
+
+		if isValid == nil && tc.isValid == nil {
+			continue
+		}
+
+		if isValid == nil && tc.isValid != nil {
+			t.Errorf("Test case %d failed. Expected HasValidTags to return: %v, but got: %v", i+1, tc.isValid, isValid)
+		}
+
+		if isValid != nil && tc.isValid == nil {
+			t.Errorf("Test case %d failed. Expected HasValidTags to return: %v, but got: %v", i+1, tc.isValid, isValid)
+		}
+
+		// check if isValid is as expected
+		if isValid.Error() != tc.isValid.Error() {
 			t.Errorf("Test case %d failed. Expected HasValidTags to return: %v, but got: %v", i+1, tc.isValid, isValid)
 		}
 	}

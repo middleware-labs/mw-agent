@@ -739,6 +739,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatoratep
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.102.0/go.mod h1:IIIjEblgrNISbDY7GPMMto9kEVIf0n9IeJoVru89kfY=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.102.0 h1:DaEYlVCn58GtkyYVK0IT/ZMjRFJ+BfmR0p9I0Eq42aQ=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.102.0/go.mod h1:u9x08rUCWdgI8Nle5XOMTCmxd0K26KTZvMMA5H8Xjyg=
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.102.0 h1:huh7V8uqMakQGdnbOqTSZihfoDeOIbNHfFt62HMsk5k=
+github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.102.0/go.mod h1:IIKgEx+D91XNJYN33/wXzGullskvjJzvzKHIP3/+zDQ=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.102.0 h1:mkRDKVWXfG1gTxwg69ttJoGmXOKNHAGsGms06DrwTlQ=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.102.0/go.mod h1:5F6hpHujLkLuEYmbbUXel2i3mBpwRJHmy8KTY3cbOVg=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.102.0 h1:nAJSknk1/WP0/d3SJWxqCdt/5S8N21CUPBlgiLs/Woc=

@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"sync"
+	"time"
 
 	"github.com/middleware-labs/mw-agent/pkg/agent"
 	"github.com/prometheus/common/version"
@@ -31,9 +33,13 @@ import (
 var agentVersion = "0.0.1"
 
 type program struct {
-	logger    *zap.Logger
-	collector *otelcol.Collector
-	args      []string
+	logger            *zap.Logger
+	programWG         *sync.WaitGroup
+	collectorSettings otelcol.CollectorSettings
+	// stop the telemetry collection if errCh receives an error
+	// resume when errCh receives nil
+	errCh chan error
+	args  []string
 }
 
 // Service interface for kardianos/service package to run
@@ -41,20 +47,57 @@ type program struct {
 func (p *program) Start(s service.Service) error {
 	// Start should not block. Do the actual work async.
 	p.logger.Info("starting service", zap.Stringer("name", s))
+	p.programWG.Add(1)
 	go p.run()
+	p.errCh <- nil
 	return nil
 }
 
 func (p *program) Stop(s service.Service) error {
 	// Stop should not block. Return with a few seconds.
 	p.logger.Info("stopping service", zap.Stringer("name", s))
+
+	// stop collection
+	close(p.errCh)
+	p.programWG.Wait()
 	return nil
 }
 
 func (p *program) run() {
-	if err := p.collector.Run(context.Background()); err != nil {
-		p.logger.Error("collector server run finished with error", zap.Error(err))
-		os.Exit(1)
+	defer p.programWG.Done()
+
+	var collector *otelcol.Collector
+	alreadyRunning := false
+	var collectorWG sync.WaitGroup
+	for err := range p.errCh {
+		if err != nil {
+			// stop collection only if it's running
+			if alreadyRunning {
+				p.logger.Error("stopping telemetry collection", zap.Error(err))
+				collector.Shutdown()
+				collectorWG.Wait()
+				alreadyRunning = false
+				p.logger.Info("stopped telemetry collection at", zap.Time("time", time.Now()))
+			}
+		} else {
+			// start collection only if it's not running
+			if !alreadyRunning {
+				p.logger.Info("(re)starting telemetry collection")
+				collectorWG.Add(1)
+				go func(alreadyRunning *bool) {
+					defer collectorWG.Done()
+					*alreadyRunning = true
+					collector, _ = otelcol.NewCollector(p.collectorSettings)
+					if err := collector.Run(context.Background()); err != nil {
+						p.logger.Error("collector server run finished with error",
+							zap.Error(err))
+						*alreadyRunning = false
+					} else {
+						p.logger.Info("collector server run finished gracefully")
+					}
+				}(&alreadyRunning)
+			}
+		}
 	}
 }
 
@@ -134,6 +177,14 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			Destination: &cfg.LogfileSize,
 			DefaultText: "1",
 			Value:       1, // default value is 1MB
+		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "logging-level",
+			Usage:       "Logging level for Middleware agent logs. Valid values: debug, info, warn, error, fatal, panic. Default: info.",
+			EnvVars:     []string{"MW_LOGGING_LEVEL"},
+			Destination: &cfg.LoggingLevel,
+			DefaultText: "info",
+			Value:       "info",
 		}),
 		/* infra monitoring flag is deprecated. See log-collection flag */
 		altsrc.NewBoolFlag(&cli.BoolFlag{
@@ -285,6 +336,12 @@ func main() {
 						go profiler.StartProfiling("mw-host-agent", cfg.Target, cfg.HostTags)
 					}
 
+					loggingLevel, err := zap.ParseAtomicLevel(cfg.LoggingLevel)
+					if err != nil {
+						logger.Error("error parsing logging level", zap.Error(err))
+						return err
+					}
+
 					var zapFileCore zapcore.Core
 					if cfg.Logfile != "" {
 						logger.Info("redirecting logs to logfile", zap.String("logfile", cfg.Logfile))
@@ -299,10 +356,12 @@ func main() {
 						zapFileCore = zapcore.NewCore(
 							zapcore.NewJSONEncoder(zapEncoderCfg),
 							w,
-							zap.InfoLevel,
+							loggingLevel.Level(),
 						)
 
 						logger = zap.New(zapFileCore)
+					} else {
+						zapCfg.Level.SetLevel(loggingLevel.Level())
 					}
 
 					infraPlatform := agent.InfraPlatformInstance
@@ -375,26 +434,24 @@ func main() {
 					os.Setenv("MW_HOST_TAGS", cfg.HostTags)
 
 					// Checking if host agent has valid tags
-					if !hostAgent.HasValidTags() {
-						return agent.ErrInvalidHostTags
+					if err := hostAgent.HasValidTags(); err != nil {
+						logger.Info("host agent has invalid tags", zap.Error(err))
+						return err
 					}
 
+					// errCh is used to control whether the agent should collect telemetry data or not.
+					// if any of the module returns error, the agent should not collect telemetry data.
+					// For example, if the agent is not able to connect to the target,
+					// it should not collect telemetry data until it can connect to the target again.
+					errCh := make(chan error)
 					if cfg.FetchAccountOtelConfig {
-						otelConfigFile, err := hostAgent.GetOtelConfig()
-						if err != nil {
-							logger.Error("error getting config file path", zap.Error(err))
-							return err
-						}
-						logger.Info("otel config file", zap.String("path", otelConfigFile))
-
 						// Listen to the config changes provided by Middleware API
-						err = hostAgent.ListenForConfigChanges(ctx)
+						err = hostAgent.ListenForConfigChanges(ctx, errCh)
 						if err != nil {
 							logger.Info("error for listening for config changes", zap.Error(err))
 							return err
 						}
 					}
-
 					configProviderSetting := otelcol.ConfigProviderSettings{
 						ResolverSettings: confmap.ResolverSettings{
 							ProviderFactories: []confmap.ProviderFactory{
@@ -411,7 +468,7 @@ func main() {
 					}
 
 					settings := otelcol.CollectorSettings{
-						DisableGracefulShutdown: true,
+						DisableGracefulShutdown: false,
 						LoggingOptions: func() []zap.Option {
 							// if logfile is specified, then write logs to the file using zapFileCore
 							if cfg.Logfile != "" {
@@ -437,7 +494,6 @@ func main() {
 						ConfigProviderSettings: configProviderSetting,
 					}
 
-					collector, _ := otelcol.NewCollector(settings)
 					svcConfig := &service.Config{
 						Name:        "MiddlewareHostAgent",
 						DisplayName: "Middleware Host Agent",
@@ -445,9 +501,11 @@ func main() {
 					}
 
 					prg := &program{
-						logger:    logger,
-						collector: collector,
-						args:      os.Args,
+						logger:            logger,
+						programWG:         &sync.WaitGroup{},
+						collectorSettings: settings,
+						errCh:             errCh,
+						args:              os.Args,
 					}
 
 					s, err := service.New(prg, svcConfig)
@@ -455,6 +513,7 @@ func main() {
 						logger.Fatal("could not create OS service", zap.Error(err))
 					}
 
+					// Run the service
 					err = s.Run()
 					if err != nil {
 						logger.Error("error after running the service", zap.Error(err))

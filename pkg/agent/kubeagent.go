@@ -214,39 +214,35 @@ func (c *KubeAgentMonitor) callRestartStatusAPI(ctx context.Context) error {
 
 	// Add Query Parameters to the URL
 	baseURL.RawQuery = params.Encode() // Escape Query Parameters
-
-	resp, err := http.Get(baseURL.String())
+	url := baseURL.String()
+	resp, err := http.Get(url)
 	if err != nil {
-		c.logger.Error("failed to call Restart-API", zap.String("url", baseURL.String()), zap.Error(err))
-		return err
+		return fmt.Errorf("failed to call restart api for url %s: %w",
+			url, err)
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		c.logger.Error("failed to call Restart-API", zap.Int("code", resp.StatusCode))
-		return ErrRestartStatusAPINotOK
+		return fmt.Errorf("restart api returned non-200 status: %d", resp.StatusCode)
 	}
 
 	var apiResponse apiResponseForRestart
 	if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
-		c.logger.Error("failed unmarshal Restart-API response", zap.Error(err))
-		return err
+		return fmt.Errorf("failed to unmarshal restart api response: %w", err)
 	}
 
 	if apiResponse.Rollout.Daemonset {
 		c.logger.Info("restarting mw-agent")
 		if err := c.restartKubeAgent(ctx, DaemonSet); err != nil {
-			c.logger.Error("error restarting mw-agent daemonset", zap.Error(err))
-			return err
+			return fmt.Errorf("error getting updated config: %w", err)
 		}
 	}
 
 	if apiResponse.Rollout.Deployment {
 		c.logger.Info("restarting mw-agent")
 		if err := c.restartKubeAgent(ctx, Deployment); err != nil {
-			c.logger.Error("error restarting mw-agent deployment", zap.Error(err))
-			return err
+			return fmt.Errorf("error restarting mw-agent: %w", err)
 		}
 	}
 
@@ -341,36 +337,31 @@ func (c *KubeAgentMonitor) updateConfigMap(ctx context.Context, componentType Co
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		c.logger.Error("failed to call get configuration api", zap.Int("statuscode", resp.StatusCode))
-		return ErrRestartStatusAPINotOK
+		return fmt.Errorf("get configuration api returned non-200 status: %d", resp.StatusCode)
 	}
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		c.logger.Error("failed to reas response body", zap.Error(err))
-		return err
+		return fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	// Unmarshal JSON response into ApiResponse struct
 	var apiResponse apiResponseForYAML
 	if err := json.Unmarshal(body, &apiResponse); err != nil {
-		c.logger.Error("failed to unmarshal api response", zap.Error(err))
-		return err
+		return fmt.Errorf("failed to unmarshal api response: %w", err)
 	}
 
 	// Verify API Response
 	if !apiResponse.Status {
-		c.logger.Error("failure status from api response for ingestion rules", zap.Bool("status", apiResponse.Status))
-		return ErrInvalidResponse
+		return fmt.Errorf("failure status from api response for ingestion rules: %t",
+			apiResponse.Status)
 	}
 
 	var apiYAMLConfig map[string]interface{}
 	if len(apiResponse.Config.DaemonSet) == 0 && len(apiResponse.Config.Deployment) == 0 {
-		c.logger.Error("failed to get valid response",
-			zap.Int("config docker len", len(apiResponse.Config.Docker)),
-			zap.Int("config no docker len", len(apiResponse.Config.NoDocker)))
-		return ErrInvalidResponse
+		return fmt.Errorf("failed to get valid response, config docker len: %d, config no docker len: %d",
+			len(apiResponse.Config.Docker), len(apiResponse.Config.NoDocker))
 	}
 
 	apiYAMLConfig = apiResponse.Config.Deployment
@@ -380,8 +371,7 @@ func (c *KubeAgentMonitor) updateConfigMap(ctx context.Context, componentType Co
 
 	yamlData, err := yaml.Marshal(apiYAMLConfig)
 	if err != nil {
-		c.logger.Error("failed to marshal api data", zap.Error(err))
-		return err
+		return fmt.Errorf("failed to marshal api data: %w", err)
 	}
 
 	switch componentType {
@@ -389,8 +379,7 @@ func (c *KubeAgentMonitor) updateConfigMap(ctx context.Context, componentType Co
 		// Retrieve the existing ConfigMap
 		existingDaemonsetConfigMap, err := c.Clientset.CoreV1().ConfigMaps(c.AgentNamespace).Get(context.Background(), c.DaemonsetConfigMap, metav1.GetOptions{})
 		if err != nil {
-			c.logger.Error("Error getting ConfigMap: %v\n" + err.Error())
-			return err
+			return fmt.Errorf("failed to get configmap: %w", err)
 		}
 
 		// Modify the content of the ConfigMap
@@ -399,8 +388,7 @@ func (c *KubeAgentMonitor) updateConfigMap(ctx context.Context, componentType Co
 		// Update the ConfigMap
 		updatedConfigMap, err := c.Clientset.CoreV1().ConfigMaps(c.AgentNamespace).Update(context.Background(), existingDaemonsetConfigMap, metav1.UpdateOptions{})
 		if err != nil {
-			c.logger.Error("Error updating ConfigMap ", zap.String("error", err.Error()))
-			return err
+			return fmt.Errorf("failed to update configmap: %w", err)
 		}
 
 		c.logger.Info("ConfigMap updated successfully ", zap.String("configmap", updatedConfigMap.Name))
@@ -408,8 +396,7 @@ func (c *KubeAgentMonitor) updateConfigMap(ctx context.Context, componentType Co
 		// Retrieve the existing ConfigMap
 		existingDeploymentConfigMap, err := c.Clientset.CoreV1().ConfigMaps(c.AgentNamespace).Get(context.Background(), c.DeploymentConfigMap, metav1.GetOptions{})
 		if err != nil {
-			c.logger.Error("Error getting ConfigMap ", zap.String("error", err.Error()))
-			return err
+			return fmt.Errorf("failed to get configmap: %w", err)
 		}
 
 		// Modify the content of the ConfigMap
@@ -418,8 +405,7 @@ func (c *KubeAgentMonitor) updateConfigMap(ctx context.Context, componentType Co
 		// Update the ConfigMap
 		updatedDeploymentConfigMap, err := c.Clientset.CoreV1().ConfigMaps(c.AgentNamespace).Update(context.Background(), existingDeploymentConfigMap, metav1.UpdateOptions{})
 		if err != nil {
-			c.logger.Error("Error updating ConfigMap", zap.String("error", err.Error()))
-			return err
+			return fmt.Errorf("failed to update configmap: %w", err)
 		}
 
 		c.logger.Info("ConfigMap updated successfully", zap.String("configmap", updatedDeploymentConfigMap.Name))
