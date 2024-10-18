@@ -469,10 +469,13 @@ func main() {
 
 					if cfg.AgentFeatures.SyntheticMonitoring {
 						config := worker.Config{
-							Mode:       worker.ModeAgent,
-							Token:      cfg.APIKey,
-							Hostname:   hostname,
-							PulsarHost: cfg.APIURLForSyntheticMonitoring,
+							Mode:                worker.ModeAgent,
+							Token:               cfg.APIKey,
+							Hostname:            hostname,
+							PulsarHost:          cfg.APIURLForSyntheticMonitoring,
+							Location:            hostname,
+							UnsubscribeEndpoint: cfg.Target + "/api/v1/synthetics/unsubscribe",
+							CaptureEndpoint:     cfg.Target + "/v1/metrics",
 						}
 
 						logger.Info("starting synthetic worker: ")
