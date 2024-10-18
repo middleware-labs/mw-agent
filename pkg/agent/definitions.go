@@ -106,9 +106,10 @@ func (c BaseConfig) String() string {
 type HostConfig struct {
 	BaseConfig
 
-	HostTags    string
-	Logfile     string
-	LogfileSize int
+	HostTags     string
+	Logfile      string
+	LogfileSize  int
+	LoggingLevel string
 }
 
 // String() implements stringer interface for HostConfig

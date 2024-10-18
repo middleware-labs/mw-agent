@@ -2,9 +2,7 @@ package agent
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -26,8 +24,9 @@ import (
 // HostAgent implements Agent interface for Hosts (e.g Linux)
 type HostAgent struct {
 	HostConfig
-	logger  *zap.Logger
-	Version string
+	logger      *zap.Logger
+	httpGetFunc func(url string) (resp *http.Response, err error)
+	Version     string
 }
 
 // HostOptions takes in various options for HostAgent
@@ -59,6 +58,7 @@ func WithHostAgentInfraPlatform(p InfraPlatform) HostOptions {
 func NewHostAgent(cfg HostConfig, opts ...HostOptions) *HostAgent {
 	var agent HostAgent
 	agent.HostConfig = cfg
+	agent.httpGetFunc = http.Get
 
 	for _, apply := range opts {
 		apply(&agent)
@@ -72,11 +72,7 @@ func NewHostAgent(cfg HostConfig, opts ...HostOptions) *HostAgent {
 }
 
 var (
-	ErrRestartStatusAPINotOK = errors.New("received error code from the server")
-	ErrReceiverKeyNotFound   = errors.New("'receivers' key not found")
-	ErrInvalidResponse       = errors.New("invalid response from ingestion rules api")
-	ErrInvalidHostTags       = errors.New("invalid host tags, kindly check the format")
-
+	ErrKeyNotFound    = fmt.Errorf("'%s' key not found", Receivers)
 	ErrParseReceivers = fmt.Errorf("failed to parse %s in otel config file", Receivers)
 	ErrParseService   = fmt.Errorf("failed to parse %s in otel config file", Service)
 	ErrParsePipelines = fmt.Errorf("failed to parse %s in otel config file", Pipelines)
@@ -238,7 +234,7 @@ func (c *HostAgent) updateConfig(config map[string]interface{}, cnf integrationC
 	// Add the temporary map to the existing "receiver" key
 	receiverData, ok := config["receivers"].(map[string]interface{})
 	if !ok {
-		return map[string]interface{}{}, ErrReceiverKeyNotFound
+		return map[string]interface{}{}, ErrKeyNotFound
 	}
 
 	for key, value := range tempMap {
@@ -287,45 +283,39 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 	// Add Query Parameters to the URL
 	baseURL.RawQuery = params.Encode() // Escape Query Parameters
 
-	resp, err := http.Get(baseURL.String())
+	url := baseURL.String()
+	resp, err := c.httpGetFunc(url)
 	if err != nil {
-		c.logger.Error("failed to call get configuration api", zap.Error(err))
-		return err
+		return fmt.Errorf("failed to call get configuration api for %s: %w", url, err)
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		c.logger.Error("failed to call get configuration api", zap.Int("statuscode", resp.StatusCode))
-		return ErrRestartStatusAPINotOK
+		return fmt.Errorf("get configuration api returned non-200 status: %d", resp.StatusCode)
 	}
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		c.logger.Error("failed to reas response body", zap.Error(err))
-		return err
+		return fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	// Unmarshal JSON response into ApiResponse struct
 	var apiResponse apiResponseForYAML
 	if err := json.Unmarshal(body, &apiResponse); err != nil {
-		c.logger.Error("failed to unmarshal api response", zap.Error(err))
-		return err
+		return fmt.Errorf("failed to unmarshal api response: %w", err)
 	}
 
 	// Verify API Response
 	if !apiResponse.Status {
-		c.logger.Error("failure status from api response for ingestion rules", zap.Bool("status", apiResponse.Status))
-		return ErrInvalidResponse
+		return fmt.Errorf("failure status from api response for ingestion rules: %t", apiResponse.Status)
 	}
 
 	var apiYAMLConfig map[string]interface{}
 	if len(apiResponse.Config.Docker) == 0 && len(apiResponse.Config.NoDocker) == 0 {
-		c.logger.Error("failed to get valid response",
-			zap.Int("config docker len", len(apiResponse.Config.Docker)),
-			zap.Int("config no docker len", len(apiResponse.Config.NoDocker)))
-		return ErrInvalidResponse
+		return fmt.Errorf("failed to get valid response, config docker len: %d, config no docker len: %d",
+			len(apiResponse.Config.Docker), len(apiResponse.Config.NoDocker))
 	}
 
 	apiYAMLConfig = apiResponse.Config.NoDocker
@@ -371,21 +361,18 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 
 	apiYAMLBytes, err := yaml.Marshal(apiYAMLConfig)
 	if err != nil {
-		c.logger.Error("failed to marshal api data", zap.Error(err))
-		return err
+		return fmt.Errorf("failed to marshal api data: %w", err)
 	}
 
 	if err := os.WriteFile(c.OtelConfigFile, apiYAMLBytes, 0644); err != nil {
-		c.logger.Error("failed to write new configuration data to file", zap.String("file", c.OtelConfigFile),
-			zap.Error(err))
-		return err
+		return fmt.Errorf("failed to write new configuration data to file %s: %w", c.OtelConfigFile, err)
 	}
 
 	return nil
 }
 
 // GetUpdatedYAMLPath gets the correct otel configuration file
-func (c *HostAgent) GetOtelConfig() (string, error) {
+func (c *HostAgent) getOtelConfig() (string, error) {
 	configType := "docker"
 	dockerSocketPath := strings.Split(c.DockerEndpoint, "//")
 	if len(dockerSocketPath) != 2 || !isSocketFn(dockerSocketPath[1]) {
@@ -398,6 +385,10 @@ func (c *HostAgent) GetOtelConfig() (string, error) {
 
 	return c.OtelConfigFile, nil
 }
+
+// isIPPortFormat checks if the given endpoint string is in the format of IPv4:PORT.
+// The function also considers localhost as an IP.
+// The function returns true if the endpoint matches the regex pattern, false otherwise.
 func (c *HostAgent) isIPPortFormat(endpoint string) bool {
 	// Regex for IPv4:PORT format, also consider localhost as an IP
 	regexPattern := `(?:localhost|((?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))):(?:[0-9]|[1-9][0-9]{1,4}|[1-5][0-9]{4}|6[0-5][0-5][0-3][0-5])$`
@@ -435,7 +426,7 @@ func (c *HostAgent) checkIntConfigValidity(integrationType IntegrationType, cnf 
 }
 
 func (c *HostAgent) restartHostAgent() error {
-	c.GetOtelConfig()
+	c.getOtelConfig()
 	cmd := exec.Command("kill", "-SIGHUP", fmt.Sprintf("%d", os.Getpid()))
 	err := cmd.Run()
 	if err != nil {
@@ -446,7 +437,6 @@ func (c *HostAgent) restartHostAgent() error {
 
 func (c *HostAgent) callRestartStatusAPI() error {
 
-	// fmt.Println("Starting recursive restart check......")
 	// apiURLForRestart, _ := checkForConfigURLOverrides()
 	hostname := getHostname()
 	u, err := url.Parse(c.APIURLForConfigCheck)
@@ -465,34 +455,32 @@ func (c *HostAgent) callRestartStatusAPI() error {
 	// Add Query Parameters to the URL
 	baseURL.RawQuery = params.Encode() // Escape Query Parameters
 
-	resp, err := http.Get(baseURL.String())
+	client := &http.Client{Timeout: 10 * time.Second}
+	url := baseURL.String()
+	resp, err := client.Get(url)
 	if err != nil {
-		c.logger.Error("failed to call Restart-API", zap.String("url", baseURL.String()), zap.Error(err))
-		return err
+		return fmt.Errorf("failed to call restart api for url %s: %w", url, err)
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		c.logger.Error("failed to call Restart-API", zap.Int("code", resp.StatusCode))
-		return ErrRestartStatusAPINotOK
+		return fmt.Errorf("restart api returned non-200 status: %d", resp.StatusCode)
 	}
 
 	var apiResponse apiResponseForRestart
 	if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
-		c.logger.Error("failed unmarshal Restart-API response", zap.Error(err))
-		return err
+		return fmt.Errorf("failed to unmarshal restart api response: %w", err)
 	}
 
 	if apiResponse.Restart {
 		c.logger.Info("restarting mw-agent")
-		if _, err := c.GetOtelConfig(); err != nil {
-			c.logger.Error("error getting Updated YAML", zap.Error(err))
-			return err
+		if _, err := c.getOtelConfig(); err != nil {
+			return fmt.Errorf("error getting updated config: %w", err)
 		}
+
 		if err := c.restartHostAgent(); err != nil {
-			c.logger.Error("error restarting mw-agent", zap.Error(err))
-			return err
+			return fmt.Errorf("error restarting mw-agent: %w", err)
 		}
 	}
 
@@ -502,7 +490,13 @@ func (c *HostAgent) callRestartStatusAPI() error {
 // ListenForConfigChanges listens for configuration changes for the
 // agent on the Middleware backend and restarts the agent if configuration
 // has changed.
-func (c *HostAgent) ListenForConfigChanges(ctx context.Context) error {
+func (c *HostAgent) ListenForConfigChanges(errCh chan<- error,
+	stopCh <-chan struct{}) error {
+
+	_, err := c.getOtelConfig()
+	if err != nil {
+		errCh <- err
+	}
 
 	restartInterval, err := time.ParseDuration(c.ConfigCheckInterval)
 	if err != nil {
@@ -511,35 +505,29 @@ func (c *HostAgent) ListenForConfigChanges(ctx context.Context) error {
 
 	ticker := time.NewTicker(restartInterval)
 
-	go func() {
-		for {
-			c.logger.Info("check for config changes after", zap.Duration("restartInterval", restartInterval))
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				err = c.callRestartStatusAPI()
-				if err != nil {
-					c.logger.Info("error restarting agent on config change",
-						zap.Error(err))
-				}
-			}
+	for {
+		c.logger.Debug("checking for config change every",
+			zap.String("restartInterval", restartInterval.String()))
+		select {
+		case <-stopCh:
+			return nil
+		case <-ticker.C:
+			err = c.callRestartStatusAPI()
+			errCh <- err
 		}
-	}()
-
-	return nil
+	}
 }
 
-func (c *HostAgent) HasValidTags() bool {
-	if c.HostTags == "" {
-		return true
+func HasValidTags(tags string) error {
+	if tags == "" {
+		return nil
 	}
-	pairs := strings.Split(c.HostTags, ",")
+	pairs := strings.Split(tags, ",")
 	for _, pair := range pairs {
 		keyValue := strings.Split(pair, ":")
 		if len(keyValue) != 2 {
-			return false
+			return fmt.Errorf("invalid tag format: %s", pair)
 		}
 	}
-	return true
+	return nil
 }
