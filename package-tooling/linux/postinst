@@ -26,24 +26,43 @@ update_config() {
     local value=$2
     local file=$3
 
-    # Update configuration file with the provided key and value
-    sed -i "s|^\s*${key}:.*|${key}: ${value}|" "$file"
-    
+    # For nested keys, we need to treat the YAML structure carefully.
+    if [[ "$key" == *.* ]]; then
+        local parent_key=${key%%.*}       # Extract parent key (e.g., agent-features)
+        local child_key=${key#*.}         # Extract child key (e.g., synthetic-monitoring)
+        
+        # Check if the parent key exists
+        grep -q "^\s*${parent_key}:" "$file"
+        if [ $? -eq 0 ]; then
+            # Parent key exists, try updating the child key
+            sed -i "/^\s*${parent_key}:/,/^\s*[a-zA-Z_-]\+:/ s|^\s*${child_key}:.*|  ${child_key}: ${value}|" "$file"
+            
+            # If the child key update fails (not found), append it under the parent key
+            if ! grep -q "^\s*${parent_key}:.*${child_key}:.*" "$file"; then
+                sed -i "/^\s*${parent_key}:/a\  ${child_key}: ${value}" "$file"
+            fi
+        else
+            # Parent key doesn't exist, append both parent and child key
+            echo -e "${parent_key}:\n  ${child_key}: ${value}" >> "$file"
+        fi
+    else
+        # For single-level keys
+        sed -i "s|^\s*${key}:.*|${key}: ${value}|" "$file"
+
+        # If the key was not updated, append it
+        grep -q "^\s*${key}:" "$file"
+        if [ $? -ne 0 ]; then
+            echo "${key}: ${value}" >> "$file"
+        fi
+    fi
+
+    # Check if the key was correctly updated or appended
     if [ $? -ne 0 ]; then
         echo "Error: Failed to update configuration file."
         exit 1
     fi
-
-    # Check if the key was updated. If not, append the key-value pair to the file.
-    grep -q "^\s*${key}:" "$file"
-    if [ $? -ne 0 ]; then
-        echo "${key}: ${value}" >> "$file"
-        if [ $? -ne 0 ]; then
-            echo "Error: Failed to append to configuration file."
-            exit 1
-        fi
-    fi
 }
+
 
 # Function to extract environment variables from old execuable file
 extract_environment_variables() {
@@ -81,9 +100,15 @@ handle_variable() {
         MW_API_URL_FOR_CONFIG_CHECK)
             update_config "api-url-for-config-check" "$value" "${CONFIG_FILE}"
             ;;
+        MW_API_URL_FOR_SYNTHETIC_MONITORING)
+            update_config "api-url-for-synthetic-monitoring" "$value" "${CONFIG_FILE}"
+            ;; 
         MW_FETCH_ACCOUNT_OTEL_CONFIG)
             update_config "fetch-account-otel-config" "$value" "${CONFIG_FILE}"
-            ;; 
+            ;;
+        MW_AGENT_FEATURES_SYNTHETIC_MONITORING)
+            update_config "agent-features.synthetic-monitoring" "$value" "${CONFIG_FILE}"
+            ;;
         MW_ENABLE_SYNTHETIC_MONITORING)
             # synthetic monitoring feature has been removed from the agent
             ;;
@@ -191,6 +216,14 @@ else
 
         if [ -n "${MW_FETCH_ACCOUNT_OTEL_CONFIG}" ]; then
             handle_variable "MW_FETCH_ACCOUNT_OTEL_CONFIG" "${MW_FETCH_ACCOUNT_OTEL_CONFIG}"
+        fi
+
+        if [ -n "${MW_AGENT_FEATURES_SYNTHETIC_MONITORING}" ]; then
+            handle_variable "MW_AGENT_FEATURES_SYNTHETIC_MONITORING" "${MW_AGENT_FEATURES_SYNTHETIC_MONITORING}"
+        fi
+
+        if [ -n "${MW_API_URL_FOR_SYNTHETIC_MONITORING}" ]; then
+            handle_variable "MW_API_URL_FOR_SYNTHETIC_MONITORING" "${MW_API_URL_FOR_SYNTHETIC_MONITORING}"
         fi
         
     fi
