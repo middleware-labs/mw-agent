@@ -176,7 +176,7 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			EnvVars:     []string{"MW_AGENT_FEATURES_SYNTHETIC_MONITORING"},
 			Destination: &cfg.AgentFeatures.SyntheticMonitoring,
 			DefaultText: "false",
-			Value:       false, // log collection is enabled by default
+			Value:       false, // synthetic monitoring is disabled by default
 		}),
 		altsrc.NewBoolFlag(&cli.BoolFlag{
 			Name:        "mw-agent-self-profiling",
@@ -469,13 +469,16 @@ func main() {
 
 					if cfg.AgentFeatures.SyntheticMonitoring {
 						config := worker.Config{
-							Mode:       worker.ModeAgent,
-							Token:      cfg.APIKey,
-							Hostname:   hostname,
-							PulsarHost: cfg.APIURLForSyntheticMonitoring,
+							Mode:                worker.ModeAgent,
+							Token:               cfg.APIKey,
+							Hostname:            hostname,
+							PulsarHost:          cfg.APIURLForSyntheticMonitoring,
+							Location:            hostname,
+							UnsubscribeEndpoint: cfg.Target + "/api/v1/synthetics/unsubscribe",
+							CaptureEndpoint:     cfg.Target + "/v1/metrics",
 						}
 
-						logger.Info("starting synthetic worker: ")
+						logger.Info("starting synthetic worker: ", zap.String("hostname", hostname))
 						syntheticWorker, err := worker.New(&config)
 						if err != nil {
 							logger.Error("Failed to create worker")
