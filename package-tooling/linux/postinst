@@ -109,6 +109,30 @@ handle_variable() {
         MW_AGENT_FEATURES_SYNTHETIC_MONITORING)
             update_config "agent-features.synthetic-monitoring" "$value" "${CONFIG_FILE}"
             ;;
+        MW_AGENT_FEATURES_METRIC_COLLECTION)
+            update_config "agent-features.metric-collection" "$value" "${CONFIG_FILE}"
+            ;;
+        MW_AGENT_FEATURES_LOG_COLLECTION)
+            update_config "agent-features.log-collection" "$value" "${CONFIG_FILE}"
+            ;;
+        MW_AGENT_SELF_PROFILING)
+            update_config "mw-agent-self-profiling" "$value" "${CONFIG_FILE}"
+            ;;
+        MW_PROFILING_SERVER_URL)
+            update_config "mw-profiling-server-url" "$value" "${CONFIG_FILE}"
+            ;;
+        MW_LOGFILE)
+            update_config "logfile" "$value" "${CONFIG_FILE}"
+            ;;
+        MW_LOGFILE_SIZE)
+            update_config "logfile-size" "$value" "${CONFIG_FILE}"
+            ;;
+        MW_FLUENT_PORT)
+            update_config "fluent-port" "$value" "${CONFIG_FILE}"
+            ;;
+        MW_DOCKER_ENDPOINT)
+            update_config "docker-endpoint" "$value" "${CONFIG_FILE}"
+            ;;
         MW_ENABLE_SYNTHETIC_MONITORING)
             # synthetic monitoring feature has been removed from the agent
             ;;
@@ -222,8 +246,40 @@ else
             handle_variable "MW_AGENT_FEATURES_SYNTHETIC_MONITORING" "${MW_AGENT_FEATURES_SYNTHETIC_MONITORING}"
         fi
 
+        if [ -n "${MW_AGENT_FEATURES_METRIC_COLLECTION}" ]; then
+            handle_variable "MW_AGENT_FEATURES_METRIC_COLLECTION" "${MW_AGENT_FEATURES_METRIC_COLLECTION}"
+        fi
+
+        if [ -n "${MW_AGENT_FEATURES_LOG_COLLECTION}" ]; then
+            handle_variable "MW_AGENT_FEATURES_LOG_COLLECTION" "${MW_AGENT_FEATURES_LOG_COLLECTION}"
+        fi
+
         if [ -n "${MW_API_URL_FOR_SYNTHETIC_MONITORING}" ]; then
             handle_variable "MW_API_URL_FOR_SYNTHETIC_MONITORING" "${MW_API_URL_FOR_SYNTHETIC_MONITORING}"
+        fi
+
+        if [ -n "${MW_AGENT_SELF_PROFILING}" ]; then
+            handle_variable "MW_AGENT_SELF_PROFILING" "${MW_AGENT_SELF_PROFILING}"
+        fi
+
+        if [ -n "${MW_PROFILING_SERVER_URL}" ]; then
+            handle_variable "MW_PROFILING_SERVER_URL" "${MW_PROFILING_SERVER_URL}"
+        fi
+
+        if [ -n "${MW_LOGFILE}" ]; then
+            handle_variable "MW_LOGFILE" "${MW_LOGFILE}"
+        fi
+
+        if [ -n "${MW_LOGFILE_SIZE}" ]; then
+            handle_variable "MW_LOGFILE_SIZE" "${MW_LOGFILE_SIZE}"
+        fi
+
+        if [ -n "${MW_FLUENT_PORT}" ]; then
+            handle_variable "MW_FLUENT_PORT" "${MW_FLUENT_PORT}"
+        fi
+
+        if [ -n "${MW_DOCKER_ENDPOINT}" ]; then
+            handle_variable "MW_DOCKER_ENDPOINT" "${MW_DOCKER_ENDPOINT}"
         fi
         
     fi
