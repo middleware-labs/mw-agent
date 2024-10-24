@@ -103,13 +103,13 @@ func (p *program) Start(s service.Service) error {
 	}
 
 	p.collectorSettings = settings
-
+	
 	// Start any goroutines that can control collection
 	if hostAgent.FetchAccountOtelConfig {
 		// Listen to the config changes provided by Middleware API
 		p.programWG.Add(1)
 		go func() {
-			hostAgent.ListenForConfigChanges(p.errCh, p.stopCh)
+			hostAgent.ListenForConfigChanges(p.errCh, p.stopCh, p.collectorSettings)
 			p.programWG.Done()
 		}()
 	}
@@ -151,7 +151,7 @@ func (p *program) run() {
 		} else {
 			// start collection only if it's not running
 			if !alreadyRunning {
-				p.logger.Error("(re)starting telemetry collection")
+				p.logger.Info("(re)starting telemetry collection")
 				collectorWG.Add(1)
 				go func(alreadyRunning *bool) {
 					defer collectorWG.Done()

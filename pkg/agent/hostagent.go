@@ -2,6 +2,7 @@ package agent
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,6 +18,7 @@ import (
 	//	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
 	//	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
 
+	"go.opentelemetry.io/collector/otelcol"
 	"go.uber.org/zap"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -130,9 +132,23 @@ type apiResponseForRestart struct {
 	Message string  `json:"message"`
 }
 
+type TrackingMetadata struct {
+	HostID        string `json:"host_id"`
+	Platform      string `json:"platform"`
+	AgentVersion  string `json:"agent_version"`
+	InfraPlatform string `json:"infra_platform"`
+	Reason        string `json:"reason"`
+}
+
+type TrackingPayload struct {
+	Status   string           `json:"status"`
+	Metadata TrackingMetadata `json:"metadata"`
+}
+
 var (
 	apiPathForYAML    = "api/v1/agent/ingestion-rules"
 	apiPathForRestart = "api/v1/agent/restart-status"
+	apiAgentTrack     = "api/v1/agent/tracking"
 )
 
 func (d IntegrationType) String() string {
@@ -435,7 +451,7 @@ func (c *HostAgent) restartHostAgent() error {
 	return nil
 }
 
-func (c *HostAgent) callRestartStatusAPI() error {
+func (c *HostAgent) callRestartStatusAPI(settings otelcol.CollectorSettings) error {
 
 	// apiURLForRestart, _ := checkForConfigURLOverrides()
 	hostname := getHostname()
@@ -475,23 +491,112 @@ func (c *HostAgent) callRestartStatusAPI() error {
 
 	if apiResponse.Restart {
 		c.logger.Info("restarting mw-agent")
+
+		// Backup current config content
+		currentConfig, err := os.ReadFile(c.OtelConfigFile)
+		if err != nil {
+			return err
+		}
+
 		if _, err := c.getOtelConfig(); err != nil {
 			return fmt.Errorf("error getting updated config: %w", err)
 		}
 
-		if err := c.restartHostAgent(); err != nil {
-			return fmt.Errorf("error restarting mw-agent: %w", err)
+		c.logger.Info("performing dry run with new config")
+		/* Perform a dry run to check if new config is valid*/
+		collector, _ := otelcol.NewCollector(settings)
+
+		requiresRestart := true
+		if err := collector.DryRun(context.Background()); err != nil {
+			c.logger.Info("dry run failed, restoring old config", zap.Error(err))
+
+			// ignoring errors for this case
+			// we dont want to stop collector if this api fails (Tracking Api)
+			trackerr := c.UpdateAgentTrackStatus(err)
+			if trackerr != nil {
+				c.logger.Error("failed to update old config", zap.Error(trackerr))
+			}
+
+			// Restore old config
+			if writeErr := os.WriteFile(c.OtelConfigFile, currentConfig, 0644); writeErr != nil {
+				c.logger.Error("failed to restore old config", zap.Error(writeErr))
+				return fmt.Errorf("dry run failed and config restore failed: %v, original error: %w", writeErr, err)
+			}
+			requiresRestart = false
 		}
+
+		/* Dont  Restart Host Agent if using old config only */
+		if requiresRestart {
+			c.logger.Info("mw-agent requires restart")
+			if err := c.restartHostAgent(); err != nil {
+				return fmt.Errorf("error restarting mw-agent: %w", err)
+			}
+		}
+
 	}
 
-	return err
+	return nil
+}
+
+func (c *HostAgent) UpdateAgentTrackStatus(reason error) error {
+	c.logger.Info("Starting UpdateAgentTrackStatus")
+
+	hostname := getHostname()
+	u, err := url.Parse(c.APIURLForConfigCheck)
+	if err != nil {
+		return err
+	}
+	baseURL := u.JoinPath(apiAgentTrack)
+	baseURL = baseURL.JoinPath(c.APIKey)
+
+	payload := TrackingPayload{
+		Status: "validate", // or could be passed as parameter
+		Metadata: TrackingMetadata{
+			HostID:        hostname,
+			Platform:      runtime.GOOS,
+			AgentVersion:  c.Version,
+			InfraPlatform: fmt.Sprint(c.InfraPlatform),
+			Reason:        reason.Error(),
+		},
+	}
+
+	// Marshal payload to JSON
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal payload: %v", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, baseURL.String(), bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		c.logger.Error("failed to create request", zap.Error(err))
+		return fmt.Errorf("failed to create request: %v", err)
+	}
+
+	// Add headers
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	// Make the request
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("API request failed: %v", err)
+	}
+	defer resp.Body.Close()
+	// Check status code
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("API returned non-200 status code: %d", resp.StatusCode)
+	}
+
+	c.logger.Info("Successfully updated agent track status")
+
+	return nil
 }
 
 // ListenForConfigChanges listens for configuration changes for the
 // agent on the Middleware backend and restarts the agent if configuration
 // has changed.
 func (c *HostAgent) ListenForConfigChanges(errCh chan<- error,
-	stopCh <-chan struct{}) error {
+	stopCh <-chan struct{}, settings otelcol.CollectorSettings) error {
 
 	_, err := c.getOtelConfig()
 	if err != nil {
@@ -512,7 +617,7 @@ func (c *HostAgent) ListenForConfigChanges(errCh chan<- error,
 		case <-stopCh:
 			return nil
 		case <-ticker.C:
-			err = c.callRestartStatusAPI()
+			err = c.callRestartStatusAPI(settings)
 			errCh <- err
 		}
 	}
