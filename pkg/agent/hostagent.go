@@ -3,12 +3,12 @@ package agent
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"regexp"
 	"runtime"
 	"strings"
@@ -19,6 +19,10 @@ import (
 
 	"go.uber.org/zap"
 	yaml "gopkg.in/yaml.v2"
+)
+
+var (
+	ErrRestartAgent = errors.New("restart agent due to config change")
 )
 
 // HostAgent implements Agent interface for Hosts (e.g Linux)
@@ -425,16 +429,6 @@ func (c *HostAgent) checkIntConfigValidity(integrationType IntegrationType, cnf 
 	return false
 }
 
-func (c *HostAgent) restartHostAgent() error {
-	c.getOtelConfig()
-	cmd := exec.Command("kill", "-SIGHUP", fmt.Sprintf("%d", os.Getpid()))
-	err := cmd.Run()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (c *HostAgent) callRestartStatusAPI() error {
 
 	// apiURLForRestart, _ := checkForConfigURLOverrides()
@@ -479,9 +473,7 @@ func (c *HostAgent) callRestartStatusAPI() error {
 			return fmt.Errorf("error getting updated config: %w", err)
 		}
 
-		if err := c.restartHostAgent(); err != nil {
-			return fmt.Errorf("error restarting mw-agent: %w", err)
-		}
+		return ErrRestartAgent
 	}
 
 	return err
@@ -510,6 +502,7 @@ func (c *HostAgent) ListenForConfigChanges(errCh chan<- error,
 			zap.String("restartInterval", restartInterval.String()))
 		select {
 		case <-stopCh:
+			ticker.Stop()
 			return nil
 		case <-ticker.C:
 			err = c.callRestartStatusAPI()
