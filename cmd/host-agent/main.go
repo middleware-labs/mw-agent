@@ -125,7 +125,6 @@ func (p *program) Stop(s service.Service) error {
 	p.logger.Info("stopping service", zap.Stringer("name", s))
 
 	// stop collection
-	p.stopCh <- struct{}{}
 	close(p.stopCh)
 	close(p.errCh)
 	p.programWG.Wait()
@@ -148,25 +147,32 @@ func (p *program) run() {
 				alreadyRunning = false
 				p.logger.Error("stopped telemetry collection at", zap.Time("time", time.Now()))
 			}
-		} else {
-			// start collection only if it's not running
-			if !alreadyRunning {
-				p.logger.Error("(re)starting telemetry collection")
-				collectorWG.Add(1)
-				go func(alreadyRunning *bool) {
-					defer collectorWG.Done()
-					*alreadyRunning = true
-					collector, _ = otelcol.NewCollector(p.collectorSettings)
-					if err := collector.Run(context.Background()); err != nil {
-						p.logger.Error("collector server run finished with error",
-							zap.Error(err))
-						*alreadyRunning = false
-					} else {
-						p.logger.Error("collector server run finished gracefully")
-					}
-				}(&alreadyRunning)
+
+			if err != agent.ErrRestartAgent {
+				continue
 			}
+
+			//if err == agent.ErrRestartAgent then continue the code and start the agent.
 		}
+
+		// start collection only if it's not running
+		if !alreadyRunning {
+			p.logger.Error("(re)starting telemetry collection")
+			collectorWG.Add(1)
+			go func(alreadyRunning *bool) {
+				defer collectorWG.Done()
+				*alreadyRunning = true
+				collector, _ = otelcol.NewCollector(p.collectorSettings)
+				if err := collector.Run(context.Background()); err != nil {
+					p.logger.Error("collector server run finished with error",
+						zap.Error(err))
+					*alreadyRunning = false
+				} else {
+					p.logger.Error("collector server run finished gracefully")
+				}
+			}(&alreadyRunning)
+		}
+
 	}
 }
 
