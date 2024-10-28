@@ -1,0 +1,216 @@
+name: Host Agent DEB + APT Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Release version for DEB + APT package'
+        required: true
+  push:
+    paths-ignore:
+      - '.github/**'
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+env:
+  ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        arch:
+          - arm64
+          - amd64
+      max-parallel: 1
+
+    steps:
+    - name: Install rpm build for ACT runs
+      if: ${{ github.actor == 'nektos/act' }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gettext-base
+  
+    - name: Checkout Repo
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GHCR_TOKEN }}
+        ssh-key: ${{ secrets.CHECK_AGENT_ACCESS }}
+        submodules: 'recursive'
+
+    - name: Set Architecture Variables
+      run: |
+        echo "::set-env name=PACKAGE_NAME::mw-agent"
+        echo "::set-env name=BINARY_SOURCE::release/mw-agent"
+        if [ -n "${{ github.event.inputs.release_version }}" ]; then
+          echo "RELEASE_VERSION=${{ github.event.inputs.release_version }}" >> $GITHUB_ENV
+        else
+          echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+        fi
+    
+    # Reference : https://www.debian.org/doc/debian-policy/ch-controlfields.html
+    - name: Creating Required Folder Structure
+      run: |
+        mkdir -p build/apt-repo
+        mkdir -p build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/opt/${PACKAGE_NAME}/bin
+
+    - name: Set up Go
+      if: ${{ github.actor != 'nektos/act' }}
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.22.1
+
+    - name: Set up Git credentials for Go
+      run: |
+        git config --global url."https://${{ secrets.GHCR_TOKEN }}:@github.com/".insteadOf "https://github.com/"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
+
+    # Building with CGO_ENABLED=0 so that we can build static binary which is not dependent on any external libraries
+    # Building with -ldflags="-s -w" to reduce the size of binary
+    - name: Go Build
+      if: ${{ github.actor != 'nektos/act' }}
+      run: |
+        CGO_ENABLED=0 GOPRIVATE=github.com/middleware-labs GOOS=linux GOARCH=${{ matrix.arch }} go build -ldflags="-s -w -X main.agentVersion=${RELEASE_VERSION}" -v -a -o $BINARY_SOURCE cmd/host-agent/main.go
+        
+    - name: Copying code binary into target location
+      run: |
+          if [ ${{ github.actor }} == "nektos/act" ]
+          then
+              cp build/mw-host-agent-${{ matrix.arch }} build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/opt/${PACKAGE_NAME}/bin/${PACKAGE_NAME}
+          else 
+            cp $BINARY_SOURCE build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/opt/${PACKAGE_NAME}/bin/${PACKAGE_NAME}
+          fi
+
+    - name: Copy Linux root files & generate dpkg Control file
+      run: |
+          mkdir -p build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN
+          mkdir -p build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/etc/${PACKAGE_NAME}
+          mkdir -p build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/lib/systemd/system
+
+          cp package-tooling/agent-config.yaml.sample build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/etc/${PACKAGE_NAME}/agent-config.yaml.sample
+          cp package-tooling/otel-config.yaml.sample build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/etc/${PACKAGE_NAME}/otel-config.yaml.sample
+
+          cp package-tooling/linux/postinst build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/postinst
+          cp package-tooling/linux/prerm build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/prerm
+          cp package-tooling/linux/postrm build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/postrm
+          chmod 0755 build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/postinst
+          chmod 0755 build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/prerm
+          chmod 0755 build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/postrm
+
+          cp package-tooling/linux/mw-agent.service build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/lib/systemd/system/mw-agent.service
+
+          PACKAGE=${PACKAGE_NAME} VERSION=${RELEASE_VERSION} ARCHITECTURE=${{ matrix.arch }} envsubst < package-tooling/linux/deb/control > build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/control
+
+    - name: Creating DEB package
+      run: |
+          dpkg-deb --build -Z xz build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}
+          dpkg-deb --info build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}.deb
+          dpkg-deb --contents build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}.deb
+
+    - name: Upload DEB as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: mw-agent-${{ matrix.arch }}-deb
+        path: build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}.deb
+        retention-days: 1
+
+    - name: Set up aptly
+      if: ${{ github.actor != 'nektos/act' }}
+      run: |
+        # Download aptly binary
+        wget https://github.com/aptly-dev/aptly/releases/download/v1.5.0/aptly_1.5.0_linux_amd64.tar.gz
+        tar -xzf aptly_1.5.0_linux_amd64.tar.gz
+        chmod +x aptly_1.5.0_linux_amd64/aptly
+         
+        # Move aptly binary to a directory in PATH
+        sudo mv aptly_1.5.0_linux_amd64/aptly /usr/local/bin/
+
+    - name: Verify aptly version
+      if: ${{ github.actor != 'nektos/act' }}
+      run: aptly version
+
+    # Reference : https://www.aptly.info/doc/
+    - name: Add DEB to MW APT Repo
+      if: ${{ github.actor != 'nektos/act' }}
+      run: |
+        sudo apt-get install -y gnupg
+        git clone https://.:${{ secrets.GHCR_TOKEN }}@github.com/middleware-labs/apt.middleware.io.git
+        gpg --import apt.middleware.io/gpg-keys/mw-agent-apt-private.key
+        gpg --import apt.middleware.io/gpg-keys/mw-agent-apt-public.key
+        
+        APTLY_HOME=$(aptly config show | grep rootDir | cut -d '"' -f 4)
+        echo "APTLY_HOME=$APTLY_HOME" >> $GITHUB_ENV
+
+        cat ~/.aptly.conf
+
+        echo $APTLY_HOME
+        mkdir -p $APTLY_HOME/public
+        mkdir -p $APTLY_HOME/db
+        mkdir -p $APTLY_HOME/pool
+        chmod 755 $APTLY_HOME
+        chmod 755 $APTLY_HOME/*
+        ls -l apt.middleware.io
+        cp -r apt.middleware.io/db/* $APTLY_HOME/db/
+        cp -r apt.middleware.io/public/* $APTLY_HOME/public/
+        cp -r apt.middleware.io/pool/* $APTLY_HOME/pool/
+        aptly repo list
+        aptly repo add --force-replace mw-repo build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}.deb
+        aptly repo list
+        gpg --list-keys
+        gpg --list-secret-keys
+        
+        ls -l $APTLY_HOME/pool
+        aptly publish update -force-overwrite stable
+        ls -l $APTLY_HOME/pool
+        echo "sleep 5"
+        sleep 5
+        ls -l $APTLY_HOME/pool
+        cp -r $APTLY_HOME/* apt.middleware.io
+
+        cd apt.middleware.io
+        git config --global user.email "keval@middleware.io"
+        git config --global user.name "bhogayatakb"
+        git add .
+        git commit -m "apt.middleware.io updated"
+        git push origin master
+
+  upload-to-release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: ./artifacts
+
+    - name: Set up GitHub CLI
+      run: |
+        type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+        curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+        && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+        && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+        && sudo apt update \
+        && sudo apt install gh -y
+
+    - name: Get Release Tag
+      id: get_tag
+      run: |
+        if [ -n "${{ github.event.inputs.release_version }}" ]; then
+          echo "RELEASE_TAG=${{ github.event.inputs.release_version }}" >> $GITHUB_ENV
+        else
+          echo "RELEASE_TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+        fi
+
+    - name: Upload Assets to Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
+      run: |
+        # For each architecture
+        for arch in arm64 amd64; do
+          # Upload DEB package
+          gh release upload "$RELEASE_TAG" "./artifacts/mw-agent-${arch}-deb/mw-agent_${RELEASE_TAG}_${arch}.deb" --clobber
+        done
