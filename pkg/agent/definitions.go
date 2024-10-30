@@ -240,6 +240,20 @@ func GetAPIURLForSyntheticMonitoring(target string) (string, error) {
 	return webSocketURL, nil
 }
 
+func HasValidTags(tags string) error {
+	if tags == "" {
+		return nil
+	}
+	pairs := strings.Split(tags, ",")
+	for _, pair := range pairs {
+		keyValue := strings.Split(pair, ":")
+		if len(keyValue) != 2 {
+			return fmt.Errorf("invalid tag format: %s", pair)
+		}
+	}
+	return nil
+}
+
 type Profiler struct {
 	Logger        *zap.Logger
 	ServerAddress string

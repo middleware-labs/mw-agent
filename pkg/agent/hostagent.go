@@ -2,6 +2,7 @@ package agent
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,20 +18,33 @@ import (
 	//	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
 	//	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
+	"go.opentelemetry.io/collector/confmap/provider/envprovider"
+	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
+	"go.opentelemetry.io/collector/otelcol"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	yaml "gopkg.in/yaml.v2"
 )
 
 var (
-	ErrRestartAgent = errors.New("restart agent due to config change")
+	ErrRestartAgent  = errors.New("restart agent due to config change")
+	ErrInvalidConfig = errors.New("invalid config received from backend")
 )
 
 // HostAgent implements Agent interface for Hosts (e.g Linux)
 type HostAgent struct {
 	HostConfig
-	logger      *zap.Logger
-	httpGetFunc func(url string) (resp *http.Response, err error)
-	Version     string
+	collectorFactories otelcol.Factories
+	collectorSettings  otelcol.CollectorSettings
+	collector          *otelcol.Collector
+	zapCore            zapcore.Core
+	logger             *zap.Logger
+	httpGetFunc        func(url string) (resp *http.Response, err error)
+	Version            string
 }
 
 // HostOptions takes in various options for HostAgent
@@ -44,9 +58,9 @@ func WithHostAgentVersion(v string) HostOptions {
 }
 
 // WithHostAgentLogger sets the logger to be used with agent logs
-func WithHostAgentLogger(logger *zap.Logger) HostOptions {
+func WithHostAgentZapCore(zapCore zapcore.Core) HostOptions {
 	return func(h *HostAgent) {
-		h.logger = logger
+		h.zapCore = zapCore
 	}
 }
 
@@ -59,7 +73,8 @@ func WithHostAgentInfraPlatform(p InfraPlatform) HostOptions {
 }
 
 // NewHostAgent returns new agent for Kubernetes with given options.
-func NewHostAgent(cfg HostConfig, opts ...HostOptions) *HostAgent {
+func NewHostAgent(cfg HostConfig, zapCore zapcore.Core,
+	opts ...HostOptions) (*HostAgent, error) {
 	var agent HostAgent
 	agent.HostConfig = cfg
 	agent.httpGetFunc = http.Get
@@ -68,11 +83,41 @@ func NewHostAgent(cfg HostConfig, opts ...HostOptions) *HostAgent {
 		apply(&agent)
 	}
 
-	if agent.logger == nil {
-		agent.logger, _ = zap.NewProduction()
+	agent.logger = zap.New(zapCore, zap.AddCaller())
+
+	collectorFactories, err := agent.getFactories()
+	if err != nil {
+		return nil, err
 	}
 
-	return &agent
+	agent.collectorFactories = collectorFactories
+	agent.collectorSettings = otelcol.CollectorSettings{
+		DisableGracefulShutdown: true,
+		LoggingOptions: func() []zap.Option {
+			// if logfile is specified, then write logs to the file using zapFileCore
+			if cfg.Logfile != "" {
+				return []zap.Option{
+					zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+						return zapCore
+					}),
+				}
+			}
+			return []zap.Option{}
+		}(),
+
+		BuildInfo: component.BuildInfo{
+			Command:     "mw-otelcontribcol",
+			Description: "Middleware OpenTelemetry Collector Contrib",
+			Version:     agent.Version,
+		},
+
+		Factories: func() (otelcol.Factories, error) {
+			return agent.getFactories()
+		},
+		ConfigProviderSettings: agent.getConfigProviderSettings(agent.OtelConfigFile),
+	}
+
+	return &agent, nil
 }
 
 var (
@@ -159,6 +204,23 @@ func (d IntegrationType) String() string {
 	return "unknown"
 }
 
+func (c *HostAgent) getConfigProviderSettings(uri string) otelcol.ConfigProviderSettings {
+	return otelcol.ConfigProviderSettings{
+		ResolverSettings: confmap.ResolverSettings{
+			ProviderFactories: []confmap.ProviderFactory{
+				fileprovider.NewFactory(),
+				yamlprovider.NewFactory(),
+				envprovider.NewFactory(),
+			},
+			ConverterFactories: []confmap.ConverterFactory{
+				expandconverter.NewFactory(),
+				//overwritepropertiesconverter.New(getSetFlag()),
+			},
+			//URIs: []string{c.OtelConfigFile},
+			URIs: []string{uri},
+		},
+	}
+}
 func convertTabsToSpaces(input []byte, tabWidth int) []byte {
 	// Find the tab character in the input
 	tabChar := byte('\t')
@@ -368,6 +430,23 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 		return fmt.Errorf("failed to marshal api data: %w", err)
 	}
 
+	// check if the config is valid, otherwise return an error
+	factories, _ := c.getFactories()
+	cfgProviderSettings := c.getConfigProviderSettings("yaml:" + string(apiYAMLBytes))
+	configProvider, err := otelcol.NewConfigProvider(cfgProviderSettings)
+	if err != nil {
+		return err
+	}
+
+	cfg, err := configProvider.Get(context.Background(), factories)
+	if err != nil {
+		return err
+	}
+
+	if err := cfg.Validate(); err != nil {
+		return fmt.Errorf("%w: %v", ErrInvalidConfig, err)
+	}
+
 	if err := os.WriteFile(c.OtelConfigFile, apiYAMLBytes, 0644); err != nil {
 		return fmt.Errorf("failed to write new configuration data to file %s: %w", c.OtelConfigFile, err)
 	}
@@ -384,7 +463,7 @@ func (c *HostAgent) getOtelConfig() (string, error) {
 	}
 
 	if err := c.updateConfigFile(configType); err != nil {
-		return "", err
+		return c.OtelConfigFile, err
 	}
 
 	return c.OtelConfigFile, nil
@@ -468,9 +547,9 @@ func (c *HostAgent) callRestartStatusAPI() error {
 	}
 
 	if apiResponse.Restart {
-		c.logger.Info("restarting mw-agent")
+		c.logger.Info("fetching updated configuration from backend")
 		if _, err := c.getOtelConfig(); err != nil {
-			return fmt.Errorf("error getting updated config: %w", err)
+			return err
 		}
 
 		return ErrRestartAgent
@@ -511,16 +590,20 @@ func (c *HostAgent) ListenForConfigChanges(errCh chan<- error,
 	}
 }
 
-func HasValidTags(tags string) error {
-	if tags == "" {
-		return nil
+// StartCollector initializes a new OpenTelemetry collector with the configured
+// settings and starts it. This function blocks until the collector is stopped
+func (c *HostAgent) StartCollector() error {
+	collector, err := otelcol.NewCollector(c.collectorSettings)
+	if err != nil {
+		return err
 	}
-	pairs := strings.Split(tags, ",")
-	for _, pair := range pairs {
-		keyValue := strings.Split(pair, ":")
-		if len(keyValue) != 2 {
-			return fmt.Errorf("invalid tag format: %s", pair)
-		}
+
+	c.collector = collector
+	return collector.Run(context.Background())
+}
+
+func (c *HostAgent) StopCollector() {
+	if c.collector != nil {
+		c.collector.Shutdown()
 	}
-	return nil
 }
