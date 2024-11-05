@@ -1,0 +1,259 @@
+name: Host Agent - RPM
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Release version for RPM package'
+        required: true
+      release_number:
+        description: 'Release number for RPM package'
+        required: true
+  push:
+    paths-ignore:
+      - '.github/**'
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+env:
+  ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - x86_64
+          - aarch64
+      max-parallel: 1
+
+    steps:
+    - name: Install rpm build for ACT runs
+      if: ${{ github.actor == 'nektos/act' }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y rpm
+      
+    - name: Checkout Repo
+      uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+        
+    - name: Set Architecture Variables
+      run: |
+        if [ -n "${{ github.event.inputs.release_version }}" ]; then
+          echo "RELEASE_VERSION=${{ github.event.inputs.release_version }}" >> $GITHUB_ENV
+        else
+          echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+        fi
+        echo "::set-env name=RELEASE_NUMBER::$(echo "${{ github.event.inputs.release_number || 1 }}" | tr -d '\n')"
+        echo "::set-env name=PACKAGE_NAME::mw-agent"
+        echo "::set-env name=SPEC_FILE::mw-agent.spec"
+
+    - name: Creating Required Folder Structure
+      run: |
+        mkdir -p ~/build/rpmbuild/BUILD
+        mkdir -p ~/build/rpmbuild/BUILDROOT
+        mkdir -p ~/build/rpmbuild/RPMS
+        mkdir -p ~/build/rpmbuild/SOURCES
+        mkdir -p ~/build/rpmbuild/SPECS
+        mkdir -p ~/build/rpmbuild/SRPMS
+        mkdir -p ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/bin
+        echo '%_topdir %(echo $HOME)/build/rpmbuild' > ~/.rpmmacros
+        cp package-tooling/linux/rpm/$SPEC_FILE ~/build/rpmbuild/SPECS/$SPEC_FILE
+        cp package-tooling/agent-config.yaml.sample \
+        ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/agent-config.yaml.sample
+        cp package-tooling/otel-config.yaml.sample \
+        ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/otel-config.yaml.sample
+        cp package-tooling/linux/postinst ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/postinstall.sh
+        cp package-tooling/linux/mw-agent.service ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/mw-agent.service
+
+    - name: Set up Git credentials for Go
+      run: |
+        # Remove any existing git config for github.com
+        git config --global --unset-all url."https://github.com/".insteadOf || true
+        # Set up new config with token
+        git config --global url."https://${{ secrets.GHCR_TOKEN }}@github.com/".insteadOf "https://github.com/"
+        # Set GOPRIVATE
+        go env -w GOPRIVATE=github.com/middleware-labs,github.com/middleware-labs/innoParser
+        # Debug: show git config (make sure to not print the actual token)
+        echo "Git config set up completed"
+        git config --global --get-regexp url.*.insteadOf
+      env:
+        GIT_TERMINAL_PROMPT: 0
+        GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
+
+    - name: Go Build
+      run: |
+        buildarch="amd64"
+        if [ ${{ matrix.arch }} == "aarch64" ]
+        then
+            buildarch="arm64"
+        fi
+        
+        if [ ${{ github.actor }} != "nektos/act" ]
+        then
+          CGO_ENABLED=0 GOPRIVATE=github.com/middleware-labs,github.com/middleware-labs/innoParser GOOS=linux GOARCH=${buildarch} go build \
+          -ldflags="-s -w -X main.agentVersion=${RELEASE_VERSION}" \
+          -v -a -o ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/${PACKAGE_NAME} cmd/host-agent/main.go
+        else
+          cp ~/build/mw-host-agent-${buildarch} ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/${PACKAGE_NAME}
+        fi
+        
+    - name: Tar Building
+      run: |
+        cd ~/build/rpmbuild/SOURCES/${{ matrix.arch }}
+        tar czvf ~/build/rpmbuild/SOURCES/${PACKAGE_NAME}-${RELEASE_VERSION}-${{ matrix.arch }}.tar.gz \
+        ${PACKAGE_NAME}-${RELEASE_VERSION}/
+
+    - name: Create RPM package
+      run: |
+        rpmbuild -bb --define="release_version ${RELEASE_VERSION}" \
+        --define="release_number ${RELEASE_NUMBER}" \
+        --define="arch ${{ matrix.arch }}" \
+        --define="package_name ${PACKAGE_NAME}" \
+        --target=${{ matrix.arch }} ~/build/rpmbuild/SPECS/$SPEC_FILE
+        
+    - name: Debug file location
+      run: |
+        echo "Checking file existence:"
+        ls -l ~/build/rpmbuild/RPMS/${{ matrix.arch }}/mw-agent-${{ env.RELEASE_VERSION }}-${{ env.RELEASE_NUMBER }}.${{ matrix.arch }}.rpm
+
+    - name: Upload RPM as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: mw-agent-${{ matrix.arch }}-rpm
+        path: ~/build/rpmbuild/RPMS/${{ matrix.arch }}/mw-agent-${{ env.RELEASE_VERSION }}-${{ env.RELEASE_NUMBER }}.${{ matrix.arch }}.rpm
+        retention-days: 1
+    
+  upload-to-release:
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: ./artifacts
+
+    - name: Set up GitHub CLI
+      run: |
+        type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+        curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+        && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+        && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+        && sudo apt update \
+        && sudo apt install gh -y
+
+    - name: Create and upload to release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        VERSION="${{ github.event.inputs.release_version }}"
+        REL_NUM="${{ github.event.inputs.release_number }}"
+        if [ -z "$VERSION" ]; then
+          VERSION="${GITHUB_REF#refs/tags/}"
+        fi
+        if [ -z "$REL_NUM" ]; then
+          REL_NUM="1"
+        fi
+        
+        # Debug info
+        echo "VERSION: $VERSION"
+        echo "REL_NUM: $REL_NUM"
+        echo "Artifacts directory content:"
+        ls -R ./artifacts
+        
+        # For each architecture
+        for arch in x86_64 aarch64; do
+          echo "Processing $arch architecture"
+          FILE="./artifacts/mw-agent-${arch}-rpm/mw-agent-${VERSION}-${REL_NUM}.${arch}.rpm"
+          if [ -f "$FILE" ]; then
+            echo "Uploading $FILE to release $VERSION"
+            gh release upload "$VERSION" "$FILE" --clobber --repo ${{ github.repository }}
+          else
+            echo "Warning: $FILE not found"
+            echo "Checking actual file path:"
+            find ./artifacts -type f -name "*.rpm"
+          fi
+        done   
+    # - name: Debug file location
+    #   run: |
+    #     echo "Checking file existence:"
+    #     echo "Expected path: ~/build/rpmbuild/RPMS/${{ matrix.arch }}/mw-agent-${RELEASE_VERSION}-${RELEASE_NUMBER}.${{ matrix.arch }}.rpm"
+    #     ls -la ~/build/rpmbuild/RPMS/${{ matrix.arch }}/
+    #     echo "Searching for any RPM files:"
+    #     find ~/build/rpmbuild/RPMS -name "*.rpm"
+
+    # - name: Upload RPM as artifact
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: mw-agent-${{ matrix.arch }}-rpm
+    #     path: |
+    #       ~/build/rpmbuild/RPMS/${{ matrix.arch }}/mw-agent-${{ env.RELEASE_VERSION }}-${{ env.RELEASE_NUMBER }}.${{ matrix.arch }}.rpm
+    #     retention-days: 1
+    # - name: Debug file location
+    #   run: |
+    #     echo "Checking file existence:"
+    #     ls -l ~/build/rpmbuild/RPMS/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}-${RELEASE_NUMBER}.${{ matrix.arch }}.rpm
+
+    # - name: Upload RPM as artifact
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: mw-agent-${{ matrix.arch }}-rpm
+    #     path: ~/build/rpmbuild/RPMS/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}-${RELEASE_NUMBER}.${{ matrix.arch }}.rpm
+    #     retention-days: 1
+
+  # upload-to-release:
+  #   needs: build
+  #   runs-on: ubuntu-latest
+    
+  #   steps:
+  #   - name: Download all artifacts
+  #     uses: actions/download-artifact@v3
+  #     with:
+  #       path: ./artifacts
+
+  #   - name: Set up GitHub CLI
+  #     run: |
+  #       type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+  #       curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+  #       && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+  #       && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+  #       && sudo apt update \
+  #       && sudo apt install gh -y
+
+  #   - name: Create and upload to release
+  #     env:
+  #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #     run: |
+  #       VERSION="${{ github.event.inputs.release_version }}"
+  #       REL_NUM="${{ github.event.inputs.release_number }}"
+  #       if [ -z "$VERSION" ]; then
+  #         VERSION="${GITHUB_REF#refs/tags/}"
+  #       fi
+  #       if [ -z "$REL_NUM" ]; then
+  #         REL_NUM="1"
+  #       fi
+        
+  #       # Debug info
+  #       echo "VERSION: $VERSION"
+  #       echo "REL_NUM: $REL_NUM"
+  #       echo "Artifacts directory content:"
+  #       ls -R ./artifacts
+        
+  #       # For each architecture
+  #       for arch in x86_64 aarch64; do
+  #         echo "Processing $arch architecture"
+  #         FILE="./artifacts/mw-agent-${arch}-rpm/${PACKAGE_NAME}-${VERSION}-${REL_NUM}.${arch}.rpm"
+  #         if [ -f "$FILE" ]; then
+  #           echo "Uploading $FILE to release $VERSION"
+  #           gh release upload "$VERSION" "$FILE" --clobber --repo ${{ github.repository }}
+  #         else
+  #           echo "Warning: $FILE not found"
+  #           echo "Checking actual file path:"
+  #           find ./artifacts -type f -name "*.rpm"
+  #         fi
+  #       done

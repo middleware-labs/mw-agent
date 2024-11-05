@@ -1,0 +1,126 @@
+name: Build Windows Installer Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Release number for MW Agent for Windows'
+        required: true
+  push:
+    paths-ignore:
+      - '.github/**'
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+env:
+  ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+
+jobs:
+  create_installer:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ 'ubuntu-22.04']
+
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.GHCR_TOKEN }}
+        ssh-key: ${{ secrets.CHECK_AGENT_ACCESS }}
+        submodules: 'recursive'
+
+    - name: Install makensis
+      run: sudo apt update && sudo apt install -y nsis nsis-pluginapi
+      if: ${{ matrix.os == 'ubuntu-22.04' }}
+    
+    - name: Set up Git credentials for Go
+      run: |
+        git config --global url."https://${{ secrets.GHCR_TOKEN }}:@github.com/".insteadOf "https://github.com/"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
+    
+    - name: Setting Release Number
+      run: |
+        if [ -n "${{ github.event.inputs.release_version }}" ]; then
+          echo "RELEASE_VERSION=${{ github.event.inputs.release_version }}" >> $GITHUB_ENV
+        else
+          echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+        fi
+
+    - name: Build MW Agent for Windows
+      run: |
+        GOOS=windows CGO_ENABLED=0 GOPRIVATE=github.com/middleware-labs go build -ldflags "-s -w -X main.agentVersion=${{ env.RELEASE_VERSION }}" -o build/mw-windows-agent.exe cmd/host-agent/main.go
+        makensis -DVERSION=${{ env.RELEASE_VERSION }} package-tooling/windows/package-windows.nsi
+       
+    # - name: Install jsign Tool For Microsoft Authenticode
+    #   run: |
+    #     wget https://github.com/ebourg/jsign/releases/download/5.0/jsign_5.0_all.deb
+    #     sudo dpkg -i jsign_5.0_all.deb
+       
+    # - name: Setup Code Signing Certificate
+    #   run: | 
+    #     echo "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}" | base64 --decode > certificate_pkcs12.p12
+
+    # - name: Sign MW Agent Installer Package
+    #   run: |
+    #     jsign --storetype ${{ secrets.SM_CLIENT_CERT_STORE_TYPE }} --alias ${{ secrets.SM_CLIENT_CERT_ALIAS }} --tsaurl ${{ secrets.SM_TIMESTAMP_AUTHORITY_URL }} --storepass "${{ secrets.SM_API_KEY }}|./certificate_pkcs12.p12|${{ secrets.SM_CLIENT_CERT_PASSWORD }}"  package-tooling/windows/mw-windows-agent-${{ env.RELEASE_VERSION }}-setup.exe
+             
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: windows-installer
+        path: package-tooling/windows/mw-windows-agent-${{ env.RELEASE_VERSION }}-setup.exe
+        retention-days: 1
+
+  upload-to-release:
+    needs: create_installer
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: windows-installer
+        path: ./artifacts
+
+    - name: Set up GitHub CLI
+      run: |
+        type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+        curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+        && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+        && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+        && sudo apt update \
+        && sudo apt install gh -y
+
+    - name: Upload to release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        VERSION="${{ github.event.inputs.release_version }}"
+        if [ -z "$VERSION" ]; then
+          VERSION="${GITHUB_REF#refs/tags/}"
+        fi
+        
+        # Debug info
+        echo "VERSION: $VERSION"
+        echo "Artifacts directory content:"
+        ls -R ./artifacts
+        
+        # Upload Windows installer
+        FILE="./artifacts/mw-windows-agent-${VERSION}-setup.exe"
+        if [ -f "$FILE" ]; then
+          echo "Uploading $FILE to release $VERSION"
+          gh release upload "$VERSION" "$FILE" --clobber --repo ${{ github.repository }}
+        else
+          echo "Warning: $FILE not found"
+          echo "Checking actual file path:"
+          find ./artifacts -type f -name "*.exe"
+          # Try uploading with found path
+          FOUND_FILE=$(find ./artifacts -type f -name "*.exe" | head -n 1)
+          if [ ! -z "$FOUND_FILE" ]; then
+            echo "Found file at $FOUND_FILE, attempting upload"
+            gh release upload "$VERSION" "$FOUND_FILE" --clobber --repo ${{ github.repository }}
+          fi
+        fi
