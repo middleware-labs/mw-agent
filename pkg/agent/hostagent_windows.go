@@ -1,8 +1,6 @@
 package agent
 
 import (
-	"context"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
@@ -43,7 +41,7 @@ import (
 )
 
 // GetFactories get otel factories for HostAgent
-func (c *HostAgent) GetFactories(ctx context.Context) (otelcol.Factories, error) {
+func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 	var err error
 	factories := otelcol.Factories{}
 	factories.Extensions, err = extension.MakeFactoryMap(

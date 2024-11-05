@@ -1,7 +1,7 @@
 package main
 
 import (
-	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -12,20 +12,12 @@ import (
 	"time"
 
 	"github.com/middleware-labs/mw-agent/pkg/agent"
-	"github.com/prometheus/common/version"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/kardianos/service"
 	cli "github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
-	expandconverter "go.opentelemetry.io/collector/confmap/converter/expandconverter"
-	"go.opentelemetry.io/collector/confmap/provider/envprovider"
-	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
-	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
-	"go.opentelemetry.io/collector/otelcol"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -33,12 +25,9 @@ import (
 var agentVersion = "0.0.1"
 
 type program struct {
-	logger            *zap.Logger
-	zapFileCore       zapcore.Core
-	cfg               agent.HostConfig
-	infraPlatform     agent.InfraPlatform
-	collectorSettings otelcol.CollectorSettings
-	programWG         *sync.WaitGroup
+	logger    *zap.Logger
+	hostAgent *agent.HostAgent
+	programWG *sync.WaitGroup
 	// stop the telemetry collection if errCh receives an error
 	// resume when errCh receives nil
 	errCh  chan error
@@ -52,64 +41,12 @@ func (p *program) Start(s service.Service) error {
 	// Start should not block. Do the actual work async.
 	p.logger.Info("starting service", zap.Stringer("name", s))
 
-	ctx, _ := context.WithCancel(context.Background())
-
-	hostAgent := agent.NewHostAgent(
-		p.cfg,
-		agent.WithHostAgentLogger(p.logger),
-		agent.WithHostAgentVersion(agentVersion),
-		agent.WithHostAgentInfraPlatform(p.infraPlatform),
-	)
-
-	configProviderSetting := otelcol.ConfigProviderSettings{
-		ResolverSettings: confmap.ResolverSettings{
-			ProviderFactories: []confmap.ProviderFactory{
-				fileprovider.NewFactory(),
-				yamlprovider.NewFactory(),
-				envprovider.NewFactory(),
-			},
-			ConverterFactories: []confmap.ConverterFactory{
-				expandconverter.NewFactory(),
-				//overwritepropertiesconverter.New(getSetFlag()),
-			},
-			URIs: []string{p.cfg.OtelConfigFile},
-		},
-	}
-
-	settings := otelcol.CollectorSettings{
-		DisableGracefulShutdown: true,
-		LoggingOptions: func() []zap.Option {
-			// if logfile is specified, then write logs to the file using zapFileCore
-			if p.cfg.Logfile != "" {
-				return []zap.Option{
-					zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-						return p.zapFileCore
-					}),
-				}
-			}
-			return []zap.Option{}
-		}(),
-
-		BuildInfo: component.BuildInfo{
-			Command:     "mw-otelcontribcol",
-			Description: "Middleware OpenTelemetry Collector Contrib",
-			Version:     version.Version,
-		},
-
-		Factories: func() (otelcol.Factories, error) {
-			return hostAgent.GetFactories(ctx)
-		},
-		ConfigProviderSettings: configProviderSetting,
-	}
-
-	p.collectorSettings = settings
-
 	// Start any goroutines that can control collection
-	if hostAgent.FetchAccountOtelConfig {
+	if p.hostAgent.FetchAccountOtelConfig {
 		// Listen to the config changes provided by Middleware API
 		p.programWG.Add(1)
 		go func() {
-			hostAgent.ListenForConfigChanges(p.errCh, p.stopCh)
+			p.hostAgent.ListenForConfigChanges(p.errCh, p.stopCh)
 			p.programWG.Done()
 		}()
 	}
@@ -134,41 +71,49 @@ func (p *program) Stop(s service.Service) error {
 func (p *program) run() {
 	defer p.programWG.Done()
 
-	var collector *otelcol.Collector
 	alreadyRunning := false
 	collectorWG := &sync.WaitGroup{}
 	for err := range p.errCh {
+		// if invalid config is received from the backend, then keep collector
+		// in its current state. If it is stopped, keep it stopped until we receive
+		// a valid config. If it is already running, don't restart it.
+		if errors.Is(err, agent.ErrInvalidConfig) {
+			p.logger.Error("invalid config. keeping collector in its current state",
+				zap.Error(err))
+			continue
+		}
+
 		if err != nil {
 			// stop collection only if it's running
 			if alreadyRunning {
-				p.logger.Error("stopping telemetry collection", zap.Error(err))
-				collector.Shutdown()
+				p.logger.Info("stopping telemetry collection", zap.Error(err))
+				p.hostAgent.StopCollector()
 				collectorWG.Wait()
 				alreadyRunning = false
-				p.logger.Error("stopped telemetry collection at", zap.Time("time", time.Now()))
+				p.logger.Info("stopped telemetry collection at", zap.Time("time", time.Now()))
 			}
 
-			if err != agent.ErrRestartAgent {
+			// if err is not agent.ErrRestartAgent, then keep collector stopped.
+			// if err is agent.ErrRestartAgent, then resume collection.
+			if !errors.Is(err, agent.ErrRestartAgent) {
 				continue
 			}
 
-			//if err == agent.ErrRestartAgent then continue the code and start the agent.
 		}
 
 		// start collection only if it's not running
 		if !alreadyRunning {
-			p.logger.Error("(re)starting telemetry collection")
+			p.logger.Info("(re)starting telemetry collection")
 			collectorWG.Add(1)
 			go func(alreadyRunning *bool) {
 				defer collectorWG.Done()
 				*alreadyRunning = true
-				collector, _ = otelcol.NewCollector(p.collectorSettings)
-				if err := collector.Run(context.Background()); err != nil {
+				if err := p.hostAgent.StartCollector(); err != nil {
 					p.logger.Error("collector server run finished with error",
 						zap.Error(err))
 					*alreadyRunning = false
 				} else {
-					p.logger.Error("collector server run finished gracefully")
+					p.logger.Info("collector server run finished gracefully")
 				}
 			}(&alreadyRunning)
 		}
@@ -395,16 +340,17 @@ func main() {
 		StacktraceKey: "stacktrace",
 		LineEnding:    zapcore.DefaultLineEnding,
 	}
-	zapCfg := zap.NewProductionConfig()
-	zapCfg.EncoderConfig = zapEncoderCfg
-	logger, _ := zapCfg.Build()
-	defer func() {
-		_ = logger.Sync()
-	}()
+
+	zapCore := zapcore.NewCore(
+		zapcore.NewJSONEncoder(zapEncoderCfg),
+		zapcore.AddSync(os.Stderr),
+		zap.InfoLevel,
+	)
+	logger := zap.New(zapCore, zap.AddCaller())
 
 	execPath, err := os.Executable()
 	if err != nil {
-		logger.Info("error getting executable path", zap.Error(err))
+		logger.Error("error getting executable path", zap.Error(err))
 		return
 	}
 
@@ -421,38 +367,45 @@ func main() {
 				Flags:  flags,
 				Before: altsrc.InitInputSourceWithContext(flags, altsrc.NewYamlSourceFromFlagFunc("config-file")),
 				Action: func(c *cli.Context) error {
-					if cfg.SelfProfiling {
-						profiler := agent.NewProfiler(logger, cfg.ProfilngServerURL)
-						// start profiling
-						go profiler.StartProfiling("mw-host-agent", cfg.Target, cfg.HostTags)
-					}
-
 					loggingLevel, err := zap.ParseAtomicLevel(cfg.LoggingLevel)
 					if err != nil {
-						logger.Error("error parsing logging level", zap.Error(err))
+						logger.Error("error getting executable path", zap.Error(err))
 						return err
 					}
 
-					var zapFileCore zapcore.Core
+					var w zapcore.WriteSyncer
 					if cfg.Logfile != "" {
 						logger.Info("redirecting logs to logfile", zap.String("logfile", cfg.Logfile))
 						// logfile specified. Update logger to write logs to the
 						// give logfile
-						w := zapcore.AddSync(&lumberjack.Logger{
+						w = zapcore.AddSync(&lumberjack.Logger{
 							Filename:   cfg.Logfile,
 							MaxSize:    cfg.LogfileSize, // megabytes
 							MaxBackups: 1,
 							MaxAge:     7, // days
 						})
-						zapFileCore = zapcore.NewCore(
-							zapcore.NewJSONEncoder(zapEncoderCfg),
-							w,
-							loggingLevel.Level(),
-						)
 
-						logger = zap.New(zapFileCore)
 					} else {
-						zapCfg.Level.SetLevel(loggingLevel.Level())
+						w = zapcore.AddSync(os.Stderr)
+
+					}
+
+					zapCore = zapcore.NewCore(
+						zapcore.NewJSONEncoder(zapEncoderCfg),
+						w,
+						loggingLevel.Level(),
+					)
+
+					logger := zap.New(zapCore, zap.AddCaller())
+
+					defer func() {
+						_ = logger.Sync()
+					}()
+
+					if cfg.SelfProfiling {
+						profiler := agent.NewProfiler(logger, cfg.ProfilngServerURL)
+						// start profiling
+						go profiler.StartProfiling("mw-host-agent", cfg.Target, cfg.HostTags)
 					}
 
 					infraPlatform := agent.InfraPlatformInstance
@@ -531,6 +484,17 @@ func main() {
 						logger.Info("host agent has invalid tags", zap.Error(err))
 						return err
 					}
+					// create hostAgent
+
+					hostAgent, err := agent.NewHostAgent(
+						cfg, zapCore,
+						agent.WithHostAgentVersion(agentVersion),
+						agent.WithHostAgentInfraPlatform(infraPlatform),
+					)
+
+					if err != nil {
+						return err
+					}
 
 					svcConfig := &service.Config{
 						Name:        "mw-agent",
@@ -549,14 +513,12 @@ func main() {
 					stopCh := make(chan struct{})
 
 					prg := &program{
-						logger:        logger,
-						zapFileCore:   zapFileCore,
-						cfg:           cfg,
-						infraPlatform: infraPlatform,
-						programWG:     programWG,
-						errCh:         errCh,
-						stopCh:        stopCh,
-						args:          os.Args,
+						logger:    logger,
+						hostAgent: hostAgent,
+						programWG: programWG,
+						errCh:     errCh,
+						stopCh:    stopCh,
+						args:      os.Args,
 					}
 
 					s, err := service.New(prg, svcConfig)

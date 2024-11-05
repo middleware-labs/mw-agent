@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -14,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
-	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func TestUpdatepgdbConfig(t *testing.T) {
@@ -34,7 +33,8 @@ func TestUpdatepgdbConfig(t *testing.T) {
 		Path: "db-config_test.yaml",
 	}
 
-	agent := NewHostAgent(HostConfig{}, WithHostAgentLogger(zap.NewNop()))
+	zapCore := zapcore.NewNopCore()
+	agent, _ := NewHostAgent(HostConfig{}, zapCore)
 	// Call the updatepgdbConfig function
 	updatedConfig, err := agent.updateConfig(initialConfig, pgdbConfig)
 	assert.NoError(t, err)
@@ -69,7 +69,8 @@ func TestUpdateMongodbConfig(t *testing.T) {
 		Path: "db-config_test.yaml",
 	}
 
-	agent := NewHostAgent(HostConfig{}, WithHostAgentLogger(zap.NewNop()))
+	zapCore := zapcore.NewNopCore()
+	agent, _ := NewHostAgent(HostConfig{}, zapCore)
 
 	updatedConfig, err := agent.updateConfig(initialConfig, mongodbConfig)
 	assert.NoError(t, err)
@@ -105,7 +106,8 @@ func TestUpdateMysqlConfig(t *testing.T) {
 	}
 
 	cfg := HostConfig{}
-	agent := NewHostAgent(cfg, WithHostAgentLogger(zap.NewNop()))
+	zapCore := zapcore.NewNopCore()
+	agent, _ := NewHostAgent(cfg, zapCore)
 	// Call the updateMysqlConfig function
 	updatedConfig, err := agent.updateConfig(initialConfig, mysqlConfig)
 	assert.NoError(t, err)
@@ -139,7 +141,8 @@ func TestUpdateRedisConfig(t *testing.T) {
 	}
 
 	cfg := HostConfig{}
-	agent := NewHostAgent(cfg, WithHostAgentLogger(zap.NewNop()))
+	zapCore := zapcore.NewNopCore()
+	agent, _ := NewHostAgent(cfg, zapCore)
 	// Call the updateRedisConfig function
 	updatedConfig, err := agent.updateConfig(initialConfig, redisConfig)
 	assert.NoError(t, err)
@@ -158,7 +161,9 @@ func TestUpdateRedisConfig(t *testing.T) {
 func TestListenForConfigChanges(t *testing.T) {
 	cfg := HostConfig{}
 	cfg.ConfigCheckInterval = "1s"
-	agent := NewHostAgent(cfg, WithHostAgentLogger(zap.NewNop()))
+
+	zapCore := zapcore.NewNopCore()
+	agent, _ := NewHostAgent(cfg, zapCore)
 	agent.httpGetFunc = func(url string) (resp *http.Response, err error) {
 		return nil, fmt.Errorf("failed to call get configuration api for %s: %w", url,
 			errors.New("test error"))
@@ -242,13 +247,13 @@ func TestHostAgentGetFactories(t *testing.T) {
 		},
 	}
 
-	agent := NewHostAgent(HostConfig{
+	zapCore := zapcore.NewNopCore()
+	agent, _ := NewHostAgent(HostConfig{
 		BaseConfig: baseConfig,
-	},
-		WithHostAgentLogger(zap.NewNop()),
+	}, zapCore,
 		WithHostAgentInfraPlatform(InfraPlatformECSEC2))
 
-	factories, err := agent.GetFactories(context.Background())
+	factories, err := agent.getFactories()
 	assert.NoError(t, err)
 
 	// Assert that the returned factories are not nil
