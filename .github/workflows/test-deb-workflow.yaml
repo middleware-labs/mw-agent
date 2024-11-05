@@ -108,6 +108,13 @@ jobs:
           dpkg-deb --build -Z xz build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}
           dpkg-deb --info build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}.deb
           dpkg-deb --contents build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}.deb
+    
+    - name: Upload DEB as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: mw-agent-${{ matrix.arch }}-deb
+        path: build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}.deb
+        retention-days: 1
 
     # - name: Set up aptly
     #   if: ${{ github.actor != 'nektos/act' }}
@@ -177,10 +184,9 @@ jobs:
   upload-to-release:
     needs: build
     runs-on: ubuntu-latest
-  
+    
     steps:
     - name: Download all artifacts
-      if: ${{ github.actor != 'nektos/act' }}  # Only run on GitHub
       uses: actions/download-artifact@v3
       with:
         path: ./artifacts
@@ -194,34 +200,8 @@ jobs:
         && sudo apt update \
         && sudo apt install gh -y
 
-    - name: Local Release Test
-      if: ${{ github.actor == 'nektos/act' }}
-      run: |
-        VERSION="${{ github.event.inputs.release_version }}"
-        ARTIFACTS_DIR="${GITHUB_WORKSPACE}/local-artifacts"
-        
-        echo "Looking for artifacts in workspace:"
-        ls -R "${ARTIFACTS_DIR}/" || echo "No files in ${ARTIFACTS_DIR}"
-        
-        # For each architecture
-        for arch in arm64 amd64; do
-          echo "Processing $arch architecture"
-          FILE="${ARTIFACTS_DIR}/mw-agent-${arch}-deb/${PACKAGE_NAME}_${VERSION}_${arch}.deb"
-          if [ -f "$FILE" ]; then
-            echo "Found file for upload: $FILE"
-          else
-            echo "Warning: $FILE not found"
-            echo "Current directory contents:"
-            ls -la .
-            echo "Build directory contents:"
-            ls -la build/ || echo "No build directory"
-          fi
-        done
-
     - name: Create and upload to release
-      if: ${{ github.actor != 'nektos/act' }}
       env:
-        # Use GITHUB_TOKEN instead of GHCR_TOKEN for your fork
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         VERSION="${{ github.event.inputs.release_version }}"
@@ -230,6 +210,7 @@ jobs:
         fi
         
         # Debug info
+        echo "VERSION: $VERSION"
         echo "Artifacts directory content:"
         ls -R ./artifacts
         
@@ -239,9 +220,15 @@ jobs:
           FILE="./artifacts/mw-agent-${arch}-deb/mw-agent_${VERSION}_${arch}.deb"
           if [ -f "$FILE" ]; then
             echo "Uploading $FILE to release $VERSION"
-            # Add --repo flag to specify your fork
             gh release upload "$VERSION" "$FILE" --clobber --repo ${{ github.repository }}
           else
             echo "Warning: $FILE not found"
+            echo "Checking actual file path:"
+            find ./artifacts -type f -name "*.deb"
+            FOUND_FILE=$(find ./artifacts -type f -name "*.deb" | grep "${arch}" | head -n 1)
+            if [ ! -z "$FOUND_FILE" ]; then
+              echo "Found file at $FOUND_FILE, attempting upload"
+              gh release upload "$VERSION" "$FOUND_FILE" --clobber --repo ${{ github.repository }}
+            fi
           fi
         done
