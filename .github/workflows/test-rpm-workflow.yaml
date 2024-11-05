@@ -149,7 +149,7 @@ jobs:
 
     - name: Create and upload to release
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
       run: |
         VERSION="${{ github.event.inputs.release_version }}"
         REL_NUM="${{ github.event.inputs.release_number }}"
