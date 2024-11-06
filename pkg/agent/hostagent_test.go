@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -346,5 +348,66 @@ func TestHostAgentHasValidTags(t *testing.T) {
 		if isValid.Error() != tc.isValid.Error() {
 			t.Errorf("Test case %d failed. Expected HasValidTags to return: %v, but got: %v", i+1, tc.isValid, isValid)
 		}
+	}
+}
+
+func TestUpdateAgentTrackStatus(t *testing.T) {
+	tests := []struct {
+		name           string
+		serverResponse int
+		wantError     bool
+	}{
+		{
+			name:           "successful response",
+			serverResponse: http.StatusOK,
+			wantError:     false,
+		},
+		{
+			name:           "internal server error",
+			serverResponse: http.StatusInternalServerError,
+			wantError:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+				if r.Method != http.MethodPost {
+					t.Errorf("Expected method POST, got %s", r.Method)
+				}
+				if r.Header.Get("Content-Type") != "application/json" {
+					t.Errorf("Expected Content-Type application/json, got %s", r.Header.Get("Content-Type"))
+				}
+
+				w.WriteHeader(tt.serverResponse)
+			}))
+			defer mockServer.Close()
+
+			noopCore := zapcore.NewNopCore()
+			logger := zap.New(noopCore)
+			defer logger.Sync()
+
+			hostAgent := &HostAgent{
+				HostConfig: HostConfig{
+					BaseConfig: BaseConfig{
+						APIKey:               "testAPIKey",
+						APIURLForConfigCheck: mockServer.URL,
+					},
+				},
+				logger:  logger,
+				Version: "1.0.0",
+			}
+
+			err := hostAgent.UpdateAgentTrackStatus(errors.New("test reason"))
+
+			if tt.wantError && err == nil {
+				t.Error("Expected error but got nil")
+			}
+			
+			if !tt.wantError && err != nil {
+				t.Errorf("Expected no error but got: %v", err)
+			}
+		})
 	}
 }
