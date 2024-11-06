@@ -109,6 +109,13 @@ jobs:
           dpkg-deb --info build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}.deb
           dpkg-deb --contents build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}.deb
 
+    - name: Upload DEB as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: mw-agent-${{ matrix.arch }}-deb
+        path: build/mw-agent_${{ env.RELEASE_VERSION }}_${{ matrix.arch }}.deb
+        retention-days: 1
+
     - name: Set up aptly
       if: ${{ github.actor != 'nektos/act' }}
       run: |
@@ -172,5 +179,58 @@ jobs:
 # distribution = stable, wheezy
 # architectures = all, amd64, arm64
 # component = main, contrib, non-free
+
+  upload-to-release:
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: ./artifacts
+
+    - name: Set up GitHub CLI
+      run: |
+        type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+        curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+        && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+        && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+        && sudo apt update \
+        && sudo apt install gh -y
+
+    - name: Create and upload to release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
+      run: |
+        VERSION="${{ github.event.inputs.release_version }}"
+        if [ -z "$VERSION" ]; then
+          VERSION="${GITHUB_REF#refs/tags/}"
+        fi
+        
+        # Debug info
+        echo "VERSION: $VERSION"
+        echo "Artifacts directory content:"
+        ls -R ./artifacts
+        
+        # For each architecture
+        for arch in arm64 amd64; do
+          echo "Processing $arch architecture"
+          FILE="./artifacts/mw-agent-${arch}-deb/mw-agent_${VERSION}_${arch}.deb"
+          if [ -f "$FILE" ]; then
+            echo "Uploading $FILE to release $VERSION"
+            gh release upload "$VERSION" "$FILE" --clobber --repo ${{ github.repository }}
+          else
+            echo "Warning: $FILE not found"
+            echo "Checking actual file path:"
+            find ./artifacts -type f -name "*.deb"
+            FOUND_FILE=$(find ./artifacts -type f -name "*.deb" | grep "${arch}" | head -n 1)
+            if [ ! -z "$FOUND_FILE" ]; then
+              echo "Found file at $FOUND_FILE, attempting upload"
+              gh release upload "$VERSION" "$FOUND_FILE" --clobber --repo ${{ github.repository }}
+            fi
+          fi
+        done
+
 
    

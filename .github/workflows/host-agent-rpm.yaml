@@ -115,6 +115,18 @@ jobs:
         --define="arch ${{ matrix.arch }}" \
         --define="package_name ${PACKAGE_NAME}" \
         --target=${{ matrix.arch }} ~/build/rpmbuild/SPECS/$SPEC_FILE
+    
+    - name: Debug file location
+      run: |
+        echo "Checking file existence:"
+        ls -l ~/build/rpmbuild/RPMS/${{ matrix.arch }}/mw-agent-${{ env.RELEASE_VERSION }}-${{ env.RELEASE_NUMBER }}.${{ matrix.arch }}.rpm
+  
+    - name: Upload RPM as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: mw-agent-${{ matrix.arch }}-rpm
+        path: ~/build/rpmbuild/RPMS/${{ matrix.arch }}/mw-agent-${{ env.RELEASE_VERSION }}-${{ env.RELEASE_NUMBER }}.${{ matrix.arch }}.rpm
+        retention-days: 1
 
     - name: Acquire lock
       if: ${{ github.actor != 'nektos/act' }}
@@ -142,3 +154,55 @@ jobs:
     - name: Delay
       if: ${{ github.actor != 'nektos/act' }}
       run: sleep 10
+  
+  upload-to-release:
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: ./artifacts
+
+    - name: Set up GitHub CLI
+      run: |
+        type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+        curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+        && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+        && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+        && sudo apt update \
+        && sudo apt install gh -y
+
+    - name: Create and upload to release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
+      run: |
+        VERSION="${{ github.event.inputs.release_version }}"
+        REL_NUM="${{ github.event.inputs.release_number }}"
+        if [ -z "$VERSION" ]; then
+          VERSION="${GITHUB_REF#refs/tags/}"
+        fi
+        if [ -z "$REL_NUM" ]; then
+          REL_NUM="1"
+        fi
+        
+        # Debug info
+        echo "VERSION: $VERSION"
+        echo "REL_NUM: $REL_NUM"
+        echo "Artifacts directory content:"
+        ls -R ./artifacts
+        
+        # For each architecture
+        for arch in x86_64 aarch64; do
+          echo "Processing $arch architecture"
+          FILE="./artifacts/mw-agent-${arch}-rpm/mw-agent-${VERSION}-${REL_NUM}.${arch}.rpm"
+          if [ -f "$FILE" ]; then
+            echo "Uploading $FILE to release $VERSION"
+            gh release upload "$VERSION" "$FILE" --clobber --repo ${{ github.repository }}
+          else
+            echo "Warning: $FILE not found"
+            echo "Checking actual file path:"
+            find ./artifacts -type f -name "*.rpm"
+          fi
+        done
