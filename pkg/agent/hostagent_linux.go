@@ -28,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
@@ -70,6 +71,7 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 		jmxreceiver.NewFactory(),
 		apachereceiver.NewFactory(),
 		oracledbreceiver.NewFactory(),
+		statsdreceiver.NewFactory(),
 	}
 
 	// if the host agent is running on ECS EC2, add
