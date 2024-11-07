@@ -4,18 +4,17 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
-
+	"net/http/httptest"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap"
 )
 
 func TestUpdatepgdbConfig(t *testing.T) {
@@ -404,7 +403,7 @@ func TestUpdateAgentTrackStatus(t *testing.T) {
 			if tt.wantError && err == nil {
 				t.Error("Expected error but got nil")
 			}
-			
+
 			if !tt.wantError && err != nil {
 				t.Errorf("Expected no error but got: %v", err)
 			}

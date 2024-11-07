@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"strconv"
 	"sync"
-	"time"
 
 	"github.com/middleware-labs/mw-agent/pkg/agent"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -71,8 +70,6 @@ func (p *program) Stop(s service.Service) error {
 func (p *program) run() {
 	defer p.programWG.Done()
 
-	alreadyRunning := false
-	collectorWG := &sync.WaitGroup{}
 	for err := range p.errCh {
 		// if invalid config is received from the backend, then keep collector
 		// in its current state. If it is stopped, keep it stopped until we receive
@@ -85,39 +82,20 @@ func (p *program) run() {
 
 		if err != nil {
 			// stop collection only if it's running
-			if alreadyRunning {
-				p.logger.Info("stopping telemetry collection", zap.Error(err))
-				p.hostAgent.StopCollector()
-				collectorWG.Wait()
-				alreadyRunning = false
-				p.logger.Info("stopped telemetry collection at", zap.Time("time", time.Now()))
-			}
+			p.hostAgent.StopCollector(err)
 
 			// if err is not agent.ErrRestartAgent, then keep collector stopped.
 			// if err is agent.ErrRestartAgent, then resume collection.
 			if !errors.Is(err, agent.ErrRestartAgent) {
 				continue
 			}
-
+			p.logger.Info("restarting agent", zap.Error(err))
 		}
-
 		// start collection only if it's not running
-		if !alreadyRunning {
-			p.logger.Info("(re)starting telemetry collection")
-			collectorWG.Add(1)
-			go func(alreadyRunning *bool) {
-				defer collectorWG.Done()
-				*alreadyRunning = true
-				if err := p.hostAgent.StartCollector(); err != nil {
-					p.logger.Error("collector server run finished with error",
-						zap.Error(err))
-					*alreadyRunning = false
-				} else {
-					p.logger.Info("collector server run finished gracefully")
-				}
-			}(&alreadyRunning)
+		if err := p.hostAgent.StartCollector(); err != nil {
+			p.logger.Error("failed to start collector",
+				zap.Error(err))
 		}
-
 	}
 }
 

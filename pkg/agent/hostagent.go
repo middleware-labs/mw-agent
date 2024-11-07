@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	//	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
@@ -41,6 +42,7 @@ type HostAgent struct {
 	collectorFactories otelcol.Factories
 	collectorSettings  otelcol.CollectorSettings
 	collector          *otelcol.Collector
+	collectorWG        *sync.WaitGroup
 	zapCore            zapcore.Core
 	logger             *zap.Logger
 	httpGetFunc        func(url string) (resp *http.Response, err error)
@@ -116,6 +118,7 @@ func NewHostAgent(cfg HostConfig, zapCore zapcore.Core,
 		},
 		ConfigProviderSettings: agent.getConfigProviderSettings(agent.OtelConfigFile),
 	}
+	agent.collectorWG = &sync.WaitGroup{}
 
 	return &agent, nil
 }
@@ -359,6 +362,14 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 	params.Add("host_tags", c.HostTags)
 	params.Add("agent_version", c.Version)
 	params.Add("infra_platform", fmt.Sprint(c.InfraPlatform))
+
+	collectorRunning := 0
+	// Don't need to take lock on the c.collector because it is not deferenced
+	if c.collector == nil {
+		collectorRunning = 1
+	}
+	params.Add("col_running", fmt.Sprintf("%d", collectorRunning))
+
 	// Add Query Parameters to the URL
 	baseURL.RawQuery = params.Encode() // Escape Query Parameters
 
@@ -542,6 +553,13 @@ func (c *HostAgent) callRestartStatusAPI() error {
 	params.Add("agent_version", c.Version)
 	params.Add("infra_platform", fmt.Sprint(c.InfraPlatform))
 
+	collectorRunning := 0
+	// Don't need to take lock on the c.collector because it is not deferenced
+	if c.collector == nil {
+		collectorRunning = 1
+	}
+	params.Add("col_running", fmt.Sprintf("%d", collectorRunning))
+
 	// Add Query Parameters to the URL
 	baseURL.RawQuery = params.Encode() // Escape Query Parameters
 
@@ -655,17 +673,40 @@ func (c *HostAgent) UpdateAgentTrackStatus(reason error) error {
 // StartCollector initializes a new OpenTelemetry collector with the configured
 // settings and starts it. This function blocks until the collector is stopped
 func (c *HostAgent) StartCollector() error {
+	if c.collector != nil {
+		return nil
+	}
+
 	collector, err := otelcol.NewCollector(c.collectorSettings)
 	if err != nil {
 		return err
 	}
 
 	c.collector = collector
-	return collector.Run(context.Background())
+
+	c.collectorWG.Add(1)
+	go func() {
+		defer c.collectorWG.Done()
+		if err := collector.Run(context.Background()); err != nil {
+			c.logger.Error("collector server run finished with error",
+				zap.Error(err))
+			c.collector = nil
+		} else {
+			c.logger.Info("collector server run finished gracefully")
+		}
+
+	}()
+
+	return nil
+
 }
 
-func (c *HostAgent) StopCollector() {
+func (c *HostAgent) StopCollector(err error) {
 	if c.collector != nil {
+		c.logger.Info("stopping telemetry collection", zap.Error(err))
 		c.collector.Shutdown()
+		c.collectorWG.Wait()
+		c.logger.Info("stopped telemetry collection at", zap.Time("time", time.Now()))
+		c.collector = nil
 	}
 }
