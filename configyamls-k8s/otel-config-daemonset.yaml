@@ -130,13 +130,6 @@ receivers:
       process:
         mute_process_name_error: true
   
-  prometheus:
-    config:
-      scrape_configs:
-        - job_name: "otel-collector"
-          scrape_interval: 5s
-          static_configs:
-            - targets: ["0.0.0.0:8888"]
   
   fluentforward:
     endpoint: 0.0.0.0:8006
