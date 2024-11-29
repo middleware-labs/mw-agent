@@ -254,7 +254,7 @@ func (c *KubeAgentMonitor) callRestartStatusAPI(ctx context.Context) error {
 // restartKubeAgent rewrites the configmaps and rollout restarts agent's data scraping components
 func (c *KubeAgentMonitor) restartKubeAgent(ctx context.Context, componentType ComponentType) error {
 
-	updateConfigMapErr := c.updateConfigMap(ctx, componentType)
+	updateConfigMapErr := c.UpdateConfigMap(ctx, componentType)
 	if updateConfigMapErr != nil {
 		return updateConfigMapErr
 	}
@@ -312,7 +312,7 @@ func (c *KubeAgentMonitor) rolloutRestart(ctx context.Context, componentType Com
 
 // updateConfigMap gets the latest configmap from Middleware backend and updates the k8s configmap
 // based on component type
-func (c *KubeAgentMonitor) updateConfigMap(ctx context.Context, componentType ComponentType) error {
+func (c *KubeAgentMonitor) UpdateConfigMap(ctx context.Context, componentType ComponentType) error {
 
 	u, err := url.Parse(c.APIURLForConfigCheck)
 	if err != nil {
@@ -379,7 +379,7 @@ func (c *KubeAgentMonitor) updateConfigMap(ctx context.Context, componentType Co
 	switch componentType {
 	case DaemonSet:
 		// Retrieve the existing ConfigMap
-		existingDaemonsetConfigMap, err := c.Clientset.CoreV1().ConfigMaps(c.AgentNamespace).Get(context.Background(), c.DaemonsetConfigMap, metav1.GetOptions{})
+		existingDaemonsetConfigMap, err := c.Clientset.CoreV1().ConfigMaps(c.AgentNamespace).Get(ctx, c.DaemonsetConfigMap, metav1.GetOptions{})
 		if err != nil {
 			return fmt.Errorf("failed to get configmap: %w", err)
 		}
@@ -388,7 +388,7 @@ func (c *KubeAgentMonitor) updateConfigMap(ctx context.Context, componentType Co
 		existingDaemonsetConfigMap.Data["otel-config"] = string(yamlData)
 
 		// Update the ConfigMap
-		updatedConfigMap, err := c.Clientset.CoreV1().ConfigMaps(c.AgentNamespace).Update(context.Background(), existingDaemonsetConfigMap, metav1.UpdateOptions{})
+		updatedConfigMap, err := c.Clientset.CoreV1().ConfigMaps(c.AgentNamespace).Update(ctx, existingDaemonsetConfigMap, metav1.UpdateOptions{})
 		if err != nil {
 			return fmt.Errorf("failed to update configmap: %w", err)
 		}
@@ -396,7 +396,7 @@ func (c *KubeAgentMonitor) updateConfigMap(ctx context.Context, componentType Co
 		c.logger.Info("ConfigMap updated successfully ", zap.String("configmap", updatedConfigMap.Name))
 	case Deployment:
 		// Retrieve the existing ConfigMap
-		existingDeploymentConfigMap, err := c.Clientset.CoreV1().ConfigMaps(c.AgentNamespace).Get(context.Background(), c.DeploymentConfigMap, metav1.GetOptions{})
+		existingDeploymentConfigMap, err := c.Clientset.CoreV1().ConfigMaps(c.AgentNamespace).Get(ctx, c.DeploymentConfigMap, metav1.GetOptions{})
 		if err != nil {
 			return fmt.Errorf("failed to get configmap: %w", err)
 		}
@@ -405,7 +405,7 @@ func (c *KubeAgentMonitor) updateConfigMap(ctx context.Context, componentType Co
 		existingDeploymentConfigMap.Data["otel-config"] = string(yamlData)
 
 		// Update the ConfigMap
-		updatedDeploymentConfigMap, err := c.Clientset.CoreV1().ConfigMaps(c.AgentNamespace).Update(context.Background(), existingDeploymentConfigMap, metav1.UpdateOptions{})
+		updatedDeploymentConfigMap, err := c.Clientset.CoreV1().ConfigMaps(c.AgentNamespace).Update(ctx, existingDeploymentConfigMap, metav1.UpdateOptions{})
 		if err != nil {
 			return fmt.Errorf("failed to update configmap: %w", err)
 		}
