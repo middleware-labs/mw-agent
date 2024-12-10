@@ -21,7 +21,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/confmap/converter/expandconverter"
+
+	// "go.opentelemetry.io/collector/confmap/converter/expandconverter"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
@@ -216,7 +217,7 @@ func (c *HostAgent) getConfigProviderSettings(uri string) otelcol.ConfigProvider
 				envprovider.NewFactory(),
 			},
 			ConverterFactories: []confmap.ConverterFactory{
-				expandconverter.NewFactory(),
+				// expandconverter.NewFactory(),
 				//overwritepropertiesconverter.New(getSetFlag()),
 			},
 			//URIs: []string{c.OtelConfigFile},
