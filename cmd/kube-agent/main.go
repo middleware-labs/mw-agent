@@ -14,7 +14,8 @@ import (
 	"github.com/urfave/cli/v2/altsrc"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	expandconverter "go.opentelemetry.io/collector/confmap/converter/expandconverter"
+
+	// expandconverter "go.opentelemetry.io/collector/confmap/converter/expandconverter"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
@@ -220,7 +221,7 @@ func main() {
 								envprovider.NewFactory(),
 							},
 							ConverterFactories: []confmap.ConverterFactory{
-								expandconverter.NewFactory(),
+								// expandconverter.NewFactory(),
 								//overwritepropertiesconverter.New(getSetFlag()),
 							},
 							URIs: []string{cfg.OtelConfigFile},
