@@ -107,10 +107,6 @@ processors:
     override: false
     timeout: 5s
 receivers:
-  docker_stats:
-    collection_interval: 5s
-    endpoint: unix:///var/run/docker.sock
-    timeout: 20s
   filelog:
     include:
     - /var/log/**/*.log*
@@ -223,7 +219,6 @@ service:
       - batch
       receivers:
       - hostmetrics
-      - docker_stats
       - otlp
       - prometheus
     traces:
