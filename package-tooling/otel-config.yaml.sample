@@ -187,9 +187,9 @@ receivers:
   otlp:
     protocols:
       grpc:
-        endpoint: 127.0.0.1:9319
+        endpoint: "[::]:9319"
       http:
-        endpoint: 127.0.0.1:9320
+        endpoint: "[::]:9320"
   prometheus:
     config:
       scrape_configs:
