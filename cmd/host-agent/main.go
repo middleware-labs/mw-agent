@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
@@ -11,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/middleware-labs/mw-agent/pkg/agent"
+	"github.com/middleware-labs/synthetics-agent/pkg/worker"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/kardianos/service"
@@ -472,6 +474,40 @@ func main() {
 
 					if err != nil {
 						return err
+					}
+
+					ctx, cancel := context.WithCancel(c.Context)
+					defer cancel()
+
+					if cfg.AgentFeatures.SyntheticMonitoring {
+						config := worker.Config{
+							Mode:                worker.ModeAgent,
+							Token:               cfg.APIKey,
+							Hostname:            hostname,
+							PulsarHost:          cfg.APIURLForSyntheticMonitoring,
+							Location:            hostname,
+							UnsubscribeEndpoint: cfg.Target + "/api/v1/synthetics/unsubscribe",
+							CaptureEndpoint:     cfg.Target + "/v1/metrics",
+						}
+
+						logger.Info("starting synthetic worker: ", zap.String("hostname", hostname))
+						syntheticWorker, err := worker.New(&config)
+						if err != nil {
+							logger.Error("Failed to create worker")
+						}
+
+						go func(ctx context.Context) {
+							for {
+								select {
+								case <-ctx.Done():
+									fmt.Println("Turning off the synthetic monitoring...")
+									return
+								default:
+									syntheticWorker.Run()
+								}
+							}
+						}(ctx)
+
 					}
 
 					svcConfig := &service.Config{
