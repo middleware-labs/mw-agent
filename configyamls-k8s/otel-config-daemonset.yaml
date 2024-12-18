@@ -147,8 +147,6 @@ receivers:
       http:
         endpoint: 0.0.0.0:9320
 exporters:
-  logging:
-    loglevel: fatal
   otlp:
     endpoint: ${MW_TARGET}
 processors:
@@ -323,7 +321,7 @@ service:
       metrics:
         receivers: [ kubeletstats ]
         processors: [ resourcedetection, resource, k8sattributes, resource/cluster, batch, batch/2]
-        exporters: [ otlp, logging ]
+        exporters: [ otlp ]
       metrics/hostmetrics:
         receivers: [ hostmetrics ]
         processors: [ resourcedetection, resource, resource/hostmetrics, resource/cluster, k8sattributes, batch, batch/2]

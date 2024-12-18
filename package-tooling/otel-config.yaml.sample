@@ -1,6 +1,4 @@
 exporters:
-  logging:
-    loglevel: debug
   otlp/2:
     endpoint: ${MW_TARGET}
     headers:

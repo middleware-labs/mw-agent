@@ -29,8 +29,6 @@ receivers:
       http:
         endpoint: 0.0.0.0:9320
 exporters:
-  logging:
-    loglevel: warn
   otlp:
     endpoint: ${MW_TARGET}
 processors:
