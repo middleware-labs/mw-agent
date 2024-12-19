@@ -286,12 +286,6 @@ processors:
       - key: mw.account_key
         action: insert
         value: ${MW_API_KEY}
-      - key: agent.installation.time
-        from_attribute: host.name
-        action: insert
-      - key: agent.installation.time
-        value: ${MW_AGENT_INSTALLATION_TIME}
-        action: update
       - key: k8s.cluster.name
         from_attribute: k8s.node.uid
         action: insert

@@ -66,12 +66,6 @@ processors:
     - action: upsert
       key: mw.account_key
       value: ${env:MW_API_KEY}
-    - action: insert
-      from_attribute: host.name
-      key: agent.installation.time
-    - action: update
-      key: agent.installation.time
-      value: ${env:MW_AGENT_INSTALLATION_TIME}
     - action: delete
       key: host.name
   resource/hostid:

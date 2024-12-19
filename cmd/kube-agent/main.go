@@ -5,8 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strconv"
-	"time"
 
 	"github.com/middleware-labs/mw-agent/pkg/agent"
 	"github.com/prometheus/common/version"
@@ -134,23 +132,6 @@ func getFlags(cfg *agent.KubeConfig) []cli.Flag {
 	}
 }
 
-func setAgentInstallationTime(logger *zap.Logger) {
-	_, exists := os.LookupEnv("MW_ISSET_AGENT_INSTALLATION_TIME")
-	if exists {
-		logger.Info("MW_ISSET_AGENT_INSTALLATION_TIME env variable exists")
-		if os.Getenv("MW_ISSET_AGENT_INSTALLATION_TIME") != "true" {
-			os.Setenv("MW_ISSET_AGENT_INSTALLATION_TIME", "true")
-			os.Setenv("MW_AGENT_INSTALLATION_TIME",
-				strconv.FormatInt(time.Now().UnixMilli(), 10))
-		}
-	} else {
-		logger.Info("MW_ISSET_AGENT_INSTALLATION_TIME env variable does not exists")
-		os.Setenv("MW_ISSET_AGENT_INSTALLATION_TIME", "true")
-		os.Setenv("MW_AGENT_INSTALLATION_TIME",
-			strconv.FormatInt(time.Now().UnixMilli(), 10))
-	}
-}
-
 func main() {
 	var cfg agent.KubeConfig
 	flags := getFlags(&cfg)
@@ -173,8 +154,6 @@ func main() {
 	defer func() {
 		_ = logger.Sync()
 	}()
-
-	setAgentInstallationTime(logger)
 
 	app := &cli.App{
 		Name:  "mw-agent",
