@@ -182,14 +182,6 @@ receivers:
         endpoint: "[::]:9319"
       http:
         endpoint: "[::]:9320"
-  prometheus:
-    config:
-      scrape_configs:
-      - job_name: otel-collector
-        scrape_interval: 5s
-        static_configs:
-        - targets:
-          - 127.0.0.1:${env:MW_AGENT_INTERNAL_METRICS_PORT}
 service:
   pipelines:
     logs:
@@ -217,7 +209,6 @@ service:
       - hostmetrics
       - docker_stats
       - otlp
-      - prometheus
     traces:
       exporters:
       - otlp/2
