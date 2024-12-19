@@ -49,7 +49,7 @@ func TestKubeAgentGetFactories(t *testing.T) {
 
 	// check if factories contain expected exporters
 	assert.Len(t, factories.Exporters, 4)
-	assertContainsComponent(t, factories.Exporters, "logging")
+	assertContainsComponent(t, factories.Exporters, "debug")
 	assertContainsComponent(t, factories.Exporters, "otlp")
 	assertContainsComponent(t, factories.Exporters, "otlphttp")
 	assertContainsComponent(t, factories.Exporters, "kafka")
