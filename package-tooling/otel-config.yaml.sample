@@ -1,10 +1,8 @@
 exporters:
-  logging:
-    loglevel: debug
   otlp/2:
-    endpoint: ${MW_TARGET}
+    endpoint: ${env:MW_TARGET}
     headers:
-      authorization: ${MW_API_KEY}
+      authorization: ${env:MW_API_KEY}
     sending_queue:
       enabled: true
       num_consumers: 100
@@ -67,13 +65,7 @@ processors:
     attributes:
     - action: upsert
       key: mw.account_key
-      value: ${MW_API_KEY}
-    - action: insert
-      from_attribute: host.name
-      key: agent.installation.time
-    - action: update
-      key: agent.installation.time
-      value: ${MW_AGENT_INSTALLATION_TIME}
+      value: ${env:MW_API_KEY}
     - action: delete
       key: host.name
   resource/hostid:
@@ -85,7 +77,7 @@ processors:
     attributes:
     - action: upsert
       key: mw.account_key
-      value: ${MW_API_KEY}
+      value: ${env:MW_API_KEY}
     - action: insert
       key: service.name
       value: middleware-logs
@@ -95,7 +87,7 @@ processors:
     attributes:
     - action: upsert
       key: mw.account_key
-      value: ${MW_API_KEY}
+      value: ${env:MW_API_KEY}
     - action: delete
       key: host.name
   resourcedetection:
@@ -197,7 +189,7 @@ receivers:
         scrape_interval: 5s
         static_configs:
         - targets:
-          - 127.0.0.1:${MW_AGENT_INTERNAL_METRICS_PORT}
+          - 127.0.0.1:${env:MW_AGENT_INTERNAL_METRICS_PORT}
 service:
   pipelines:
     logs:
@@ -239,6 +231,6 @@ service:
       - otlp
   telemetry:
     metrics:
-      address: 127.0.0.1:${MW_AGENT_INTERNAL_METRICS_PORT}
+      address: 127.0.0.1:${env:MW_AGENT_INTERNAL_METRICS_PORT}
     logs:
       level: fatal
