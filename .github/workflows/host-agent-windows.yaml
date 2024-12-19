@@ -78,10 +78,26 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+    - name: Checkout Repo  
+      uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.GHCR_TOKEN }}
+    - name: Set Version
+      run: |
+        if [ -n "${{ github.event.inputs.release_version }}" ]; then
+          RELEASE_VERSION="${{ github.event.inputs.release_version }}"
+          echo "Setting RELEASE_VERSION from github.event.inputs.release_version: ${{ github.event.inputs.release_version }}"
+        else
+          RELEASE_VERSION="${GITHUB_REF#refs/tags/}"
+          echo "Setting RELEASE_VERSION from GITHUB_REF#refs/tags/: ${GITHUB_REF#refs/tags/}"
+        fi
+        echo "RELEASE_VERSION=$RELEASE_VERSION" >> $GITHUB_ENV
+        echo "Set RELEASE_VERSION to: $RELEASE_VERSION"  # Debug line
+
     - name: Download artifacts
       uses: actions/download-artifact@v3
       with:
-        name: windows-installer
+        name:  mw-windows-agent-${{ env.RELEASE_VERSION }}-setup.exe
         path: ./artifacts
 
     - name: Set up GitHub CLI
