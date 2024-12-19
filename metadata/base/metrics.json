@@ -2,6 +2,9 @@
     {
         "type": "host",
         "prefixes": ["system"],
+        "source": {
+            "agent": ["Docker", "Linux", "CentOS", "Debian", "Ubuntu", "Red Hat", "Fedora", "Amazon Linux", "AlmaLinux", "Rocky Linux", "SUSE", "Oracle Linux", "CoreOS", "Flatcar Linux", "Windows", "AWS ECS"]
+        },
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/metadata.yaml",
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/hostmetricsreceiver/internal/scraper/diskscraper/metadata.yaml",
@@ -17,6 +20,9 @@
     {
         "type": "container",
         "prefixes": ["container"],
+        "source": {
+            "agent": ["Docker", "Linux", "CentOS", "Debian", "Ubuntu", "Red Hat", "Fedora", "Amazon Linux", "AlmaLinux", "Rocky Linux", "SUSE", "Oracle Linux", "CoreOS", "Flatcar Linux", "Windows", "AWS ECS"]
+        },
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/dockerstatsreceiver/metadata.yaml"
         ],
@@ -25,6 +31,9 @@
     {
         "type": "process",
         "prefixes": ["process"],
+        "source": {
+            "agent": ["Docker", "Linux", "CentOS", "Debian", "Ubuntu", "Red Hat", "Fedora", "Amazon Linux", "AlmaLinux", "Rocky Linux", "SUSE", "Oracle Linux", "CoreOS", "Flatcar Linux", "Windows", "AWS ECS"]
+        },
         "files": [
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/hostmetricsreceiver/internal/scraper/processscraper/metadata.yaml"
         ],
