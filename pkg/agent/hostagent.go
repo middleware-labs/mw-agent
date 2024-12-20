@@ -178,9 +178,22 @@ type apiResponseForRestart struct {
 	Message string  `json:"message"`
 }
 
+type TrackingMetadata struct {
+	HostID        string `json:"host_id"`
+	Platform      string `json:"platform"`
+	AgentVersion  string `json:"agent_version"`
+	InfraPlatform string `json:"infra_platform"`
+	Reason        string `json:"reason"`
+}
+type TrackingPayload struct {
+	Status   string           `json:"status"`
+	Metadata TrackingMetadata `json:"metadata"`
+}
+
 var (
 	apiPathForYAML    = "api/v1/agent/ingestion-rules"
 	apiPathForRestart = "api/v1/agent/restart-status"
+	apiAgentTrack     = "api/v1/agent/tracking"
 )
 
 func (d IntegrationType) String() string {
@@ -446,6 +459,10 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 	}
 
 	if err := cfg.Validate(); err != nil {
+		trackErr := c.UpdateAgentTrackStatus(err)
+		if trackErr != nil {
+			c.logger.Error("failed to update agent track status", zap.Error(trackErr))
+		}
 		return fmt.Errorf("%w: %v", ErrInvalidConfig, err)
 	}
 
@@ -597,6 +614,51 @@ func (c *HostAgent) ListenForConfigChanges(errCh chan<- error,
 			errCh <- err
 		}
 	}
+}
+
+func (c *HostAgent) UpdateAgentTrackStatus(reason error) error {
+	c.logger.Info("Starting UpdateAgentTrackStatus")
+	hostname := getHostname()
+	u, err := url.Parse(c.APIURLForConfigCheck)
+	if err != nil {
+		return err
+	}
+	baseURL := u.JoinPath(apiAgentTrack)
+	baseURL = baseURL.JoinPath(c.APIKey)
+	payload := TrackingPayload{
+		Status: "validate",
+		Metadata: TrackingMetadata{
+			HostID:        hostname,
+			Platform:      runtime.GOOS,
+			AgentVersion:  c.Version,
+			InfraPlatform: fmt.Sprint(c.InfraPlatform),
+			Reason:        reason.Error(),
+		},
+	}
+	// Marshal payload to JSON
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal payload: %w", err)
+	}
+	req, err := http.NewRequest(http.MethodPost, baseURL.String(), bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+	// Add headers
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{Timeout: 10 * time.Second}
+	// Make the request
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("Agent Track API request failed: %w", err)
+	}
+	defer resp.Body.Close()
+	// Check status code
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Agent Track API returned non-200 status code: %d", resp.StatusCode)
+	}
+	c.logger.Info("Successfully updated agent track status")
+	return nil
 }
 
 // StartCollector initializes a new OpenTelemetry collector with the configured
