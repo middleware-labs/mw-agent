@@ -163,14 +163,6 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			Destination: &cfg.HostTags,
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:        "fluent-port",
-			Usage:       "Fluent receiver will listen to this port.",
-			EnvVars:     []string{"MW_FLUENT_PORT"},
-			Destination: &cfg.FluentPort,
-			DefaultText: "8006",
-			Value:       "8006",
-		}),
-		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "logfile",
 			Usage:       "Log file to store Middleware agent logs.",
 			EnvVars:     []string{"MW_LOGFILE"},
@@ -229,7 +221,7 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			Value:       false, // synthetic monitoring is disabled by default
 		}),
 		altsrc.NewBoolFlag(&cli.BoolFlag{
-			Name:        "mw-agent-self-profiling",
+			Name:        "agent-self-profiling",
 			Usage:       "For Profiling MW Agent itself.",
 			EnvVars:     []string{"MW_AGENT_SELF_PROFILING"},
 			Destination: &cfg.SelfProfiling,
@@ -237,12 +229,48 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			Value:       false,
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:        "mw-profiling-server-url",
+			Name:        "profiling-server-url",
 			Usage:       "Server Address for redirecting profiling data.",
 			EnvVars:     []string{"MW_PROFILING_SERVER_URL"},
 			Destination: &cfg.ProfilngServerURL,
 			Value:       "https://profiling.middleware.io",
 			DefaultText: "https://profiling.middleware.io",
+		}),
+
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "grpc-port",
+			Usage:       "gRPC receiver will listen to this port.",
+			EnvVars:     []string{"MW_AGENT_GRPC_PORT"},
+			Destination: &cfg.GRPCPort,
+			DefaultText: "9319",
+			Value:       "9319",
+		}),
+
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "http-port",
+			Usage:       "HTPT receiver will listen to this port.",
+			EnvVars:     []string{"MW_AGENT_HTTP_PORT"},
+			Destination: &cfg.HTTPPort,
+			DefaultText: "9320",
+			Value:       "9320",
+		}),
+
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "fluent-port",
+			Usage:       "Fluent receiver will listen to this port.",
+			EnvVars:     []string{"MW_AGENT_FLUENT_PORT"},
+			Destination: &cfg.FluentPort,
+			DefaultText: "8006",
+			Value:       "8006",
+		}),
+
+		altsrc.NewUintFlag(&cli.UintFlag{
+			Name:        "agent-internal-metrics-port",
+			Usage:       "Port where mw-agent will expose its Prometheus metrics.",
+			EnvVars:     []string{"MW_AGENT_INTERNAL_METRICS_PORT"},
+			Destination: &cfg.InternalMetricsPort,
+			DefaultText: "8888",
+			Value:       8888,
 		}),
 
 		&cli.StringFlag{
@@ -292,15 +320,6 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 				return ""
 			}(),
 		},
-
-		altsrc.NewUintFlag(&cli.UintFlag{
-			Name:        "agent-internal-metrics-port",
-			Usage:       "Port where mw-agent will expose its Prometheus metrics.",
-			EnvVars:     []string{"MW_AGENT_INTERNAL_METRICS_PORT"},
-			Destination: &cfg.InternalMetricsPort,
-			DefaultText: "8888",
-			Value:       8888,
-		}),
 	}
 }
 
@@ -448,10 +467,12 @@ func main() {
 						target += ":443"
 					}
 
-					// Set MW_TARGET, MW_API_KEY  MW_FLUENT_PORT so that envprovider can fill those in the otel config files
+					// Set environment variables so that envprovider can fill those in the otel config files
 					os.Setenv("MW_TARGET", target)
 					os.Setenv("MW_API_KEY", cfg.APIKey)
-					os.Setenv("MW_FLUENT_PORT", cfg.FluentPort)
+					os.Setenv("MW_AGENT_GRPC_PORT", cfg.GRPCPort)
+					os.Setenv("MW_AGENT_HTTP_PORT", cfg.HTTPPort)
+					os.Setenv("MW_AGENT_FLUENT_PORT", cfg.FluentPort)
 					os.Setenv("MW_AGENT_INTERNAL_METRICS_PORT", strconv.Itoa(int(cfg.InternalMetricsPort)))
 
 					// TODO: check if on Windows, socket scheme is different than "unix"
