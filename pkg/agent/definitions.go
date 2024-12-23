@@ -78,6 +78,8 @@ type BaseConfig struct {
 	DockerEndpoint               string
 	APIURLForConfigCheck         string
 	APIURLForSyntheticMonitoring string
+	GRPCPort                     string
+	HTTPPort                     string
 	FluentPort                   string
 	InfraPlatform                InfraPlatform
 	OtelConfigFile               string

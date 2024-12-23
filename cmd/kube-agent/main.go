@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 
 	"github.com/middleware-labs/mw-agent/pkg/agent"
 	"github.com/prometheus/common/version"
@@ -92,19 +93,55 @@ func getFlags(cfg *agent.KubeConfig) []cli.Flag {
 			Value:       true, // log collection is enabled by default
 		}),
 		altsrc.NewBoolFlag(&cli.BoolFlag{
-			Name:        "mw-agent-self-profiling",
+			Name:        "agent-self-profiling",
 			Usage:       "For Profiling the agent itself",
 			EnvVars:     []string{"MW_AGENT_SELF_PROFILING"},
 			Destination: &cfg.SelfProfiling,
 			Value:       false,
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:        "mw-profiling-server-url",
+			Name:        "profiling-server-url",
 			Usage:       "Server Address for redirecting profiling data",
 			EnvVars:     []string{"MW_PROFILING_SERVER_URL"},
 			Destination: &cfg.ProfilngServerURL,
 			Value:       "https://profiling.middleware.io",
 			DefaultText: "https://profiling.middleware.io",
+		}),
+
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "grpc-port",
+			Usage:       "gRPC receiver will listen to this port.",
+			EnvVars:     []string{"MW_AGENT_GRPC_PORT"},
+			Destination: &cfg.GRPCPort,
+			DefaultText: "9319",
+			Value:       "9319",
+		}),
+
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "http-port",
+			Usage:       "HTPT receiver will listen to this port.",
+			EnvVars:     []string{"MW_AGENT_HTTP_PORT"},
+			Destination: &cfg.HTTPPort,
+			DefaultText: "9320",
+			Value:       "9320",
+		}),
+
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "fluent-port",
+			Usage:       "Fluent receiver will listen to this port.",
+			EnvVars:     []string{"MW_AGENT_FLUENT_PORT"},
+			Destination: &cfg.FluentPort,
+			DefaultText: "8006",
+			Value:       "8006",
+		}),
+
+		altsrc.NewUintFlag(&cli.UintFlag{
+			Name:        "agent-internal-metrics-port",
+			Usage:       "Port where mw-agent will expose its Prometheus metrics.",
+			EnvVars:     []string{"MW_AGENT_INTERNAL_METRICS_PORT"},
+			Destination: &cfg.InternalMetricsPort,
+			DefaultText: "8888",
+			Value:       8888,
 		}),
 
 		&cli.StringFlag{
@@ -181,9 +218,14 @@ func main() {
 					// Set the infra platform to kubernetes for now since we don't need to differentiate between
 					// vanilla kubernetes and managed kubernetes.
 					cfg.InfraPlatform = agent.InfraPlatformKubernetes
-					// Set MW_TARGET & MW_API_KEY so that envprovider can fill those in the otel config files
+
+					// Set environment variables so that envprovider can fill those in the otel config files
 					os.Setenv("MW_TARGET", cfg.Target)
 					os.Setenv("MW_API_KEY", cfg.APIKey)
+					os.Setenv("MW_AGENT_GRPC_PORT", cfg.GRPCPort)
+					os.Setenv("MW_AGENT_HTTP_PORT", cfg.HTTPPort)
+					os.Setenv("MW_AGENT_FLUENT_PORT", cfg.FluentPort)
+					os.Setenv("MW_AGENT_INTERNAL_METRICS_PORT", strconv.Itoa(int(cfg.InternalMetricsPort)))
 
 					// Set MW_DOCKER_ENDPOINT env variable to be used by otel collector
 					os.Setenv("MW_DOCKER_ENDPOINT", cfg.DockerEndpoint)
