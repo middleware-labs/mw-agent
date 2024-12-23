@@ -109,12 +109,6 @@ processors:
       - key: host.name
         action: update
         from_attribute: k8s.node.name
-  
-  resource/logs:
-    attributes:
-      - key: service.name
-        action: insert
-        value: middleware-logs
 
   resourcedetection:
     detectors: [ env, system, docker ]
@@ -199,7 +193,7 @@ service:
         exporters: [  otlp ]
       logs:
         receivers: [fluentforward, k8s_events, otlp ]
-        processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, batch, batch/2 ]
+        processors: [ resourcedetection, resource, resource/cluster, attributes/logs, k8sattributes, batch, batch/2 ]
         exporters: [ otlp ]
       metrics:
         receivers: [ otlp, k8s_cluster ]
