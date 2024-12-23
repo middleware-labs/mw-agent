@@ -336,11 +336,6 @@ processors:
       - key: service.name
         action: upsert
         value: k8s-events
-  resource/logs:
-    attributes:
-      - key: service.name
-        action: insert
-        value: middleware-logs
 
   resourcedetection:
     detectors: [ env, system, docker ]
@@ -425,11 +420,11 @@ service:
         exporters: [  otlp ]
       logs:
         receivers: [fluentforward, otlp, filelog ]
-        processors: [ resourcedetection, resource, resource/hostmetrics, resource/cluster, attributes/logs, resource/logs, k8sattributes, batch, batch/2 ]
+        processors: [ resourcedetection, resource, resource/hostmetrics, resource/cluster, attributes/logs, k8sattributes, batch, batch/2 ]
         exporters: [ otlp ]
       logs/k8s_events:
         receivers: [ k8s_events ]
-        processors: [ resourcedetection, resource, resource/hostmetrics, resource/cluster, attributes/logs, resource/logs, k8sattributes, resource/k8s_events, batch, batch/2, ]
+        processors: [ resourcedetection, resource, resource/hostmetrics, resource/cluster, attributes/logs, k8sattributes, resource/k8s_events, batch, batch/2, ]
         exporters: [ otlp ]
       metrics:
         receivers: [ otlp, k8s_cluster ]

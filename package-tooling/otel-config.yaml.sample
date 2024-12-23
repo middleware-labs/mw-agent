@@ -73,16 +73,6 @@ processors:
     - action: upsert
       from_attribute: host.name
       key: host.id
-  resource/logs:
-    attributes:
-    - action: upsert
-      key: mw.account_key
-      value: ${env:MW_API_KEY}
-    - action: insert
-      key: service.name
-      value: middleware-logs
-    - action: delete
-      key: host.name
   resource/traces:
     attributes:
     - action: upsert
@@ -188,7 +178,7 @@ service:
       exporters:
       - otlp/2
       processors:
-      - resource/logs
+      - resource
       - resourcedetection
       - resource/hostid
       - attributes/logs

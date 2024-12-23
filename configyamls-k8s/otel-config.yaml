@@ -198,9 +198,6 @@ processors:
       - key: host.id
         from_attribute: host.name
         action: upsert
-      # - key: service.name
-      #   action: insert
-      #   value: middleware-logs
       - key: mw.account_key
         action: insert
         value: ${MW_API_KEY}
@@ -254,11 +251,6 @@ processors:
       - key: is.k8s.container
         action: insert
         value: "yes"
-  resource/logs:
-    attributes:
-      - key: service.name
-        action: insert
-        value: middleware-logs
   resource/cluster:
     attributes:
       - key: k8s.cluster.name
@@ -355,7 +347,7 @@ service:
         exporters: [  otlp ]
       logs:
         receivers: [fluentforward, k8s_events, otlp, filelog ]
-        processors: [ resourcedetection, resource, resource/cluster, attributes/logs, resource/logs, k8sattributes, resource/k8s_events, batch, batch/2 ]
+        processors: [ resourcedetection, resource, resource/cluster, attributes/logs, k8sattributes, resource/k8s_events, batch, batch/2 ]
         exporters: [ otlp ]
       metrics:
         receivers: [  otlp, k8s_cluster, kubeletstats  ]
