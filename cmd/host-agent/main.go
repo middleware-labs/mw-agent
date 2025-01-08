@@ -323,6 +323,22 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 	}
 }
 
+func detectInfraPlatform() agent.InfraPlatform {
+	awsEnv := os.Getenv("AWS_EXECUTION_ENV")
+	if awsEnv == "AWS_ECS_EC2" {
+		return agent.InfraPlatformECSEC2
+	} else if awsEnv == "AWS_ECS_FARGATE" {
+		return agent.InfraPlatformECSFargate
+	}
+
+	cycleIOEnv := os.Getenv("CYCLE_INSTANCE_ID")
+	if cycleIOEnv != "" {
+		return agent.InfraPlatformCycleIO
+	}
+
+	return agent.InfraPlatformInstance
+}
+
 func main() {
 	zapEncoderCfg := zapcore.EncoderConfig{
 		MessageKey: "message",
@@ -407,13 +423,7 @@ func main() {
 						go profiler.StartProfiling("mw-host-agent", cfg.Target, cfg.HostTags)
 					}
 
-					infraPlatform := agent.InfraPlatformInstance
-					awsEnv := os.Getenv("AWS_EXECUTION_ENV")
-					if awsEnv == "AWS_ECS_EC2" {
-						infraPlatform = agent.InfraPlatformECSEC2
-					} else if awsEnv == "AWS_ECS_FARGATE" {
-						infraPlatform = agent.InfraPlatformECSFargate
-					}
+					infraPlatform := detectInfraPlatform()
 
 					hostname, err := os.Hostname()
 					if err != nil {

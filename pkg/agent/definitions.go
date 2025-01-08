@@ -46,6 +46,8 @@ var (
 	InfraPlatformECSEC2 InfraPlatform = 2
 	// InfraPlatformECSFargate is for AWS ECS Fargate platform
 	InfraPlatformECSFargate InfraPlatform = 3
+	// InfraPlatformCycleIO is for Cycle.io platform
+	InfraPlatformCycleIO InfraPlatform = 4
 )
 
 func (p InfraPlatform) String() string {
