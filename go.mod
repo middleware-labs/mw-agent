@@ -95,6 +95,7 @@ require (
 
 require (
 	github.com/middleware-labs/synthetics-agent v1.0.29
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.115.0
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.21.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.21.0
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.21.0

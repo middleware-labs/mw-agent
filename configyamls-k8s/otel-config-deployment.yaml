@@ -10,19 +10,19 @@ receivers:
     auth_type: serviceAccount
     namespaces: all
   fluentforward:
-    endpoint: 0.0.0.0:8006
+    endpoint: "[::]:${env:MW_AGENT_FLUENT_PORT}"
   # kubeletstats:
   #   ceat_path:
   otlp:
     protocols:
       grpc:
-        endpoint: 0.0.0.0:9319
+        endpoint: "[::]:${env:MW_AGENT_GRPC_PORT}"
         # max_recv_msg_size_mib: 8
       http:
-        endpoint: 0.0.0.0:9320
+        endpoint: "[::]:${env:MW_AGENT_HTTP_PORT}"
 exporters:
   otlp:
-    endpoint: ${MW_TARGET}
+    endpoint: ${env:MW_TARGET}
 processors:
   # filter/blanklog:
   #   logs: 
@@ -61,7 +61,7 @@ processors:
         action: upsert
       - key: mw.account_key
         action: insert
-        value: ${MW_API_KEY}
+        value: ${env:MW_API_KEY}
       - key: k8s.cluster.name
         from_attribute: k8s.node.uid
         action: insert
@@ -102,7 +102,7 @@ processors:
     attributes:
       - key: k8s.cluster.name
         action: update
-        value: ${MW_KUBE_CLUSTER_NAME}
+        value: ${env:MW_KUBE_CLUSTER_NAME}
       - key: host.id
         action: update
         from_attribute: k8s.node.name
@@ -181,7 +181,7 @@ service:
       logs:
         level: "fatal"
       metrics:
-        address: 0.0.0.0:8888
+        address: "[::]:${env:MW_AGENT_INTERNAL_METRICS_PORT}"
     #extensions:
     #  - health_check
     #  - zpages
