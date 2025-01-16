@@ -1,30 +1,41 @@
+# Stage 1: Build Stage
 FROM golang:1.23.4 AS build
 WORKDIR /app
-RUN apt-get update && apt-get install -y ca-certificates openssl
-RUN update-ca-certificates
+
+# Install dependencies and update CA certificates in a single layer
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates openssl && \
+    update-ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy only necessary files to the build stage
+COPY go.mod go.sum ./
+RUN go mod tidy
+
 COPY . .
+
+# Set up environment variables for build
 ENV CGO_ENABLED=0
 ARG GITHUB_TOKEN
 ENV GITHUB_TOKEN=$GITHUB_TOKEN
 RUN git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 RUN GOPRIVATE=github.com/middleware-labs go mod tidy
-RUN go get -d -v ./... && go mod tidy
 
+# Build the Go binary
 ARG AGENT_VERSION
 ENV AGENT_VERSION=$AGENT_VERSION
-
 RUN CGO_ENABLED=0 go build -ldflags "-s -w -X main.agentVersion=${AGENT_VERSION}" -o /tmp/mw-agent cmd/kube-agent/main.go
 
-FROM busybox:glibc AS prod
+# Stage 2: Production Stage
+FROM ubuntu:24.04 AS prod
 WORKDIR /app
+# Copy necessary files from the build stage
 COPY --from=build /etc/ssl/certs /etc/ssl/certs
 COPY --from=build /tmp/mw-agent /usr/bin/mw-agent
-COPY --from=build /app/configyamls-k8s/otel-config.yaml /app/otel-config.yaml
-COPY --from=build /app/configyamls-k8s/otel-config-nodocker.yaml /app/otel-config-nodocker.yaml
-COPY --from=build /app/configyamls-k8s/otel-config-daemonset.yaml /app/otel-config-daemonset.yaml
-COPY --from=build /app/configyamls-k8s/otel-config-deployment.yaml /app/otel-config-deployment.yaml
+COPY --from=build /app/configyamls-k8s/*.yaml /app/
 
-# A symlink to support existing k8s agent users
+# Create symlink for backward compatibility
 RUN ln -s /usr/bin/mw-agent /usr/bin/api-server
 
+# Final command
 CMD ["mw-agent", "start"]

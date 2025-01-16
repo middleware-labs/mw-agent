@@ -799,6 +799,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforward
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.115.0/go.mod h1:vWTdohkLm9S+3Ekz4aq1jW0xt8wD2jrdOOSOJNllppo=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.115.0 h1:pXnOOor7Y1Uu5H520b5OIki1lPL8TuCA3mCKzKOGog8=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.115.0/go.mod h1:RnB4yFCrbFnfdAf7oJloDd5fwpQ4o9ahzn5e04AiBSQ=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.115.0 h1:DWV9m9KISPkD8UVGF/nVAiPFHjOCaVKo8ynEk0ijdbI=
+github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.115.0/go.mod h1:hJCaM2G/MpJgKj5fFeIraCHwL3RDkYIVKBs9M2UoIvk=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.115.0 h1:FUp7wZTVVGn+V6DY4Q3CkZ+N//JsZbr6SXjQDVvrvpk=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.115.0/go.mod h1:X+34A3gZbL4tXOYd25nLZdJKIUwSps8CWO1LLvSs/ek=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver v0.115.0 h1:gzMAs+a9u9+CFtCVUEITmcU076/A3cXbaSHYhWOVurc=

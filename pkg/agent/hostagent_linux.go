@@ -21,6 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
@@ -72,6 +73,7 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 		apachereceiver.NewFactory(),
 		oracledbreceiver.NewFactory(),
 		statsdreceiver.NewFactory(),
+		journaldreceiver.NewFactory(),
 	}
 
 	// if the host agent is running on ECS EC2, add
