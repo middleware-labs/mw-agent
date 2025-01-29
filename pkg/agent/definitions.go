@@ -60,6 +60,8 @@ func (p InfraPlatform) String() string {
 		return "ecsec2"
 	case InfraPlatformECSFargate:
 		return "ecsfargate"
+	case InfraPlatformCycleIO:
+		return "cycleio"
 	}
 	return "unknown"
 }
