@@ -590,9 +590,12 @@ func (c *HostAgent) callRestartStatusAPI() error {
 func (c *HostAgent) ListenForConfigChanges(errCh chan<- error,
 	stopCh <-chan struct{}) error {
 
+	// First fetch the config
 	_, err := c.getOtelConfig()
 	if err != nil {
 		errCh <- err
+	} else {
+		errCh <- nil
 	}
 
 	restartInterval, err := time.ParseDuration(c.ConfigCheckInterval)

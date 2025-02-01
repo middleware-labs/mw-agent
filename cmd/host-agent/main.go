@@ -54,7 +54,6 @@ func (p *program) Start(s service.Service) error {
 
 	p.programWG.Add(1)
 	go p.run()
-	p.errCh <- nil
 	return nil
 }
 
@@ -91,7 +90,7 @@ func (p *program) run() {
 			if !errors.Is(err, agent.ErrRestartAgent) {
 				continue
 			}
-			p.logger.Info("restarting agent", zap.Error(err))
+			p.logger.Info("restarting collector", zap.Error(err))
 		}
 		// start collection only if it's not running
 		if err := p.hostAgent.StartCollector(); err != nil {

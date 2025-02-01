@@ -2,6 +2,7 @@
 
 # Set path to your Middleware agent configuration file
 CONFIG_FILE="/etc/mw-agent/agent-config.yaml"
+ENV_FILE="/etc/mw-agent/mw-agent.env"
 
 # Enable Middleware agent service
 enable_service () {
@@ -159,6 +160,20 @@ fi
 # Set proper permissions for the Middleware agent configuration directory
 chown -R mw-agent:mw-agent /etc/mw-agent
 
+# Create mw-agent.env from sample
+cp /etc/mw-agent/mw-agent.env.sample "${ENV_FILE}"
+# Ensure proper permissions for the env file
+chmod 644 "${ENV_FILE}"
+chown mw-agent:mw-agent "${ENV_FILE}"
+
+# Set the EnvironmentFile for mw-agent to be used in systemd service
+JOURNALCTL_DIR=$(dirname "$(command -v journalctl)")
+if [[ ":$PATH:" != *":$JOURNALCTL_DIR:"* ]]; then
+    echo "PATH=$JOURNALCTL_DIR:$PATH" > /etc/mw-agent/mw-agent.env
+else
+    echo "PATH=$PATH" > /etc/mw-agent/mw-agent.env
+fi
+
 if [ -f "${CONFIG_FILE}" ]; then
   echo "/etc/mw-agent/agent-config.yaml file already exists. Not modifying it."
   restart_service
@@ -170,7 +185,6 @@ cp /etc/mw-agent/agent-config.yaml.sample "${CONFIG_FILE}"
 # Ensure proper permissions for the configuration file
 chmod 644 "${CONFIG_FILE}"
 chown mw-agent:mw-agent "${CONFIG_FILE}"
-
 
 # Check for old installation and convert it to config file
 # This is the case user is upgrading mw-agent <= 1.5 to latest

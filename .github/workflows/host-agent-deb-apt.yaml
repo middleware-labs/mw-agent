@@ -90,7 +90,9 @@ jobs:
           mkdir -p build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/lib/systemd/system
 
           cp package-tooling/agent-config.yaml.sample build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/etc/${PACKAGE_NAME}/agent-config.yaml.sample
+          cp package-tooling/mw-agent.env.sample build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/etc/${PACKAGE_NAME}/mw-agent.env.sample
           cp package-tooling/otel-config.yaml.sample build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/etc/${PACKAGE_NAME}/otel-config.yaml.sample
+
 
           cp package-tooling/linux/postinst build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/postinst
           cp package-tooling/linux/prerm build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/prerm
@@ -127,7 +129,6 @@ jobs:
         # Move aptly binary to a directory in PATH
         sudo mv aptly_1.5.0_linux_amd64/aptly /usr/local/bin/
 
-    
     - name: Verify aptly version
       if: ${{ github.actor != 'nektos/act' }}
       run: aptly version
@@ -182,6 +183,7 @@ jobs:
 
   upload-to-release:
     needs: build
+    if: ${{ github.actor != 'nektos/act' }}
     runs-on: ubuntu-latest
     
     steps:

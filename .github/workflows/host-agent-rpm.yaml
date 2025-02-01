@@ -67,6 +67,8 @@ jobs:
         cp package-tooling/linux/rpm/$SPEC_FILE ~/build/rpmbuild/SPECS/$SPEC_FILE
         cp package-tooling/agent-config.yaml.sample \
         ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/agent-config.yaml.sample
+        cp package-tooling/mw-agent.env.sample \
+        ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/mw-agent.env.sample
         cp package-tooling/otel-config.yaml.sample \
         ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/otel-config.yaml.sample
         cp package-tooling/linux/postinst ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/postinstall.sh
@@ -122,6 +124,7 @@ jobs:
         ls -l ~/build/rpmbuild/RPMS/${{ matrix.arch }}/mw-agent-${{ env.RELEASE_VERSION }}-${{ env.RELEASE_NUMBER }}.${{ matrix.arch }}.rpm
   
     - name: Upload RPM as artifact
+      if: ${{ github.actor != 'nektos/act' }}
       uses: actions/upload-artifact@v3
       with:
         name: mw-agent-${{ matrix.arch }}-rpm
@@ -157,6 +160,7 @@ jobs:
   
   upload-to-release:
     needs: build
+    if: ${{ github.actor != 'nektos/act' }}
     runs-on: ubuntu-latest
     
     steps:

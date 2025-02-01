@@ -3,6 +3,7 @@ Description=Middleware Agent Service
 After=network.target
 
 [Service]
+EnvironmentFile=/etc/mw-agent/mw-agent.env
 WorkingDirectory=/opt/mw-agent
 User=root
 ExecStart=/opt/mw-agent/bin/mw-agent start --config-file=/etc/mw-agent/agent-config.yaml
