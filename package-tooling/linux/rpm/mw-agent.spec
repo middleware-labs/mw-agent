@@ -24,6 +24,7 @@ mkdir -p %{buildroot}/etc/%{package_name}
 mkdir -p %{buildroot}/lib/systemd/system
 cp -rfa ~/build/rpmbuild/SOURCES/%{arch}/%{package_name}-%{release_version}/%{package_name} %{buildroot}/opt/%{package_name}/bin/
 cp -rfa ~/build/rpmbuild/SOURCES/%{arch}/%{package_name}-%{release_version}/agent-config.yaml.sample %{buildroot}/etc/%{package_name}/
+cp -rfa ~/build/rpmbuild/SOURCES/%{arch}/%{package_name}-%{release_version}/mw-agent.env.sample %{buildroot}/etc/%{package_name}/
 cp -rfa ~/build/rpmbuild/SOURCES/%{arch}/%{package_name}-%{release_version}/otel-config.yaml.sample %{buildroot}/etc/%{package_name}/
 cp -rfa ~/build/rpmbuild/SOURCES/%{arch}/%{package_name}-%{release_version}/postinstall.sh %{buildroot}/opt/%{package_name}/.postinstall.sh
 cp -rfa ~/build/rpmbuild/SOURCES/%{arch}/%{package_name}-%{release_version}/%{package_name}.service %{buildroot}/lib/systemd/system/%{package_name}.service
@@ -31,6 +32,7 @@ cp -rfa ~/build/rpmbuild/SOURCES/%{arch}/%{package_name}-%{release_version}/%{pa
 %files
 /opt/%{package_name}/bin/%{package_name}
 /etc/%{package_name}/agent-config.yaml.sample
+/etc/%{package_name}/mw-agent.env.sample
 /etc/%{package_name}/otel-config.yaml.sample
 /opt/%{package_name}/.postinstall.sh
 /lib/systemd/system/%{package_name}.service
@@ -51,7 +53,8 @@ fi
 if [ $1 -gt 0 ]; then
     echo "Upgrade in progress, skipping post-uninstallation steps."
 else
-    rm -f /etc/%{package_name}/agent-config.yaml
+    rm -f /etc/%{package_name}/agent-config.yaml    
+    rm -f /etc/%{package_name}/mw-agent.env
     rm -f /etc/%{package_name}/otel-config.yaml
     rmdir  /etc/%{package_name}
     rmdir /opt/%{package_name}/bin
