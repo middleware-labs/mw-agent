@@ -36,7 +36,7 @@ func TestKubeAgentGetFactories(t *testing.T) {
 	assert.Len(t, factories.Extensions, 1)
 
 	// check if factories contains expected receivers
-	assert.Len(t, factories.Receivers, 10)
+	assert.Len(t, factories.Receivers, 12)
 	assertContainsComponent(t, factories.Receivers, "otlp")
 	assertContainsComponent(t, factories.Receivers, "fluentforward")
 	assertContainsComponent(t, factories.Receivers, "filelog")
@@ -46,6 +46,9 @@ func TestKubeAgentGetFactories(t *testing.T) {
 	assertContainsComponent(t, factories.Receivers, "k8s_events")
 	assertContainsComponent(t, factories.Receivers, "kubeletstats")
 	assertContainsComponent(t, factories.Receivers, "prometheus")
+	assertContainsComponent(t, factories.Receivers, "k8sobjects")
+	assertContainsComponent(t, factories.Receivers, "statsd")
+	assertContainsComponent(t, factories.Receivers, "journald")
 
 	// check if factories contain expected exporters
 	assert.Len(t, factories.Exporters, 4)
@@ -55,7 +58,7 @@ func TestKubeAgentGetFactories(t *testing.T) {
 	assertContainsComponent(t, factories.Exporters, "kafka")
 
 	// check if factories contain expected processors
-	assert.Len(t, factories.Processors, 11)
+	assert.Len(t, factories.Processors, 12)
 	assertContainsComponent(t, factories.Processors, "batch")
 	assertContainsComponent(t, factories.Processors, "memory_limiter")
 	assertContainsComponent(t, factories.Processors, "filter")
@@ -67,6 +70,7 @@ func TestKubeAgentGetFactories(t *testing.T) {
 	assertContainsComponent(t, factories.Processors, "deltatorate")
 	assertContainsComponent(t, factories.Processors, "metricstransform")
 	assertContainsComponent(t, factories.Processors, "transform")
+	assertContainsComponent(t, factories.Processors, "groupbyattrs")
 }
 
 func TestListenForKubeOtelConfigChanges(t *testing.T) {

@@ -98,6 +98,7 @@ require (
 require (
 	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/middleware-labs/synthetics-agent v1.0.29
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.21.0
