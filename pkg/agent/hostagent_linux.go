@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"github.com/k0kubun/pp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
@@ -28,6 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 
@@ -74,6 +76,7 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 		oracledbreceiver.NewFactory(),
 		statsdreceiver.NewFactory(),
 		journaldreceiver.NewFactory(),
+		rabbitmqreceiver.NewFactory(),
 	}
 
 	// if the host agent is running on ECS EC2, add
@@ -115,6 +118,6 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 	if err != nil {
 		return otelcol.Factories{}, err
 	}
-
+	pp.Println(factories)
 	return factories, nil
 }

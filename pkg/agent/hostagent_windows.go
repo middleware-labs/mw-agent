@@ -27,6 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/debugexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -38,6 +39,7 @@ import (
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+
 )
 
 // GetFactories get otel factories for HostAgent
@@ -70,6 +72,7 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 		redisreceiver.NewFactory(),
 		apachereceiver.NewFactory(),
 		oracledbreceiver.NewFactory(),
+    rabbitmqreceiver.NewFactory(),
 	}
 
 	factories.Receivers, err = receiver.MakeFactoryMap(receiverfactories...)

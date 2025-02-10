@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/k0kubun/pp"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
@@ -286,7 +287,7 @@ func (c *HostAgent) updateConfigWithRestrictions(config map[string]interface{}) 
 }
 
 func (c *HostAgent) updateConfig(config map[string]interface{}, cnf integrationConfiguration) (map[string]interface{}, error) {
-
+	pp.Println("updating---Config--------------------------------")
 	if c.isIPPortFormat(cnf.Endpoint) {
 		return config, nil
 	}
@@ -681,7 +682,9 @@ func (c *HostAgent) StartCollector() error {
 	c.collectorWG.Add(1)
 	go func() {
 		defer c.collectorWG.Done()
+		pp.Println("Starting collector")
 		if err := collector.Run(context.Background()); err != nil {
+			pp.Println(err)
 			c.logger.Error("collector server run finished with error",
 				zap.Error(err))
 			c.collector = nil
