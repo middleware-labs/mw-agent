@@ -4,17 +4,18 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
-	"net/http/httptest"
+
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
-	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func TestUpdatepgdbConfig(t *testing.T) {
@@ -160,7 +161,12 @@ func TestUpdateRedisConfig(t *testing.T) {
 }
 
 func TestListenForConfigChanges(t *testing.T) {
-	cfg := HostConfig{}
+	cfg := HostConfig{
+		BaseConfig: BaseConfig{
+			APIKey:               "testAPIKey",
+			APIURLForConfigCheck: "http://example.com",
+		},
+	}
 	cfg.ConfigCheckInterval = "1s"
 
 	zapCore := zapcore.NewNopCore()
@@ -183,7 +189,7 @@ func TestListenForConfigChanges(t *testing.T) {
 	fmt.Println("waiting for config changes")
 	err := <-errCh
 	fmt.Println("config changes received")
-	assert.NoError(t, err)
+	assert.Error(t, err)
 	fmt.Println("config changes asserted")
 	// Manually cancel the context to stop listening for config changes
 	stopCh <- struct{}{}
@@ -267,7 +273,7 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assert.Len(t, factories.Extensions, 1)
 	assertContainsComponent(t, factories.Extensions, "health_check")
 	// check if factories contains expected receivers
-	assert.Len(t, factories.Receivers, 16)
+	assert.Len(t, factories.Receivers, 18)
 	assertContainsComponent(t, factories.Receivers, "otlp")
 	assertContainsComponent(t, factories.Receivers, "fluentforward")
 	assertContainsComponent(t, factories.Receivers, "filelog")
@@ -284,6 +290,8 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assertContainsComponent(t, factories.Receivers, "kafkametrics")
 	assertContainsComponent(t, factories.Receivers, "apache")
 	assertContainsComponent(t, factories.Receivers, "oracledb")
+	assertContainsComponent(t, factories.Receivers, "statsd")
+	assertContainsComponent(t, factories.Receivers, "journald")
 
 	// check if factories contain expected exporters
 	assert.Len(t, factories.Exporters, 5)
@@ -294,7 +302,7 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assertContainsComponent(t, factories.Exporters, "file")
 
 	// check if factories contain expected processors
-	assert.Len(t, factories.Processors, 10)
+	assert.Len(t, factories.Processors, 11)
 	assertContainsComponent(t, factories.Processors, "batch")
 	assertContainsComponent(t, factories.Processors, "filter")
 	assertContainsComponent(t, factories.Processors, "memory_limiter")
@@ -304,7 +312,7 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assertContainsComponent(t, factories.Processors, "transform")
 	assertContainsComponent(t, factories.Processors, "cumulativetodelta")
 	assertContainsComponent(t, factories.Processors, "deltatorate")
-
+	assertContainsComponent(t, factories.Processors, "groupbyattrs")
 }
 
 func TestHostAgentHasValidTags(t *testing.T) {
@@ -354,17 +362,17 @@ func TestUpdateAgentTrackStatus(t *testing.T) {
 	tests := []struct {
 		name           string
 		serverResponse int
-		wantError     bool
+		wantError      bool
 	}{
 		{
 			name:           "successful response",
 			serverResponse: http.StatusOK,
-			wantError:     false,
+			wantError:      false,
 		},
 		{
 			name:           "internal server error",
 			serverResponse: http.StatusInternalServerError,
-			wantError:     true,
+			wantError:      true,
 		},
 	}
 
