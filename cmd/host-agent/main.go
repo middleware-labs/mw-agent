@@ -42,6 +42,9 @@ func (p *program) Start(s service.Service) error {
 	// Start should not block. Do the actual work async.
 	p.logger.Info("starting service", zap.Stringer("name", s))
 
+	p.programWG.Add(1)
+	go p.run()
+
 	// Start any goroutines that can control collection
 	if p.hostAgent.FetchAccountOtelConfig {
 		// Listen to the config changes provided by Middleware API
@@ -50,10 +53,10 @@ func (p *program) Start(s service.Service) error {
 			p.hostAgent.ListenForConfigChanges(p.errCh, p.stopCh)
 			p.programWG.Done()
 		}()
+	} else {
+		p.errCh <- nil
 	}
 
-	p.programWG.Add(1)
-	go p.run()
 	return nil
 }
 
