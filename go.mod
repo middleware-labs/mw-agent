@@ -26,6 +26,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apach
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mysqlreceiver v0.91.1-0.20241220064255-38b7463368b2
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/rabbitmqreceiver v0.91.1-0.20241220064255-38b7463368b2
+
 replace go.opentelemetry.io/collector => go.opentelemetry.io/collector v0.115.0
 
 require (
@@ -73,6 +75,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.115.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.115.0

@@ -635,6 +635,8 @@ github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mysqlreceive
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mysqlreceiver v0.91.1-0.20241220064255-38b7463368b2/go.mod h1:1fPmq87jmrsSIasBalFroRJ1go+SmmverYbZj7UdQ8M=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.91.1-0.20241220064255-38b7463368b2 h1:UWEdnQMkbSLJB7ew7CoiJF69Zf+txJJaJXHy2HA7M1w=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.91.1-0.20241220064255-38b7463368b2/go.mod h1:Hm48Djy2wSY2f7/MiO1Pqx+z2PgBtTkratthdCo9Keg=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/rabbitmqreceiver v0.91.1-0.20241220064255-38b7463368b2 h1:FIsmLGHBBUuxo5Pw24ecH8eEawx42zHmyVU+G3jnzjs=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/rabbitmqreceiver v0.91.1-0.20241220064255-38b7463368b2/go.mod h1:HHG6YOBUjzg4BRHpWXMDsFFvxDG9PpnoNBnZrSMBCy4=
 github.com/middleware-labs/synthetics-agent v1.0.29 h1:Pg5sfaavbfLTfkoDCfr2CyNp+gSeL5Uhbri74qdwdtg=
 github.com/middleware-labs/synthetics-agent v1.0.29/go.mod h1:r09gb1K35E4OSahdhAeQPSpH+KYsaHKKFj9ihLwf2JY=
 github.com/miekg/dns v1.1.26/go.mod h1:bPDLeHnStXmXAq1m/Ch/hvfNHr14JKNPMBo3VZKjuso=
