@@ -95,7 +95,7 @@ jobs:
         echo "Set RELEASE_VERSION to: $RELEASE_VERSION"  # Debug line
 
     - name: Download artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name:  mw-windows-agent-${{ env.RELEASE_VERSION }}-setup.exe
         path: ./artifacts
