@@ -112,7 +112,7 @@ jobs:
           dpkg-deb --contents build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}.deb
 
     - name: Upload DEB as artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: mw-agent-${{ matrix.arch }}-deb
         path: build/mw-agent_${{ env.RELEASE_VERSION }}_${{ matrix.arch }}.deb
