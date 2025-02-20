@@ -125,7 +125,7 @@ jobs:
   
     - name: Upload RPM as artifact
       if: ${{ github.actor != 'nektos/act' }}
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: mw-agent-${{ matrix.arch }}-rpm
         path: ~/build/rpmbuild/RPMS/${{ matrix.arch }}/mw-agent-${{ env.RELEASE_VERSION }}-${{ env.RELEASE_NUMBER }}.${{ matrix.arch }}.rpm
