@@ -35,14 +35,15 @@ var (
 // HostAgent implements Agent interface for Hosts (e.g Linux)
 type HostAgent struct {
 	HostConfig
-	collectorFactories otelcol.Factories
-	collectorSettings  otelcol.CollectorSettings
-	collector          *otelcol.Collector
-	collectorWG        *sync.WaitGroup
-	zapCore            zapcore.Core
-	logger             *zap.Logger
-	httpGetFunc        func(url string) (resp *http.Response, err error)
-	Version            string
+	configCheckDuration time.Duration
+	collectorFactories  otelcol.Factories
+	collectorSettings   otelcol.CollectorSettings
+	collector           *otelcol.Collector
+	collectorWG         *sync.WaitGroup
+	zapCore             zapcore.Core
+	logger              *zap.Logger
+	httpGetFunc         func(url string) (resp *http.Response, err error)
+	Version             string
 }
 
 // HostOptions takes in various options for HostAgent
@@ -82,6 +83,13 @@ func NewHostAgent(cfg HostConfig, zapCore zapcore.Core,
 	}
 
 	agent.logger = zap.New(zapCore, zap.AddCaller())
+
+	configCheckDuration, err := time.ParseDuration(cfg.ConfigCheckInterval)
+	if err != nil {
+		return nil, err
+	}
+
+	agent.configCheckDuration = configCheckDuration
 
 	collectorFactories, err := agent.getFactories()
 	if err != nil {
@@ -607,16 +615,11 @@ func (c *HostAgent) ListenForConfigChanges(errCh chan<- error,
 		errCh <- nil
 	}
 
-	restartInterval, err := time.ParseDuration(c.ConfigCheckInterval)
-	if err != nil {
-		return err
-	}
-
-	ticker := time.NewTicker(restartInterval)
+	ticker := time.NewTicker(c.configCheckDuration)
 
 	for {
 		c.logger.Debug("checking for config change every",
-			zap.String("restartInterval", restartInterval.String()))
+			zap.String("config check duration", c.configCheckDuration.String()))
 		select {
 		case <-stopCh:
 			ticker.Stop()
