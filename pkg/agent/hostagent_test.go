@@ -305,7 +305,7 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assertContainsComponent(t, factories.Exporters, "file")
 
 	// check if factories contain expected processors
-	assert.Len(t, factories.Processors, 11)
+	assert.Len(t, factories.Processors, 14)
 	assertContainsComponent(t, factories.Processors, "batch")
 	assertContainsComponent(t, factories.Processors, "filter")
 	assertContainsComponent(t, factories.Processors, "memory_limiter")
@@ -316,6 +316,9 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assertContainsComponent(t, factories.Processors, "cumulativetodelta")
 	assertContainsComponent(t, factories.Processors, "deltatorate")
 	assertContainsComponent(t, factories.Processors, "groupbyattrs")
+	assertContainsComponent(t, factories.Processors, "logdedup")
+	assertContainsComponent(t, factories.Processors, "probabilistic_sampler")
+	assertContainsComponent(t, factories.Processors, "redaction")
 }
 
 func TestHostAgentHasValidTags(t *testing.T) {
