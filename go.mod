@@ -57,7 +57,10 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.115.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.115.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.115.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.115.0
@@ -76,13 +79,13 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver v0.115.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver v0.120.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.115.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver v0.120.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.115.0
@@ -312,6 +315,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic v0.115.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.115.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.115.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.115.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.115.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.115.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.115.0 // indirect

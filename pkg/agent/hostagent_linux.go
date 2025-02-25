@@ -14,6 +14,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
@@ -119,6 +122,9 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 		cumulativetodeltaprocessor.NewFactory(),
 		deltatorateprocessor.NewFactory(),
 		groupbyattrsprocessor.NewFactory(),
+		logdedupprocessor.NewFactory(),
+		probabilisticsamplerprocessor.NewFactory(),
+		redactionprocessor.NewFactory(),
 	}...)
 	if err != nil {
 		return otelcol.Factories{}, err

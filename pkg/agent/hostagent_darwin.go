@@ -9,7 +9,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
@@ -114,6 +117,9 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 		cumulativetodeltaprocessor.NewFactory(),
 		deltatorateprocessor.NewFactory(),
 		groupbyattrsprocessor.NewFactory(),
+		logdedupprocessor.NewFactory(),
+		probabilisticsamplerprocessor.NewFactory(),
+		redactionprocessor.NewFactory(),
 	}...)
 	if err != nil {
 		return otelcol.Factories{}, err

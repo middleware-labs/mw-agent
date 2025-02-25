@@ -61,7 +61,7 @@ func TestKubeAgentGetFactories(t *testing.T) {
 	assertContainsComponent(t, factories.Exporters, "kafka")
 
 	// check if factories contain expected processors
-	assert.Len(t, factories.Processors, 12)
+	assert.Len(t, factories.Processors, 15)
 	assertContainsComponent(t, factories.Processors, "batch")
 	assertContainsComponent(t, factories.Processors, "memory_limiter")
 	assertContainsComponent(t, factories.Processors, "filter")
@@ -74,6 +74,9 @@ func TestKubeAgentGetFactories(t *testing.T) {
 	assertContainsComponent(t, factories.Processors, "metricstransform")
 	assertContainsComponent(t, factories.Processors, "transform")
 	assertContainsComponent(t, factories.Processors, "groupbyattrs")
+	assertContainsComponent(t, factories.Processors, "logdedup")
+	assertContainsComponent(t, factories.Processors, "probabilistic_sampler")
+	assertContainsComponent(t, factories.Processors, "redaction")
 }
 
 func TestListenForKubeOtelConfigChanges(t *testing.T) {
