@@ -22,6 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
@@ -73,6 +74,7 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 		apachereceiver.NewFactory(),
 		oracledbreceiver.NewFactory(),
 		sqlserverreceiver.NewFactory(),
+		nginxreceiver.NewFactory(),
 	}
 
 	factories.Receivers, err = receiver.MakeFactoryMap(receiverfactories...)
