@@ -36,7 +36,7 @@ func TestKubeAgentGetFactories(t *testing.T) {
 	assert.Len(t, factories.Extensions, 1)
 
 	// check if factories contains expected receivers
-	assert.Len(t, factories.Receivers, 13)
+	assert.Len(t, factories.Receivers, 15)
 	assertContainsComponent(t, factories.Receivers, "otlp")
 	assertContainsComponent(t, factories.Receivers, "fluentforward")
 	assertContainsComponent(t, factories.Receivers, "filelog")
@@ -50,6 +50,8 @@ func TestKubeAgentGetFactories(t *testing.T) {
 	assertContainsComponent(t, factories.Receivers, "statsd")
 	assertContainsComponent(t, factories.Receivers, "journald")
 	assertContainsComponent(t, factories.Receivers, "rabbitmq")
+	assertContainsComponent(t, factories.Receivers, "sqlserver")
+	assertContainsComponent(t, factories.Receivers, "nginx")
 
 	// check if factories contain expected exporters
 	assert.Len(t, factories.Exporters, 4)
