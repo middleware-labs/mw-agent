@@ -26,6 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
 	"go.opentelemetry.io/collector/exporter"
@@ -71,6 +72,7 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 		redisreceiver.NewFactory(),
 		apachereceiver.NewFactory(),
 		oracledbreceiver.NewFactory(),
+		sqlserverreceiver.NewFactory(),
 	}
 
 	factories.Receivers, err = receiver.MakeFactoryMap(receiverfactories...)

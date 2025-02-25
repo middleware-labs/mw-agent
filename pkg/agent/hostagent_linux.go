@@ -26,11 +26,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 
 	"go.opentelemetry.io/collector/exporter"
@@ -77,6 +79,8 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 		statsdreceiver.NewFactory(),
 		journaldreceiver.NewFactory(),
 		rabbitmqreceiver.NewFactory(),
+		sqlserverreceiver.NewFactory(),
+		nginxreceiver.NewFactory(),
 	}
 
 	// if the host agent is running on ECS EC2, add
