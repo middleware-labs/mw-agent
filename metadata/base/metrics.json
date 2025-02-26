@@ -222,6 +222,14 @@
         "collection_interval": "10s"
     },
     {
+        "type": "sqlserver",
+        "prefixes": ["sqlserver"],
+        "files": [
+            "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/sqlserverreceiver/metadata.yaml"
+        ],
+        "collection_interval": "10s"
+    },
+    {
         "type": "service",
         "prefixes": ["service"],
         "files": [
