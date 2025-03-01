@@ -1,6 +1,6 @@
 module github.com/middleware-labs/mw-agent
 
-go 1.23
+go 1.23.0
 
 toolchain go1.23.4
 
@@ -107,6 +107,7 @@ require (
 
 require (
 	github.com/middleware-labs/synthetics-agent v1.0.29
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.115.0
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.21.0
@@ -131,6 +132,7 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
+	github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.25.0 // indirect
 	github.com/IBM/sarama v1.43.3 // indirect
 	github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c // indirect
@@ -353,6 +355,7 @@ require (
 	github.com/spf13/cobra v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
+	github.com/tg123/go-htpasswd v1.2.3 // indirect
 	github.com/tinylib/msgp v1.2.4 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect

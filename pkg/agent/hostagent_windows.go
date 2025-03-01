@@ -2,6 +2,7 @@ package agent
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
@@ -52,6 +53,8 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 	factories := otelcol.Factories{}
 	factories.Extensions, err = extension.MakeFactoryMap(
 		healthcheckextension.NewFactory(),
+		basicauthextension.NewFactory(),
+
 		// frontend.NewAuthFactory(),
 	)
 	if err != nil {
