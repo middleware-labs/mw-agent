@@ -24,6 +24,7 @@ type Agent interface {
 // Otel config components
 const (
 	Receivers              = "receivers"
+	Processors             = "processors"
 	AWSECSContainerMetrics = "awsecscontainermetrics"
 	Service                = "service"
 	Pipelines              = "pipelines"
