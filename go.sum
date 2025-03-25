@@ -693,6 +693,8 @@ github.com/middleware-labs/opentelemetry-collector-contrib/internal/filter v0.91
 github.com/middleware-labs/opentelemetry-collector-contrib/internal/filter v0.91.1-0.20241220064255-38b7463368b2/go.mod h1:6QU/K0dGCGYorkOvJmhbDFCspy4RPxRkFjf9I64y6I0=
 github.com/middleware-labs/opentelemetry-collector-contrib/pkg/ottl v0.91.1-0.20250224071852-491f9ff47aa8 h1:aokGVjS5OgaTQ+hKDlFnB4xNFmyajOmGJXGwFb0MNPU=
 github.com/middleware-labs/opentelemetry-collector-contrib/pkg/ottl v0.91.1-0.20250224071852-491f9ff47aa8/go.mod h1:mrL1MNrcg0zYAJ+aK9WtOH062dl2wN9DDG7mZk9H8v4=
+github.com/middleware-labs/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.91.1-0.20241220064255-38b7463368b2 h1:ON0mL1VZzjgq0bDyn0DPBhyKonepJcUXwns+nl5trBk=
+github.com/middleware-labs/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.91.1-0.20241220064255-38b7463368b2/go.mod h1:oRxNwm6HN7ckp4aJOAFC8BVBPa0UDhB8vNGTFL3QBJg=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/apachereceiver v0.91.1-0.20241220064255-38b7463368b2 h1:neECqyBhWf3ZtsXcUR/b4bLlhuGGmInOR7VC3EfTZAA=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/apachereceiver v0.91.1-0.20241220064255-38b7463368b2/go.mod h1:w/uUF3wkSldjm47A9c6dVuXBHKdxnnOchgd6/Bk+1bo=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.91.1-0.20241220064255-38b7463368b2 h1:nk5UB1pBFFSqA/EtJkJA4Mf3ff6AC0VqiAszS/FSqwc=
@@ -879,8 +881,6 @@ github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisti
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.115.0/go.mod h1:5ObSa9amrbzbYTdAK1Qhv3D/YqCxxnQhP0sk2eWB7Oo=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor v0.115.0 h1:xswfWYho/Ftlj5pjVPH73brF3F2O5DnX9a95B+7XqC4=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor v0.115.0/go.mod h1:egTMgypGXLBtVFZIuPVwldyBckVTx2Z2o2/hOauWnUQ=
-github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.115.0 h1:jQ6mIXhWqXhl8MPun9soNynsQ0lpOpOYQyAnQ28F014=
-github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.115.0/go.mod h1:oRxNwm6HN7ckp4aJOAFC8BVBPa0UDhB8vNGTFL3QBJg=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.115.0 h1:KbfjEsr2d/5TGWHvcaBC3lOpYAnquEraLXcis4IamAs=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.115.0/go.mod h1:fmtZPK5RIz+2Lcm9xQZuwiM+M8/juSSeJufSxUT+J9w=
 github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.115.0 h1:sLRTfXUFiqJ5Qe/NN5MUJxTaFt46E0Y/xjSY+KesCQc=
