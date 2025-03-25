@@ -691,8 +691,8 @@ github.com/middleware-labs/innoParser v0.0.0-20240729092319-ddbdd8e42266 h1:X/xV
 github.com/middleware-labs/innoParser v0.0.0-20240729092319-ddbdd8e42266/go.mod h1:K2Iq9MJAEQyQO+ZXQHraf1zxZgS+bRgv/D6p+ClJWRM=
 github.com/middleware-labs/opentelemetry-collector-contrib/internal/filter v0.91.1-0.20241220064255-38b7463368b2 h1:rN5D1MrHz6keh/6Ov27oktIpRwH7YRxuCFqYG1XMybs=
 github.com/middleware-labs/opentelemetry-collector-contrib/internal/filter v0.91.1-0.20241220064255-38b7463368b2/go.mod h1:6QU/K0dGCGYorkOvJmhbDFCspy4RPxRkFjf9I64y6I0=
-github.com/middleware-labs/opentelemetry-collector-contrib/pkg/ottl v0.91.1-0.20241220064255-38b7463368b2 h1:PUojVFgQU5DaajePIxm0OTEwpL10MUezkZZ1MEuR3xs=
-github.com/middleware-labs/opentelemetry-collector-contrib/pkg/ottl v0.91.1-0.20241220064255-38b7463368b2/go.mod h1:mrL1MNrcg0zYAJ+aK9WtOH062dl2wN9DDG7mZk9H8v4=
+github.com/middleware-labs/opentelemetry-collector-contrib/pkg/ottl v0.91.1-0.20250224071852-491f9ff47aa8 h1:aokGVjS5OgaTQ+hKDlFnB4xNFmyajOmGJXGwFb0MNPU=
+github.com/middleware-labs/opentelemetry-collector-contrib/pkg/ottl v0.91.1-0.20250224071852-491f9ff47aa8/go.mod h1:mrL1MNrcg0zYAJ+aK9WtOH062dl2wN9DDG7mZk9H8v4=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/apachereceiver v0.91.1-0.20241220064255-38b7463368b2 h1:neECqyBhWf3ZtsXcUR/b4bLlhuGGmInOR7VC3EfTZAA=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/apachereceiver v0.91.1-0.20241220064255-38b7463368b2/go.mod h1:w/uUF3wkSldjm47A9c6dVuXBHKdxnnOchgd6/Bk+1bo=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.91.1-0.20241220064255-38b7463368b2 h1:nk5UB1pBFFSqA/EtJkJA4Mf3ff6AC0VqiAszS/FSqwc=

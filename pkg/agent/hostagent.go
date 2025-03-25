@@ -120,11 +120,12 @@ func NewHostAgent(cfg HostConfig, zapCore zapcore.Core,
 }
 
 var (
-	ErrKeyNotFound    = fmt.Errorf("'%s' key not found", Receivers)
-	ErrParseReceivers = fmt.Errorf("failed to parse %s in otel config file", Receivers)
-	ErrParseService   = fmt.Errorf("failed to parse %s in otel config file", Service)
-	ErrParsePipelines = fmt.Errorf("failed to parse %s in otel config file", Pipelines)
-	ErrParseMetrics   = fmt.Errorf("failed to parse %s in otel config file", Metrics)
+	ErrKeyNotFound     = fmt.Errorf("'%s' key not found", Receivers)
+	ErrParseReceivers  = fmt.Errorf("failed to parse %s in otel config file", Receivers)
+	ErrParseProcessors = fmt.Errorf("failed to parse %s in otel config file", Processors)
+	ErrParseService    = fmt.Errorf("failed to parse %s in otel config file", Service)
+	ErrParsePipelines  = fmt.Errorf("failed to parse %s in otel config file", Pipelines)
+	ErrParseMetrics    = fmt.Errorf("failed to parse %s in otel config file", Metrics)
 )
 
 type configType struct {
@@ -435,6 +436,14 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 
 	if !c.AgentFeatures.LogCollection || !c.AgentFeatures.MetricCollection {
 		apiYAMLConfig, err = c.updateConfigWithRestrictions(apiYAMLConfig)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Adding host tags as resource attributes
+	if c.HostTags != "" {
+		apiYAMLConfig, err = c.updateConfigForHostTags(apiYAMLConfig)
 		if err != nil {
 			return err
 		}
