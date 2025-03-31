@@ -8,6 +8,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filte
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => github.com/middleware-labs/opentelemetry-collector-contrib/pkg/ottl v0.91.1-0.20250224071852-491f9ff47aa8
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor => github.com/middleware-labs/opentelemetry-collector-contrib/processor/transformprocessor v0.91.1-0.20250224071852-491f9ff47aa8
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.91.1-0.20241220064255-38b7463368b2
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.91.1-0.20241220064255-38b7463368b2
@@ -35,7 +37,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginx
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor => github.com/middleware-labs/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.91.1-0.20241220064255-38b7463368b2
 
 replace go.opentelemetry.io/collector => go.opentelemetry.io/collector v0.115.0
-
 
 require (
 	github.com/prometheus/common v0.60.1
