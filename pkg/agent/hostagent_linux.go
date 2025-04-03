@@ -10,13 +10,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
@@ -27,6 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver"
@@ -84,6 +85,7 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 		rabbitmqreceiver.NewFactory(),
 		sqlserverreceiver.NewFactory(),
 		nginxreceiver.NewFactory(),
+		mongodbatlasreceiver.NewFactory(),
 	}
 
 	// if the host agent is running on ECS EC2, add

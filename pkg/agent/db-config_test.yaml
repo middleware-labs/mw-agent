@@ -1,0 +1,21 @@
+postgresql:
+  endpoint: "example.com:5432"
+  database: "mydb"
+  user: "myuser"
+  password: "mypassword"
+
+mongodb:
+  endpoint: "example.com:5432"
+  database: "mydb"
+  user: "myuser"
+  password: "mypassword"
+
+mysql:
+  endpoint: "example.com:5432"
+  database: "mydb"
+  user: "myuser"
+  password: "mypassword"
+
+redis:
+  endpoint: "localhost:7379"
+  password: "mypassword"
