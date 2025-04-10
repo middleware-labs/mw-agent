@@ -150,6 +150,7 @@ const (
 	PostgreSQL IntegrationType = iota
 	MongoDB
 	MySQL
+	MariaDB
 	Redis
 	Cassandra
 	Elasticsearch
@@ -168,6 +169,7 @@ type apiResponseForYAML struct {
 	PgdbConfig          integrationConfiguration `json:"pgdb_config"`
 	MongodbConfig       integrationConfiguration `json:"mongodb_config"`
 	MysqlConfig         integrationConfiguration `json:"mysql_config"`
+	MariaDBConfig       integrationConfiguration `json:"mariadb_config"`
 	RedisConfig         integrationConfiguration `json:"redis_config"`
 	ElasticsearchConfig integrationConfiguration `json:"elasticsearch_config"`
 	CassandraConfig     integrationConfiguration `json:"cassandra_config"`
@@ -213,6 +215,8 @@ func (d IntegrationType) String() string {
 		return "mongodb"
 	case MySQL:
 		return "mysql"
+	case MariaDB:
+		return "mariadb"
 	case Redis:
 		return "redis"
 	case Cassandra:
@@ -417,6 +421,7 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 		PostgreSQL:    apiResponse.PgdbConfig,
 		MongoDB:       apiResponse.MongodbConfig,
 		MySQL:         apiResponse.MysqlConfig,
+		MariaDB:       apiResponse.MariaDBConfig,
 		Redis:         apiResponse.RedisConfig,
 		Elasticsearch: apiResponse.ElasticsearchConfig,
 		Cassandra:     apiResponse.CassandraConfig,
