@@ -92,6 +92,7 @@ type BaseConfig struct {
 	SelfProfiling                bool
 	ProfilngServerURL            string
 	InternalMetricsPort          uint
+	EnableDataDogReceiver        bool
 }
 
 // String() implements stringer interface for BaseConfig
