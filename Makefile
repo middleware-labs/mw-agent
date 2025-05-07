@@ -33,7 +33,7 @@ package-linux-docker:
 	docker build .  --target build --build-arg GITHUB_TOKEN=$(GH_TOKEN) -t ghcr.io/middleware-labs/mw-agent:local -f Dockerfiles/DockerfileLinux
 
 package-kube-config-updater:
-	docker buildx build . --push --platform linux/arm64,linux/amd64 --target prod --build-arg GITHUB_TOKEN=$(GH_TOKEN) --build-arg AGENT_VERSION=${RELEASE_VERSION}  -t ghcr.io/middleware-labs/mw-config-updater:local -f Dockerfiles/DockerfileKubeConfigUpdater
+	docker buildx build . --push --platform linux/arm64,linux/amd64 --target prod --build-arg GITHUB_TOKEN=$(GH_TOKEN) --build-arg AGENT_VERSION=${RELEASE_VERSION}  -t ghcr.io/middleware-labs/mw-kube-agent-config-updater:${RELEASE_VERSION} -f Dockerfiles/DockerfileKubeConfigUpdater
 
 package-darwin: build-darwin-arm64
 	package-tooling/darwin/create_installer.sh ${RELEASE_VERSION}

@@ -114,7 +114,7 @@ func TestCallRestartStatusAPI(t *testing.T) {
 	})
 
 	// Test case for successful API call
-	err := c.callRestartStatusAPI(context.Background())
+	err := c.callRestartStatusAPI(context.Background(), false)
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
@@ -123,7 +123,7 @@ func TestCallRestartStatusAPI(t *testing.T) {
 	server.Config.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	})
-	err = c.callRestartStatusAPI(context.Background())
+	err = c.callRestartStatusAPI(context.Background(), false)
 	if err == nil {
 		t.Errorf("Expected an error, got nil")
 	}

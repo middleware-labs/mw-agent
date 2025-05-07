@@ -67,13 +67,7 @@ func NewKubeAgent(cfg BaseConfig, agentVersion string, clientset kubernetes.Inte
 func (c *KubeAgent) ListenForConfigChanges(ctx context.Context, errCh chan<- error,
 	stopCh <-chan struct{}) error {
 
-	// Force an update at the start
-	err := c.UpdateConfigMap(ctx, Deployment)
-	if err != nil {
-		errCh <- err
-	}
-
-	errCh <- c.UpdateConfigMap(ctx, DaemonSet)
+	errCh <- c.callRestartStatusAPI(ctx, true)
 	ticker := time.NewTicker(c.configCheckDuration)
 
 	for {
@@ -84,14 +78,14 @@ func (c *KubeAgent) ListenForConfigChanges(ctx context.Context, errCh chan<- err
 			ticker.Stop()
 			return nil
 		case <-ticker.C:
-			errCh <- c.callRestartStatusAPI(ctx)
+			errCh <- c.callRestartStatusAPI(ctx, false)
 		}
 	}
 }
 
 // callRestartStatusAPI checks if there is an update in the otel-config at Middleware Backend
 // For a particular account
-func (c *KubeAgent) callRestartStatusAPI(ctx context.Context) error {
+func (c *KubeAgent) callRestartStatusAPI(ctx context.Context, first bool) error {
 
 	u, err := url.Parse(c.APIURLForConfigCheck)
 	if err != nil {
@@ -126,7 +120,7 @@ func (c *KubeAgent) callRestartStatusAPI(ctx context.Context) error {
 		return fmt.Errorf("failed to unmarshal restart api response: %w", err)
 	}
 
-	if apiResponse.Rollout.Daemonset {
+	if apiResponse.Rollout.Daemonset || first {
 		c.logger.Info("redeploying mw-agent daemonset")
 		updateConfigMapErr := c.UpdateConfigMap(ctx, DaemonSet)
 		if updateConfigMapErr != nil {
@@ -138,7 +132,7 @@ func (c *KubeAgent) callRestartStatusAPI(ctx context.Context) error {
 		}
 	}
 
-	if apiResponse.Rollout.Deployment {
+	if apiResponse.Rollout.Deployment || first {
 		c.logger.Info("redeploying mw-agent deployment")
 		updateConfigMapErr := c.UpdateConfigMap(ctx, Deployment)
 		if updateConfigMapErr != nil {
