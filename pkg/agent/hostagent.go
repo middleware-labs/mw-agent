@@ -367,6 +367,10 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 	params.Add("agent_version", c.Version)
 	params.Add("infra_platform", fmt.Sprint(c.InfraPlatform))
 
+	if c.EnableDataDogReceiver {
+		params.Add("enable_datadog_receiver", "true")
+	}
+
 	collectorRunning := 0
 	// Don't need to take lock on the c.collector because it is not deferenced
 	if c.collector == nil {

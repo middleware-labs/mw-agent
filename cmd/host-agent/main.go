@@ -275,6 +275,15 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			Value:       8888,
 		}),
 
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "enable-datadog-receiver",
+			Usage:       "Enable datadog receiver in agent",
+			EnvVars:     []string{"MW_ENABLE_DATADOG_RECEIVER"},
+			Destination: &cfg.EnableDataDogReceiver,
+			DefaultText: "false",
+			Value:       false,
+		}),
+
 		&cli.StringFlag{
 			Name:    "config-file",
 			EnvVars: []string{"MW_CONFIG_FILE"},
