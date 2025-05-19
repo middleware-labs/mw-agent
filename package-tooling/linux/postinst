@@ -137,6 +137,9 @@ handle_variable() {
         MW_ENABLE_SYNTHETIC_MONITORING)
             # synthetic monitoring feature has been removed from the agent
             ;;
+        MW_ENABLE_DATADOG_RECEIVER)
+            update_config "enable-datadog-receiver" "$value" "${CONFIG_FILE}"
+            ;;
         
         PATH)
             ;;
@@ -294,6 +297,10 @@ else
 
         if [ -n "${MW_DOCKER_ENDPOINT}" ]; then
             handle_variable "MW_DOCKER_ENDPOINT" "${MW_DOCKER_ENDPOINT}"
+        fi
+
+        if [ -n "${MW_ENABLE_DATADOG_RECEIVER}" ]; then
+            handle_variable "MW_ENABLE_DATADOG_RECEIVER" "${MW_ENABLE_DATADOG_RECEIVER}"
         fi
         
     fi
