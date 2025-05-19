@@ -496,6 +496,10 @@ func main() {
 					os.Setenv("MW_AGENT_FLUENT_PORT", cfg.FluentPort)
 					os.Setenv("MW_AGENT_INTERNAL_METRICS_PORT", strconv.Itoa(int(cfg.InternalMetricsPort)))
 
+					if cfg.EnableDataDogReceiver {
+						os.Setenv("MW_ENABLE_DATADOG_RECEIVER", "true")
+					}
+
 					// TODO: check if on Windows, socket scheme is different than "unix"
 					os.Setenv("MW_DOCKER_ENDPOINT", cfg.DockerEndpoint)
 
