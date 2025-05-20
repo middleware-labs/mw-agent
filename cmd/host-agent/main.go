@@ -11,6 +11,9 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/manifoldco/promptui"
+	"github.com/middleware-labs/mw-agent/integrations"
+	"github.com/middleware-labs/mw-agent/integrations/database"
 	"github.com/middleware-labs/mw-agent/pkg/agent"
 	"github.com/middleware-labs/synthetics-agent/pkg/worker"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -22,6 +25,32 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+func configureIntegration(integration string) {
+	fmt.Printf("\nYou selected: %s\n", integration)
+
+	switch integration {
+	case "Postgres":
+		database.ConfigurePostgres()
+	default:
+		fmt.Printf("\nℹ️  Configuration UI for %s is not implemented yet.\n", integration)
+	}
+}
+
+func runIntegrationSelection() {
+	prompt := promptui.Select{
+		Label: "Select an integration to configure",
+		Items: integrations.Integrations,
+	}
+
+	_, result, err := prompt.Run()
+	if err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		return
+	}
+
+	configureIntegration(result)
+}
 
 var agentVersion = "0.0.1"
 
@@ -599,6 +628,15 @@ func main() {
 				Usage: "Returns the current agent version",
 				Action: func(c *cli.Context) error {
 					fmt.Println("Middleware Agent Version", agentVersion)
+					return nil
+				},
+			},
+			{
+				Name:  "integrations",
+				Usage: "Returns the list of integrations",
+				Action: func(c *cli.Context) error {
+					fmt.Println("Middleware Integrations List:")
+					runIntegrationSelection()
 					return nil
 				},
 			},
