@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/manifoldco/promptui"
+	"github.com/middleware-labs/mw-agent/integrations/services"
 	"gopkg.in/yaml.v2"
 )
 
@@ -95,4 +96,7 @@ func ConfigurePostgres() {
 
 	fmt.Println("\n✅ Postgres has been configured and saved successfully!")
 	fmt.Printf("📄 Saved to: %s\n", filePath)
+
+	// Call the API service to send the config
+	services.SendPostgresConfigToAPI(filePath)
 }
