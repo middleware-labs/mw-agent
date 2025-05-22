@@ -9,23 +9,32 @@ import (
 
 // Struct for Auth API response
 type CaptureAuthData struct {
-	Alias      string `json:"alias"`
-	AccountUid string `json:"accountUid"`
-	AccountId  int    `json:"accountId"`
-	ProjectId  int    `json:"projectId"`
-	ProjectUid string `json:"projectUid"`
-	Db         string `json:"db"`
-	Storage    string `json:"storage"`
-	Expires    int    `json:"expires"`
-	Email      string `json:"email"`
-	Status     string `json:"status"`
+	Account    string      `json:"account"`
+	AccountId  int         `json:"account_id"`
+	ProjectId  int         `json:"project_id"`
+	ProjectUid string      `json:"project_uid"`
+	Db         string      `json:"db"`
+	Storage    string      `json:"storage"`
+	Expires    int         `json:"expires"`
+	Email      string      `json:"email"`
+	Status     string      `json:"status"`
+	BillMap    interface{} `json:"bill_map"` // You can use a specific type if the structure of BillMap is known
 }
 
-// Fetch auth data from GitHub auth-config API
+// FetchAuthData fetches auth data from the capture auth API with a Bearer token.
 func FetchAuthData(baseURL, hostname, accountToken string) (*CaptureAuthData, error) {
-	authURL := fmt.Sprintf("%s/integration/github/auth-config/%s/%s", baseURL, hostname, accountToken)
+	authURL := fmt.Sprintf("%s/auth", baseURL)
 
-	resp, err := http.Get(authURL)
+	req, err := http.NewRequest("POST", authURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create auth request: %v", err)
+	}
+
+	// Set the Authorization header
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accountToken))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("auth request failed: %v", err)
 	}
@@ -36,10 +45,14 @@ func FetchAuthData(baseURL, hostname, accountToken string) (*CaptureAuthData, er
 		return nil, fmt.Errorf("failed to read auth response: %v", err)
 	}
 
-	var authData CaptureAuthData
-	if err := json.Unmarshal(body, &authData); err != nil {
+	// Temporary struct to extract only the "data" field
+	var apiResp struct {
+		Data CaptureAuthData `json:"data"`
+	}
+
+	if err := json.Unmarshal(body, &apiResp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal auth data: %v", err)
 	}
 
-	return &authData, nil
+	return &apiResp.Data, nil
 }
