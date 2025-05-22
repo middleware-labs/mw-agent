@@ -26,18 +26,18 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-func configureIntegration(integration string) {
+func configureIntegration(integration, hostname string) {
 	fmt.Printf("\nYou selected: %s\n", integration)
 
 	switch integration {
 	case "Postgres":
-		database.ConfigurePostgres()
+		database.ConfigurePostgres(hostname)
 	default:
 		fmt.Printf("\nℹ️  Configuration UI for %s is not implemented yet.\n", integration)
 	}
 }
 
-func runIntegrationSelection() {
+func runIntegrationSelection(hostname string) {
 	prompt := promptui.Select{
 		Label: "Select an integration to configure",
 		Items: integrations.Integrations,
@@ -49,10 +49,11 @@ func runIntegrationSelection() {
 		return
 	}
 
-	configureIntegration(result)
+	configureIntegration(result, hostname)
 }
 
 var agentVersion = "0.0.1"
+var hostname = ""
 
 type program struct {
 	logger    *zap.Logger
@@ -380,6 +381,8 @@ func detectInfraPlatform() agent.InfraPlatform {
 }
 
 func main() {
+	hostname, _ = os.Hostname()
+
 	zapEncoderCfg := zapcore.EncoderConfig{
 		MessageKey: "message",
 
@@ -636,7 +639,7 @@ func main() {
 				Usage: "Returns the list of integrations",
 				Action: func(c *cli.Context) error {
 					fmt.Println("Middleware Integrations List:")
-					runIntegrationSelection()
+					runIntegrationSelection(hostname)
 					return nil
 				},
 			},

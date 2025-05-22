@@ -4,57 +4,28 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strings"
 
-	"github.com/manifoldco/promptui"
 	"github.com/middleware-labs/mw-agent/integrations/services"
+	"github.com/middleware-labs/mw-agent/integrations/utils"
 	"gopkg.in/yaml.v2"
 )
 
-var endPointRegex = regexp.MustCompile(`^(?:https?:\/\/)?(localhost|0\.0\.0\.0|(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?|(?:\d{1,3}\.){3}\d{1,3}):[1-9]\d{0,4}(\/[^\s]*(\?[^\s]*)?)?$`)
-
-func promptWithValidate(label string, validateFunc promptui.ValidateFunc, mask rune) (string, error) {
-	prompt := promptui.Prompt{
-		Label:    label,
-		Validate: validateFunc,
-	}
-	if mask != 0 {
-		prompt.Mask = mask
-	}
-	return prompt.Run()
-}
-
-func validateNotEmpty(input string) error {
-	if strings.TrimSpace(input) == "" {
-		return fmt.Errorf("value cannot be empty")
-	}
-	return nil
-}
-
-func validateEndpoint(input string) error {
-	if !endPointRegex.MatchString(input) {
-		return fmt.Errorf("invalid endpoint format")
-	}
-	return nil
-}
-
-func ConfigurePostgres() {
+func ConfigurePostgres(hostname string) {
 	fmt.Println("\nYou selected: Postgres")
 
-	endpoint, err := promptWithValidate("Enter Endpoint (e.g., localhost:5432)", validateEndpoint, 0)
+	endpoint, err := utils.PromptWithValidate("Enter Endpoint (e.g., localhost:5432)", utils.ValidateEndpoint, 0)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
 	}
 
-	username, err := promptWithValidate("Enter Username", validateNotEmpty, 0)
+	username, err := utils.PromptWithValidate("Enter Username", utils.ValidateNotEmpty, 0)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
 	}
 
-	password, err := promptWithValidate("Enter Password", validateNotEmpty, '*')
+	password, err := utils.PromptWithValidate("Enter Password", utils.ValidateNotEmpty, '*')
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
@@ -97,6 +68,15 @@ func ConfigurePostgres() {
 	fmt.Println("\n✅ Postgres has been configured and saved successfully!")
 	fmt.Printf("📄 Saved to: %s\n", filePath)
 
+	baseURL := ""      // TODO: Add the base URL of your API (Local or Deployed)
+	accountToken := "" // TODO: API key for authentication
+
+	authData, err := services.FetchAuthData(baseURL, hostname, accountToken)
+	if err != nil {
+		fmt.Printf("❌ Auth fetch error: %v\n", err)
+		return
+	}
+
 	// Call the API service to send the config
-	services.SendPostgresConfigToAPI(filePath)
+	services.SendPostgresConfigToAPI(baseURL, filePath, hostname, authData)
 }

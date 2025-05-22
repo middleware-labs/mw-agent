@@ -10,10 +10,9 @@ import (
 	"time"
 )
 
-func SendPostgresConfigToAPI(filePath string) {
+// Send Postgres config using auth data
+func SendPostgresConfigToAPI(baseURL, filePath, hostID string, authData *CaptureAuthData) {
 	const (
-		hostID    = "" // TODO: Add the host ID of your agent
-		baseURL   = "" // TODO: Add the base URL of your API (Local or Deployed)
 		timeZone  = "Asia/Kolkata"
 		offset    = "+0530"
 		sessionID = "4Vn39yx"
@@ -44,15 +43,16 @@ func SendPostgresConfigToAPI(filePath string) {
 		"value": encodedConfig,
 	}
 
-	// Marshal the final payload
 	finalJSON, err := json.Marshal(finalPayload)
 	if err != nil {
 		fmt.Printf("❌ Failed to marshal final payload: %v\n", err)
 		return
 	}
 
-	// Prepare request
-	url := fmt.Sprintf("%s%s", baseURL, hostID)
+	// Construct final URL using account/project IDs
+	url := fmt.Sprintf("%s/agent/setting/withoutAuth/%s/%d/%d", baseURL, hostID, authData.AccountId, authData.ProjectId)
+
+	// Make POST request
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(finalJSON))
 	if err != nil {
 		fmt.Printf("❌ Failed to create request: %v\n", err)
@@ -64,7 +64,6 @@ func SendPostgresConfigToAPI(filePath string) {
 	req.Header.Set("CLIENT_TIME_ZONE", timeZone)
 	req.Header.Set("CLIENT_TIME_ZONE_OFFSET", offset)
 	req.Header.Set("MW_USER_SESSION_ID", sessionID)
-	// req.Header.Set("Authorization", "Bearer <your_token>") // Add this if needed
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
@@ -74,18 +73,13 @@ func SendPostgresConfigToAPI(filePath string) {
 	}
 	defer resp.Body.Close()
 
-	// Step 5: Read & print response
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Printf("❌ Failed to read response body: %v\n", err)
 		return
 	}
 
-	// fmt.Printf("📡 Status: %s\n", resp.Status)
-	// fmt.Println("📨 Response Body:")
-	// fmt.Println(string(body))
-
-	// Step 6: Verify path was stored correctly
+	// Parse and verify response
 	var parsedResp struct {
 		Setting struct {
 			Config struct {
