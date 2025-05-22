@@ -37,6 +37,7 @@ func configureIntegration(integration, hostname string) {
 	}
 }
 
+
 func runIntegrationSelection(hostname string) {
 	prompt := promptui.Select{
 		Label: "Select an integration to configure",
