@@ -202,6 +202,10 @@ func (c *KubeAgent) UpdateConfigMap(ctx context.Context, componentType Component
 	params.Add("cluster", c.ClusterName)
 	params.Add("agent_version", c.version)
 
+	if c.BaseConfig.EnableDataDogReceiver {
+		params.Add("enable_datadog_receiver", "true")
+	}
+
 	// Add Query Parameters to the URL
 	baseURL.RawQuery = params.Encode() // Escape Query Parameters
 

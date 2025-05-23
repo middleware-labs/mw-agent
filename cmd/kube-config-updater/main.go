@@ -92,6 +92,14 @@ func getFlags(cfg *configupdater.BaseConfig) []cli.Flag {
 			DefaultText: "mw-deployment-otel-config",
 			Value:       "mw-deployment-otel-config",
 		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "enable-datadog-receiver",
+			Usage:       "Enable datadog receiver in agent",
+			EnvVars:     []string{"MW_ENABLE_DATADOG_RECEIVER"},
+			Destination: &cfg.EnableDataDogReceiver,
+			DefaultText: "false",
+			Value:       false,
+		}),
 	}
 }
 
