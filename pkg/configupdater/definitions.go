@@ -125,6 +125,7 @@ type BaseConfig struct {
 	DeploymentName            string
 	DeploymentConfigMapName   string
 	ClusterName               string
+	EnableDataDogReceiver     bool
 }
 
 // KubeConfig stores configuration for all the host agent
