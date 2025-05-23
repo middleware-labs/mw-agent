@@ -39,6 +39,13 @@ jobs:
         ssh-key: ${{ secrets.CHECK_AGENT_ACCESS }}
         submodules: 'recursive'
 
+    - name: Clean previous build artifacts
+      run: |
+        rm -rf build/
+        rm -rf ./artifacts/
+        rm -rf aptly_1.5.0_linux_amd64*
+        rm -rf apt.middleware.io
+
     - name: Set Architecture Variables
       run: |
         echo "::set-env name=PACKAGE_NAME::mw-agent"
@@ -111,12 +118,21 @@ jobs:
           dpkg-deb --info build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}.deb
           dpkg-deb --contents build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}.deb
 
+    - name: Cleanup build directory (keep .deb)
+      run: |
+        find build/ -type f ! -name "*.deb" -delete
+        find build/ -type d -empty -delete
+
     - name: Upload DEB as artifact
       uses: actions/upload-artifact@v4
       with:
         name: mw-agent-${{ matrix.arch }}-deb
         path: build/mw-agent_${{ env.RELEASE_VERSION }}_${{ matrix.arch }}.deb
         retention-days: 1
+
+    - name: Cleanup after artifact upload
+      run: |
+        rm -rf aptly_1.5.0_linux_amd64*
 
     - name: Set up aptly
       if: ${{ github.actor != 'nektos/act' }}
@@ -138,7 +154,7 @@ jobs:
       if: ${{ github.actor != 'nektos/act' }}
       run: |
         sudo apt-get install -y gnupg
-        git clone https://.:${{ secrets.GHCR_TOKEN }}@github.com/middleware-labs/apt.middleware.io.git
+        git clone --depth=1 --filter=blob:none https://.:${{ secrets.GHCR_TOKEN }}@github.com/middleware-labs/apt.middleware.io.git
         gpg --import apt.middleware.io/gpg-keys/mw-agent-apt-private.key
         gpg --import apt.middleware.io/gpg-keys/mw-agent-apt-public.key
         
@@ -170,6 +186,10 @@ jobs:
         sleep 5
         ls -l $APTLY_HOME/pool
         cp -r $APTLY_HOME/* apt.middleware.io
+
+    - name: Cleanup after aptly publish
+      run: |
+        rm -rf aptly_1.5.0_linux_amd64*
 
         cd apt.middleware.io
         git config --global user.email "keval@middleware.io"
@@ -235,4 +255,4 @@ jobs:
         done
 
 
-   
+
