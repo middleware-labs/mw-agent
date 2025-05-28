@@ -138,7 +138,7 @@ jobs:
       if: ${{ github.actor != 'nektos/act' }}
       run: |
         sudo apt-get install -y gnupg
-        git clone https://.:${{ secrets.GHCR_TOKEN }}@github.com/middleware-labs/apt.middleware.io.git
+        git clone --depth=1 --filter=blob:none https://.:${{ secrets.GHCR_TOKEN }}@github.com/middleware-labs/apt.middleware.io.git
         gpg --import apt.middleware.io/gpg-keys/mw-agent-apt-private.key
         gpg --import apt.middleware.io/gpg-keys/mw-agent-apt-public.key
         
