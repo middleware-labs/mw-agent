@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/fatih/color"
 	"github.com/manifoldco/promptui"
-	"github.com/middleware-labs/mw-agent/integrations"
 	"github.com/middleware-labs/mw-agent/integrations/database"
 	"github.com/middleware-labs/mw-agent/pkg/agent"
 	"github.com/middleware-labs/synthetics-agent/pkg/worker"
@@ -27,30 +27,104 @@ import (
 )
 
 func configureIntegration(integration, hostname string) {
-	fmt.Printf("\nYou selected: %s\n", integration)
+	color.Cyan("Configuring '%s' for host '%s'...\n", integration, hostname)
 
 	switch integration {
 	case "Postgres":
 		database.ConfigurePostgres(hostname)
+	case "MySQL":
+		database.ConfigureMySQL(hostname)
+	case "MariaDB":
+		database.ConfigureMongoDB(hostname)
+	case "MongoDB":
+		database.ConfigureMongoDB(hostname)
+	case "OracleDB":
+		database.ConfigureOracleDB(hostname)
+	case "Redis":
+		database.ConfigureRedis(hostname)
+	case "ElasticSearch":
+		database.ConfigureElasticSearch(hostname)
 	default:
-		fmt.Printf("\nℹ️  Configuration UI for %s is not implemented yet.\n", integration)
+		fmt.Printf("\nℹ️ Configuration UI for %s is not implemented yet.\n", integration)
 	}
 }
 
+var categorizedIntegrations = map[string][]string{
+	"🗄️  Database": {
+		"Postgres", "MongoDB", "MySQL", "MariaDB", "Redis",
+		"Clickhouse", "Cassandra", "ElasticSearch", "OracleDB",
+		"SQLServer", "MongoDBAtlas",
+	},
+	"📦 Logs": {
+		"Journald", "WindowsEventLogs",
+	},
+	"📊 Telemetry": {
+		"Prometheus",
+	},
+	"📡 Streaming": {
+		"Redpanda", "Kafka", "RabbitMQ",
+	},
+	"🌐 Networking": {
+		"Apache", "Nginx",
+	},
+	"🪟 Windows": {
+		"WindowsEventLogs",
+	},
+}
 
 func runIntegrationSelection(hostname string) {
-	prompt := promptui.Select{
-		Label: "Select an integration to configure",
-		Items: integrations.Integrations,
+	// Select category first
+	categories := []string{}
+	for cat := range categorizedIntegrations {
+		categories = append(categories, cat)
 	}
 
-	_, result, err := prompt.Run()
+	categoryPrompt := promptui.Select{
+		Label: "📚 Select a category of integrations",
+		Items: categories,
+		Size:  8,
+		Templates: &promptui.SelectTemplates{
+			Label:    "{{ . }}",
+			Active:   "👉 {{ . | underline }}",
+			Inactive: "   {{ . }}",
+			Selected: "🎯 Selected: {{ . }}",
+		},
+	}
+
+	_, selectedCategory, err := categoryPrompt.Run()
 	if err != nil {
-		fmt.Printf("Prompt failed %v\n", err)
+		fmt.Printf("Prompt failed: %v\n", err)
 		return
 	}
 
-	configureIntegration(result, hostname)
+	// Now list integrations under that category with numbers
+	integrations := categorizedIntegrations[selectedCategory]
+	numberedItems := make([]string, len(integrations))
+	for i, val := range integrations {
+		numberedItems[i] = fmt.Sprintf("%d. %s", i+1, val)
+	}
+
+	integrationPrompt := promptui.Select{
+		Label: fmt.Sprintf("🔧 Choose a service in '%s'", selectedCategory),
+		Items: numberedItems,
+		Templates: &promptui.SelectTemplates{
+			Label:    "{{ . }}",
+			Active:   "👉 {{ . | underline }}",
+			Inactive: "   {{ . }}",
+			Selected: "🎉 Selected: {{ . }}",
+		},
+		Size: 10,
+	}
+
+	idx, _, err := integrationPrompt.Run()
+	if err != nil {
+		fmt.Printf("Prompt failed: %v\n", err)
+		return
+	}
+
+	// Use the raw integration name (without the number)
+	selectedIntegration := integrations[idx]
+	configureIntegration(selectedIntegration, hostname)
 }
 
 var agentVersion = "0.0.1"

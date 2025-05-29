@@ -7,7 +7,7 @@ var Integrations = []string{
 	"PagerDuty",
 	"Slack",
 	"Postgres",
-	"MongoDb",
+	"MongoDB",
 	"Journald",
 	"MySQL",
 	"MariaDB",

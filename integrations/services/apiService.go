@@ -10,35 +10,30 @@ import (
 	"time"
 )
 
-// Send Postgres config using auth data
-func SendPostgresConfigToAPI(baseURL, filePath, hostID string, authData *CaptureAuthData) {
+func SendIntegrationConfigToAPI(baseURL, filePath, hostID string, authData *CaptureAuthData, configKey string) {
 	const (
 		timeZone  = "Asia/Kolkata"
 		offset    = "+0530"
 		sessionID = "4Vn39yx"
 	)
 
-	// Directly define the config payload as expected by backend
 	configPayload := map[string]interface{}{
 		"linux": map[string]interface{}{
 			"agent_restart_status": true,
-			"postgres_config": map[string]string{
+			configKey: map[string]string{
 				"path": filePath,
 			},
 		},
 	}
 
-	// Marshal full Payload.Config to JSON
 	rawConfigJSON, err := json.Marshal(configPayload)
 	if err != nil {
 		fmt.Printf("❌ Failed to marshal config: %v\n", err)
 		return
 	}
 
-	// Base64 encode the config
 	encodedConfig := base64.StdEncoding.EncodeToString(rawConfigJSON)
 
-	// Wrap it inside { "value": "<base64_string>" }
 	finalPayload := map[string]string{
 		"value": encodedConfig,
 	}
@@ -49,17 +44,14 @@ func SendPostgresConfigToAPI(baseURL, filePath, hostID string, authData *Capture
 		return
 	}
 
-	// Construct final URL using account/project IDs
 	url := fmt.Sprintf("%s/agent/setting/withoutAuth/%s/%d/%d", baseURL, hostID, authData.AccountId, authData.ProjectId)
 
-	// Make POST request
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(finalJSON))
 	if err != nil {
 		fmt.Printf("❌ Failed to create request: %v\n", err)
 		return
 	}
 
-	// Set required headers
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("CLIENT_TIME_ZONE", timeZone)
 	req.Header.Set("CLIENT_TIME_ZONE_OFFSET", offset)
@@ -79,28 +71,12 @@ func SendPostgresConfigToAPI(baseURL, filePath, hostID string, authData *Capture
 		return
 	}
 
-	// Parse and verify response
-	var parsedResp struct {
-		Setting struct {
-			Config struct {
-				Linux struct {
-					PostgresConfig struct {
-						Path string `json:"path"`
-					} `json:"postgres_config"`
-				} `json:"linux"`
-			} `json:"config"`
-		} `json:"setting"`
-		Status bool `json:"status"`
-	}
-
+	var parsedResp map[string]interface{}
 	if err := json.Unmarshal(body, &parsedResp); err != nil {
 		fmt.Printf("❌ Failed to parse response JSON: %v\n", err)
 		return
 	}
 
-	if parsedResp.Status && parsedResp.Setting.Config.Linux.PostgresConfig.Path == filePath {
-		fmt.Println("✅ Postgres config path verified successfully in the DB.")
-	} else {
-		fmt.Println("⚠️ Config path was not stored correctly or response format changed.")
-	}
+	fmt.Println("📡 Configuration sent to middleware API")
+	fmt.Println()
 }
