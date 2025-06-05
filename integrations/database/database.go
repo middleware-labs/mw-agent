@@ -2,19 +2,13 @@ package database
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
-	"github.com/fatih/color"
 	"github.com/manifoldco/promptui"
 	"github.com/middleware-labs/mw-agent/integrations/services"
 	"github.com/middleware-labs/mw-agent/integrations/utils"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
-	"gopkg.in/yaml.v2"
 )
 
-func ConfigurePostgres(hostname string) {
+func ConfigurePostgres(hostname string, agentConfig utils.AgentConfig) {
 	fmt.Println("\nYou selected: Postgres")
 
 	endpoint, err := utils.PromptWithValidate("Enter Endpoint (e.g., localhost:5432)", utils.ValidateEndpoint, 0)
@@ -43,10 +37,10 @@ func ConfigurePostgres(hostname string) {
 		},
 	}
 
-	saveAndSendConfig("postgres", config, hostname)
+	services.SaveAndSendConfig("postgres", config, hostname, agentConfig)
 }
 
-func ConfigureMongoDB(hostname string) {
+func ConfigureMongoDB(hostname string, agentConfig utils.AgentConfig) {
 	fmt.Println("\nYou selected: MongoDB")
 
 	var endpoints []map[string]string
@@ -101,10 +95,10 @@ func ConfigureMongoDB(hostname string) {
 		},
 	}
 
-	saveAndSendConfig("mongodb", config, hostname)
+	services.SaveAndSendConfig("mongodb", config, hostname, agentConfig)
 }
 
-func ConfigureOracleDB(hostname string) {
+func ConfigureOracleDB(hostname string, agentConfig utils.AgentConfig) {
 	fmt.Println("\nYou selected: OracleDB")
 
 	endpoint, err := utils.PromptWithValidate("Enter Endpoint (e.g., localhost:1521)", utils.ValidateEndpoint, 0)
@@ -133,10 +127,10 @@ func ConfigureOracleDB(hostname string) {
 		},
 	}
 
-	saveAndSendConfig("oracledb", config, hostname)
+	services.SaveAndSendConfig("oracledb", config, hostname, agentConfig)
 }
 
-func ConfigureMySQL(hostname string) {
+func ConfigureMySQL(hostname string, agentConfig utils.AgentConfig) {
 	fmt.Println("\nYou selected: MySQL")
 
 	endpoint, err := utils.PromptWithValidate("🔌 Enter Endpoint (e.g., localhost:3306)", utils.ValidateEndpoint, 0)
@@ -165,10 +159,10 @@ func ConfigureMySQL(hostname string) {
 		},
 	}
 
-	saveAndSendConfig("mysql", config, hostname)
+	services.SaveAndSendConfig("mysql", config, hostname, agentConfig)
 }
 
-func ConfigureRedis(hostname string) {
+func ConfigureRedis(hostname string, agentConfig utils.AgentConfig) {
 	fmt.Println("\nYou selected: Redis")
 
 	endpoint, err := utils.PromptWithValidate("Enter Redis Endpoint (e.g., localhost:6379)", utils.ValidateEndpoint, 0)
@@ -183,10 +177,10 @@ func ConfigureRedis(hostname string) {
 		},
 	}
 
-	saveAndSendConfig("redis", config, hostname)
+	services.SaveAndSendConfig("redis", config, hostname, agentConfig)
 }
 
-func ConfigureMariaDB(hostname string) {
+func ConfigureMariaDB(hostname string, agentConfig utils.AgentConfig) {
 	fmt.Println("\nYou selected: MariaDB")
 
 	endpoint, err := utils.PromptWithValidate("Enter Endpoint (e.g., localhost:3306)", utils.ValidateEndpoint, 0)
@@ -215,10 +209,10 @@ func ConfigureMariaDB(hostname string) {
 		},
 	}
 
-	saveAndSendConfig("mariadb", config, hostname)
+	services.SaveAndSendConfig("mariadb", config, hostname, agentConfig)
 }
 
-func ConfigureElasticSearch(hostname string) {
+func ConfigureElasticSearch(hostname string, agentConfig utils.AgentConfig) {
 	fmt.Println("\nYou selected: ElasticSearch")
 
 	endpoint, err := utils.PromptWithValidate("Enter Endpoint (e.g., http://localhost:9200)", utils.ValidateEndpoint, 0)
@@ -247,52 +241,5 @@ func ConfigureElasticSearch(hostname string) {
 		},
 	}
 
-	saveAndSendConfig("elasticsearch", config, hostname)
-}
-
-func saveAndSendConfig(integration string, config interface{}, hostname string) {
-	yamlData, err := yaml.Marshal(config)
-	if err != nil {
-		fmt.Printf("Failed to marshal YAML: %v\n", err)
-		return
-	}
-
-	baseDir := "/etc/mw-agent/integrations"
-	err = os.MkdirAll(baseDir, 0755)
-	if err != nil {
-		if os.IsPermission(err) {
-			fmt.Println("❌ Permission denied. Please run this command with sudo:")
-			fmt.Println("   sudo mw-agent integration")
-		} else {
-			fmt.Printf("Failed to create directories: %v\n", err)
-		}
-		return
-	}
-
-	filePath := filepath.Join(baseDir, integration+".yaml")
-	err = os.WriteFile(filePath, yamlData, 0644)
-	if err != nil {
-		fmt.Printf("Failed to write config file: %v\n", err)
-		return
-	}
-
-	fmt.Println()
-	fmt.Printf("🎉 %s configuration completed!\n", cases.Title(language.English).String(integration))
-	fmt.Printf("📁 File saved at: %s", filePath)
-
-	baseURL := ""      // TODO: Add the base URL of your API (Local or Deployed)
-	accountToken := "" // TODO: API key for authentication
-
-	authData, err := services.FetchAuthData(baseURL, hostname, accountToken)
-	if err != nil {
-		fmt.Printf("❌ Auth fetch error: %v\n", err)
-		return
-	}
-
-	services.SendIntegrationConfigToAPI(baseURL, filePath, hostname, authData, integration+"_config")
-
-	fmt.Println("──────────────────────────────────────────────")
-	color.Green("✅ Setup complete! You may now monitor %s.", cases.Title(language.English).String(integration))
-	fmt.Println("──────────────────────────────────────────────")
-
+	services.SaveAndSendConfig("elasticsearch", config, hostname, agentConfig)
 }

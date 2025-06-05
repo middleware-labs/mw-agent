@@ -6,11 +6,76 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"net/url"
+	"os"
+	"path/filepath"
 	"time"
+
+	"github.com/fatih/color"
+	"github.com/middleware-labs/mw-agent/integrations/utils"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+	"gopkg.in/yaml.v2"
 )
 
-func SendIntegrationConfigToAPI(baseURL, filePath, hostID string, authData *CaptureAuthData, configKey string) {
+func SaveAndSendConfig(integration string, config interface{}, hostname string, agentConfig utils.AgentConfig) {
+	yamlData, err := yaml.Marshal(config)
+	if err != nil {
+		fmt.Printf("Failed to marshal YAML: %v\n", err)
+		return
+	}
+
+	baseDir := "/etc/mw-agent/integrations"
+	err = os.MkdirAll(baseDir, 0755)
+	if err != nil {
+		if os.IsPermission(err) {
+			fmt.Println("❌ Permission denied. Please run this command with sudo:")
+			fmt.Println("   sudo mw-agent integration")
+		} else {
+			fmt.Printf("Failed to create directories: %v\n", err)
+		}
+		return
+	}
+
+	filePath := filepath.Join(baseDir, integration+".yaml")
+	err = os.WriteFile(filePath, yamlData, 0644)
+	if err != nil {
+		fmt.Printf("Failed to write config file: %v\n", err)
+		return
+	}
+
+	fmt.Println()
+	fmt.Printf("🎉 %s configuration completed!\n", cases.Title(language.English).String(integration))
+	fmt.Printf("📁 File saved at: %s", filePath)
+
+	u, err := url.Parse(agentConfig.Target)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if u.Scheme == "https" && u.Port() == "443" {
+		u.Host = u.Hostname() // remove the port
+	}
+
+	baseURL := fmt.Sprintf("%s/api/v1", u.String())
+	accountToken := agentConfig.APIKey
+
+	authData, err := FetchAuthData(baseURL, hostname, accountToken)
+	if err != nil {
+		fmt.Printf("❌ Auth fetch error: %v\n", err)
+		return
+	}
+
+	sendIntegrationConfigToAPI(baseURL, filePath, hostname, authData, integration+"_config")
+
+	fmt.Println("──────────────────────────────────────────────")
+	color.Green("✅ Setup complete! You may now monitor %s.", cases.Title(language.English).String(integration))
+	fmt.Println("──────────────────────────────────────────────")
+
+}
+
+func sendIntegrationConfigToAPI(baseURL, filePath, hostID string, authData *CaptureAuthData, configKey string) {
 	const (
 		timeZone  = "Asia/Kolkata"
 		offset    = "+0530"
@@ -44,7 +109,7 @@ func SendIntegrationConfigToAPI(baseURL, filePath, hostID string, authData *Capt
 		return
 	}
 
-	url := fmt.Sprintf("%s/agent/setting/withoutAuth/%s/%d/%d", baseURL, hostID, authData.AccountId, authData.ProjectId)
+	url := fmt.Sprintf("%s/agent/setting/by-identity/%s/%d/%d", baseURL, hostID, authData.AccountId, authData.ProjectId)
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(finalJSON))
 	if err != nil {
