@@ -746,6 +746,8 @@ github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsr
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.91.1-0.20250604125145-b398bbf6ae75/go.mod h1:iu8i9ZtbBldSKLrE9R1cMgK1zQU1T/Tfob4oqvHautE=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.91.1-0.20250604125145-b398bbf6ae75 h1:cyTLX921y1Vmqp8g+5CM6l0ztMyY6/zt+8QL9MMXwpU=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.91.1-0.20250604125145-b398bbf6ae75/go.mod h1:vI4gD0nHNVIUTdCNCLtbbvKWzGgyDE78KcunC3XnssA=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver v0.91.1-0.20250623131108-c615c621ff05 h1:n7oMz+n1yDgs1mkZ5dHyJ3z9BW64W9g9SftCv/S6PN8=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver v0.91.1-0.20250623131108-c615c621ff05/go.mod h1:Q7UJS9QVZuIAAxm8Wr7sT1vBd0UCb3KbyYm8qN1/zQA=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kafkametricsreceiver v0.91.1-0.20250604125145-b398bbf6ae75 h1:Vr1tG9gwvBlbQLCmMq1GlTW3QO+E3BQ0H07dx9IRaDw=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kafkametricsreceiver v0.91.1-0.20250604125145-b398bbf6ae75/go.mod h1:yY/um2oCCzdz/V+m1B9nia9enX8n0Rb1rxkMkVpr5sA=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.91.1-0.20250604125145-b398bbf6ae75 h1:kS+DdaP06KkwBc15054ph27gyV24jIge1JLzUrz1KWk=
@@ -944,8 +946,6 @@ github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldrecei
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.115.0/go.mod h1:hJCaM2G/MpJgKj5fFeIraCHwL3RDkYIVKBs9M2UoIvk=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.115.0 h1:FUp7wZTVVGn+V6DY4Q3CkZ+N//JsZbr6SXjQDVvrvpk=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver v0.115.0/go.mod h1:X+34A3gZbL4tXOYd25nLZdJKIUwSps8CWO1LLvSs/ek=
-github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver v0.115.0 h1:gzMAs+a9u9+CFtCVUEITmcU076/A3cXbaSHYhWOVurc=
-github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver v0.115.0/go.mod h1:Q7UJS9QVZuIAAxm8Wr7sT1vBd0UCb3KbyYm8qN1/zQA=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver v0.115.0 h1:gW7t6xiYvK97I8wO/TGMvEkxrXR1Dqy3HhFhTgivg7A=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver v0.115.0/go.mod h1:L4oKND8S/VVv/MLVOFuvzOA3KUgI7Zpm7AzRub8SYac=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver v0.115.0 h1:EThnE3bnp2H5k11yn3BGis2/WMni+1fD/DTigHb5TAQ=
