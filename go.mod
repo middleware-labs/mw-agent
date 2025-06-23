@@ -34,6 +34,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlse
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/nginxreceiver v0.91.1-0.20250604125145-b398bbf6ae75
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver v0.91.1-0.20250623131108-c615c621ff05
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor => github.com/middleware-labs/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.91.1-0.20250604125145-b398bbf6ae75
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders => github.com/middleware-labs/opentelemetry-collector-contrib/internal/metadataproviders v0.91.1-0.20250604125145-b398bbf6ae75
