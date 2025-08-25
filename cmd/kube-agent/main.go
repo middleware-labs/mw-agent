@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
 
 	"github.com/middleware-labs/mw-agent/pkg/agent"
+	"github.com/middleware-labs/synthetics-agent/pkg/worker"
 	"github.com/prometheus/common/version"
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
@@ -152,6 +154,14 @@ func getFlags(cfg *agent.KubeConfig) []cli.Flag {
 			DefaultText: "false",
 			Value:       false,
 		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "agent-features.synthetic-monitoring",
+			Usage:       "Flag to enable or disable synthetic monitoring.",
+			EnvVars:     []string{"MW_AGENT_FEATURES_SYNTHETIC_MONITORING"},
+			Destination: &cfg.AgentFeatures.SyntheticMonitoring,
+			DefaultText: "false",
+			Value:       false, // synthetic monitoring is disabled by default
+		}),
 
 		&cli.StringFlag{
 			Name:    "config-file",
@@ -268,6 +278,39 @@ func main() {
 						Factories:              func() (otelcol.Factories, error) { return kubeAgent.GetFactories(ctx) },
 						ConfigProviderSettings: configProviderSetting,
 					}
+
+					if cfg.AgentFeatures.SyntheticMonitoring {
+						config := worker.Config{
+							Mode:                worker.ModeAgent,
+							Token:               cfg.APIKey,
+							NCAPassword:         cfg.APIKey,
+							Hostname:            os.Getenv("MW_KUBE_CLUSTER_NAME"),
+							PulsarHost:          cfg.APIURLForSyntheticMonitoring,
+							Location:            os.Getenv("MW_KUBE_CLUSTER_NAME"),
+							UnsubscribeEndpoint: cfg.Target + "/api/v1/synthetics/unsubscribe",
+							CaptureEndpoint:     cfg.Target + "/v1/metrics",
+						}
+
+						logger.Info("starting synthetic worker: ", zap.String("hostname", os.Getenv("MW_KUBE_CLUSTER_NAME")))
+						syntheticWorker, err := worker.New(&config)
+						if err != nil {
+							logger.Error("Failed to create worker")
+						}
+
+						go func(ctx context.Context) {
+							for {
+								select {
+								case <-ctx.Done():
+									fmt.Println("Turning off the synthetic monitoring...")
+									return
+								default:
+									syntheticWorker.Run()
+								}
+							}
+						}(ctx)
+
+					}
+
 					collector, _ := otelcol.NewCollector(settings)
 					if err := collector.Run(context.Background()); err != nil {
 						logger.Error("collector server run finished with error", zap.Error(err))
