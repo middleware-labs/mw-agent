@@ -29,6 +29,10 @@ RUN CGO_ENABLED=0 go build -ldflags "-s -w -X main.agentVersion=${AGENT_VERSION}
 # Stage 2: Production Stage
 FROM ubuntu:24.04 AS prod
 RUN apt-get update && apt-get install -y systemd
+RUN apt-get update && apt-get install -y curl
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+RUN install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+RUN rm kubectl
 RUN rm -fr /var/lib/apt/lists/*
 WORKDIR /app
 # Copy necessary files from the build stage
