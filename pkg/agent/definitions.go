@@ -345,6 +345,7 @@ func GetAPIURLForSyntheticMonitoring(target string) (string, error) {
 
 	// Build the WebSocket URL
 	webSocketURL := "wss://" + trimmedURL + "/plsrws/v2"
+	fmt.Println("webSocketURL", webSocketURL)
 	return webSocketURL, nil
 }
 

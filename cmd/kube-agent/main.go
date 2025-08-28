@@ -154,6 +154,14 @@ func getFlags(cfg *agent.KubeConfig) []cli.Flag {
 			DefaultText: "false",
 			Value:       false,
 		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "api-url-for-synthetic-monitoring",
+			EnvVars:     []string{"MW_API_URL_FOR_SYNTHETIC_MONITORING"},
+			Destination: &cfg.APIURLForSyntheticMonitoring,
+			DefaultText: "wss://app.middleware.io/plsrws/v2",
+			Value:       "wss://app.middleware.io/plsrws/v2",
+			Hidden:      true,
+		}),
 		altsrc.NewBoolFlag(&cli.BoolFlag{
 			Name:        "agent-features.synthetic-monitoring",
 			Usage:       "Flag to enable or disable synthetic monitoring.",
@@ -188,6 +196,7 @@ func getFlags(cfg *agent.KubeConfig) []cli.Flag {
 }
 
 func main() {
+	fmt.Println("Testing Changes ...")
 	var cfg agent.KubeConfig
 	flags := getFlags(&cfg)
 
@@ -279,6 +288,20 @@ func main() {
 						ConfigProviderSettings: configProviderSetting,
 					}
 
+					if cfg.APIURLForSyntheticMonitoring == "" {
+						var err error
+						cfg.APIURLForSyntheticMonitoring, err = agent.GetAPIURLForSyntheticMonitoring(cfg.Target)
+						// could not derive api url for synthetic monitoring from target
+						if err != nil {
+							logger.Info("could not derive api url for synthetic monitoring from target",
+								zap.String("target", cfg.Target))
+							return err
+						}
+
+						logger.Info("derived api url for synthetic monitoring",
+							zap.String("api-url-for-synthetic-monitoring", cfg.APIURLForSyntheticMonitoring))
+					}
+
 					if cfg.AgentFeatures.SyntheticMonitoring {
 						config := worker.Config{
 							Mode:                worker.ModeAgent,
@@ -287,7 +310,7 @@ func main() {
 							Hostname:            os.Getenv("MW_KUBE_CLUSTER_NAME"),
 							PulsarHost:          cfg.APIURLForSyntheticMonitoring,
 							Location:            os.Getenv("MW_KUBE_CLUSTER_NAME"),
-							UnsubscribeEndpoint: cfg.Target + "/api/v1/synthetics/unsubscribe",
+							UnsubscribeEndpoint: os.Getenv("UNSUBSCRIBE_ENDPOINT"),
 							CaptureEndpoint:     cfg.Target + "/v1/metrics",
 						}
 

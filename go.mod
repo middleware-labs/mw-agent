@@ -115,7 +115,7 @@ require (
 )
 
 require (
-	github.com/middleware-labs/synthetics-agent v1.0.54-beta-1
+	github.com/middleware-labs/synthetics-agent v1.0.54-beta-2
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.115.0

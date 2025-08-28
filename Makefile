@@ -1,4 +1,4 @@
-RELEASE_VERSION=0.0.0
+RELEASE_VERSION=1.15.0
 LD_FLAGS="-s -w -X main.agentVersion=${RELEASE_VERSION}"
 build-windows:
 	GOOS=windows CGO_ENABLED=0 go build -ldflags=${LD_FLAGS} -o build/mw-windows-agent.exe cmd/host-agent/main.go
