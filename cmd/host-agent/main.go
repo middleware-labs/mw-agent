@@ -223,6 +223,14 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			Value:       false, // synthetic monitoring is disabled by default
 		}),
 		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "agent-features.opsai-autofix",
+			Usage:       "Flag to enable or disable OpsAI Pulsar Connection.",
+			EnvVars:     []string{"MW_AGENT_FEATURES_OPSAI_AUTOFIX"},
+			Destination: &cfg.AgentFeatures.OpsAIAutoFix,
+			DefaultText: "false",
+			Value:       false, // synthetic monitoring is disabled by default
+		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
 			Name:        "agent-self-profiling",
 			Usage:       "For Profiling MW Agent itself.",
 			EnvVars:     []string{"MW_AGENT_SELF_PROFILING"},
@@ -533,6 +541,7 @@ func main() {
 						config := worker.Config{
 							Mode:                worker.ModeAgent,
 							Token:               cfg.APIKey,
+							NCAPassword:         cfg.APIKey,
 							Hostname:            hostname,
 							PulsarHost:          cfg.APIURLForSyntheticMonitoring,
 							Location:            hostname,
@@ -554,6 +563,38 @@ func main() {
 									return
 								default:
 									syntheticWorker.Run()
+								}
+							}
+						}(ctx)
+
+					}
+
+					if cfg.AgentFeatures.OpsAIAutoFix {
+						config := worker.Config{
+							Mode:                worker.ModeMCP,
+							Token:               cfg.APIKey,
+							NCAPassword:         cfg.APIKey,
+							Hostname:            hostname,
+							PulsarHost:          cfg.APIURLForSyntheticMonitoring,
+							Location:            hostname,
+							UnsubscribeEndpoint: cfg.Target + "/api/v1/synthetics/unsubscribe",
+							CaptureEndpoint:     cfg.Target + "/v1/metrics",
+						}
+
+						logger.Info("starting opsai worker: ", zap.String("hostname", hostname))
+						opsaiWorker, err := worker.New(&config)
+						if err != nil {
+							logger.Error("Failed to create worker")
+						}
+
+						go func(ctx context.Context) {
+							for {
+								select {
+								case <-ctx.Done():
+									fmt.Println("Turning off the opsai monitoring...")
+									return
+								default:
+									opsaiWorker.Run()
 								}
 							}
 						}(ctx)

@@ -170,6 +170,14 @@ func getFlags(cfg *agent.KubeConfig) []cli.Flag {
 			DefaultText: "false",
 			Value:       false, // synthetic monitoring is disabled by default
 		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "agent-features.opsai-autofix",
+			Usage:       "Flag to enable or disable OpsAI Pulsar Connection.",
+			EnvVars:     []string{"MW_AGENT_FEATURES_OPSAI_AUTOFIX"},
+			Destination: &cfg.AgentFeatures.OpsAIAutoFix,
+			DefaultText: "false",
+			Value:       false, // synthetic monitoring is disabled by default
+		}),
 
 		&cli.StringFlag{
 			Name:    "config-file",
@@ -328,6 +336,38 @@ func main() {
 									return
 								default:
 									syntheticWorker.Run()
+								}
+							}
+						}(ctx)
+
+					}
+
+					if cfg.AgentFeatures.OpsAIAutoFix {
+						config := worker.Config{
+							Mode:                worker.ModeMCP,
+							Token:               cfg.APIKey,
+							NCAPassword:         cfg.APIKey,
+							Hostname:            os.Getenv("MW_KUBE_CLUSTER_NAME"),
+							PulsarHost:          cfg.APIURLForSyntheticMonitoring,
+							Location:            os.Getenv("MW_KUBE_CLUSTER_NAME"),
+							UnsubscribeEndpoint: os.Getenv("UNSUBSCRIBE_ENDPOINT"),
+							CaptureEndpoint:     cfg.Target + "/v1/metrics",
+						}
+
+						logger.Info("starting opsai worker: ", zap.String("hostname", os.Getenv("MW_KUBE_CLUSTER_NAME")))
+						opsaiWorker, err := worker.New(&config)
+						if err != nil {
+							logger.Error("Failed to create worker")
+						}
+
+						go func(ctx context.Context) {
+							for {
+								select {
+								case <-ctx.Done():
+									fmt.Println("Turning off the synthetic monitoring...")
+									return
+								default:
+									opsaiWorker.Run()
 								}
 							}
 						}(ctx)

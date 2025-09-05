@@ -78,6 +78,7 @@ type AgentFeatures struct {
 	MetricCollection    bool
 	LogCollection       bool
 	SyntheticMonitoring bool
+	OpsAIAutoFix        bool
 }
 
 // BaseConfig stores general configuration for all agent types

@@ -486,8 +486,6 @@ github.com/google/pprof v0.0.0-20240711041743-f6c9dda6c6da/go.mod h1:K1liHPHnj73
 github.com/google/renameio v0.1.0/go.mod h1:KWCgfxg9yswjAJkECMjeO8J8rahYeXnNhOm40UhjYkI=
 github.com/google/s2a-go v0.1.7 h1:60BLSyTrOV4/haCDW4zb1guZItoSq8foHCXrAnjBo/o=
 github.com/google/s2a-go v0.1.7/go.mod h1:50CgR4k1jNlWBu4UfS4AcfhVe1r6pdZPygJ3R8F0Qdw=
-github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 h1:El6M4kTTCOh6aBiKaUGG7oYTSPP8MxqL4YI3kZKwcP4=
-github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510/go.mod h1:pupxD2MaaD3pAXIBCelhxNneeOaAeabZDe5s4K6zSpQ=
 github.com/google/uuid v1.1.1/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/google/uuid v1.1.2/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
@@ -766,8 +764,8 @@ github.com/middleware-labs/opentelemetry-collector-contrib/receiver/rabbitmqrece
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/rabbitmqreceiver v0.91.1-0.20250604125145-b398bbf6ae75/go.mod h1:HHG6YOBUjzg4BRHpWXMDsFFvxDG9PpnoNBnZrSMBCy4=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/sqlserverreceiver v0.91.1-0.20250604125145-b398bbf6ae75 h1:Tw2uylAk8c3Zdxx36btqgP6tNqoe8JOoVbVDJsHaMg0=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/sqlserverreceiver v0.91.1-0.20250604125145-b398bbf6ae75/go.mod h1:3I7HyGRgDTikd6s2r02YNJVVLY5I/cq0EU00zgpCPCU=
-github.com/middleware-labs/synthetics-agent v1.0.54-beta-2 h1:FDyAVmTvcQFnXRswLXv9T+YICJ85FpK8hbzuS7jTE1c=
-github.com/middleware-labs/synthetics-agent v1.0.54-beta-2/go.mod h1:3RnnYz4vBzWzux0l7LvTIxNG3wczIYIl4oVsB1Hh5RQ=
+github.com/middleware-labs/synthetics-agent v1.0.54-beta-4 h1:yb5n/MeIu9Pq/owZoKU4V4I2lHMuvd2ljg+DvIc68ks=
+github.com/middleware-labs/synthetics-agent v1.0.54-beta-4/go.mod h1:leFEdEaCFzG3EGpO5QRvEMKqgGs0+m/vsiv4a31zuag=
 github.com/miekg/dns v1.1.26/go.mod h1:bPDLeHnStXmXAq1m/Ch/hvfNHr14JKNPMBo3VZKjuso=
 github.com/miekg/dns v1.1.41/go.mod h1:p6aan82bvRIyn+zDIv9xYNUpwa73JcSh9BKwknJysuI=
 github.com/miekg/dns v1.1.61 h1:nLxbwF3XxhwVSm8g9Dghm9MHPaUZuqhPiGL+675ZmEs=
