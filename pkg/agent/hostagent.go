@@ -350,7 +350,7 @@ func (c *HostAgent) updateConfig(config map[string]interface{}, cnf integrationC
 func (c *HostAgent) updateConfigFile(configType string) error {
 	// _, apiURLForYAML := checkForConfigURLOverrides()
 
-	hostname := getHostname()
+	hostname := GetHostnameForPlatform(c.InfraPlatform)
 
 	// Call Webhook
 	u, err := url.Parse(c.APIURLForConfigCheck)
@@ -556,7 +556,7 @@ func (c *HostAgent) checkIntConfigValidity(integrationType IntegrationType, cnf 
 func (c *HostAgent) callRestartStatusAPI() error {
 
 	// apiURLForRestart, _ := checkForConfigURLOverrides()
-	hostname := getHostname()
+	hostname := GetHostnameForPlatform(c.InfraPlatform)
 	u, err := url.Parse(c.APIURLForConfigCheck)
 	if err != nil {
 		return err
@@ -642,7 +642,7 @@ func (c *HostAgent) ListenForConfigChanges(errCh chan<- error,
 
 func (c *HostAgent) UpdateAgentTrackStatus(reason error) error {
 	c.logger.Info("Starting UpdateAgentTrackStatus")
-	hostname := getHostname()
+	hostname := GetHostnameForPlatform(c.InfraPlatform)
 	u, err := url.Parse(c.APIURLForConfigCheck)
 	if err != nil {
 		return err

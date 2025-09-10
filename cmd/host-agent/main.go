@@ -347,6 +347,11 @@ func detectInfraPlatform() agent.InfraPlatform {
 		return agent.InfraPlatformCycleIO
 	}
 
+	// Check if running on EC2 (but not ECS)
+	if agent.IsEC2Instance() {
+		return agent.InfraPlatformEC2
+	}
+
 	return agent.InfraPlatformInstance
 }
 
@@ -436,11 +441,10 @@ func main() {
 
 					infraPlatform := detectInfraPlatform()
 
-					hostname, err := os.Hostname()
-					if err != nil {
-						logger.Error("error getting hostname", zap.Error(err))
-						hostname = "unknown"
-					}
+					var hostname string
+
+					// Get hostname based on infrastructure platform
+					hostname = agent.GetHostnameForPlatform(infraPlatform)
 
 					logger.Info("starting host agent",
 						zap.String("agent location", execPath),
