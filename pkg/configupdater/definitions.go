@@ -37,6 +37,8 @@ var (
 	InfraPlatformECSFargate InfraPlatform = 3
 	// InfraPlatformCycleIO is for Cycle.io platform
 	InfraPlatformCycleIO InfraPlatform = 4
+	// InfraPlatformEC2 is for AWS EC2 platform
+	InfraPlatformEC2 InfraPlatform = 5
 )
 
 func (p InfraPlatform) String() string {
@@ -51,6 +53,8 @@ func (p InfraPlatform) String() string {
 		return "ecsfargate"
 	case InfraPlatformCycleIO:
 		return "cycleio"
+	case InfraPlatformEC2:
+		return "ec2"
 	}
 	return "unknown"
 }

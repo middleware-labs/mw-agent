@@ -3,10 +3,13 @@ package agent
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/fs"
+	"net/http"
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/grafana/pyroscope-go"
 	"go.opentelemetry.io/collector/otelcol"
@@ -49,6 +52,8 @@ var (
 	InfraPlatformECSFargate InfraPlatform = 3
 	// InfraPlatformCycleIO is for Cycle.io platform
 	InfraPlatformCycleIO InfraPlatform = 4
+	// InfraPlatformEC2 is for AWS EC2 platform
+	InfraPlatformEC2 InfraPlatform = 5
 )
 
 func (p InfraPlatform) String() string {
@@ -63,6 +68,8 @@ func (p InfraPlatform) String() string {
 		return "ecsfargate"
 	case InfraPlatformCycleIO:
 		return "cycleio"
+	case InfraPlatformEC2:
+		return "ec2"
 	}
 	return "unknown"
 }
@@ -207,12 +214,105 @@ func isSocket(path string) bool {
 
 var isSocketFn = isSocket
 
+// getIMDSv2Token retrieves an IMDSv2 token for AWS EC2 metadata service
+func getIMDSv2Token() (string, error) {
+	client := &http.Client{
+		Timeout: 2 * time.Second,
+	}
+
+	tokenURL := "http://169.254.169.254/latest/api/token"
+	req, err := http.NewRequest("PUT", tokenURL, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("X-aws-ec2-metadata-token-ttl-seconds", "21600")
+
+	tokenResp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer tokenResp.Body.Close()
+
+	if tokenResp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to get IMDSv2 token, status: %d", tokenResp.StatusCode)
+	}
+
+	tokenBytes, err := io.ReadAll(tokenResp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(tokenBytes), nil
+}
+
+// getEC2Metadata retrieves metadata from AWS EC2 metadata service using IMDSv2
+func getEC2Metadata(metadataPath string) (string, error) {
+	token, err := getIMDSv2Token()
+	if err != nil {
+		return "", err
+	}
+
+	client := &http.Client{
+		Timeout: 2 * time.Second,
+	}
+
+	metadataURL := "http://169.254.169.254/latest/meta-data/" + metadataPath
+	req, err := http.NewRequest("GET", metadataURL, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("X-aws-ec2-metadata-token", token)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to get EC2 metadata from %s, status: %d", metadataPath, resp.StatusCode)
+	}
+
+	metadataBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(metadataBytes), nil
+}
+
+// isEC2Instance checks if the current instance is running on AWS EC2
+// by attempting to contact the AWS Instance Metadata Service (IMDS) v2
+func IsEC2Instance() bool {
+	_, err := getEC2Metadata("instance-id")
+	return err == nil
+}
+
+// getEC2Hostname retrieves the internal hostname/FQDN from AWS EC2 metadata service
+func getEC2Hostname() (string, error) {
+	return getEC2Metadata("local-hostname")
+}
+
 func getHostname() string {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return ""
 	}
 	return hostname
+}
+
+// GetHostnameForPlatform returns hostname based on the infra platform
+func GetHostnameForPlatform(infraPlatform InfraPlatform) string {
+	// Get EC2 full hostname when running on EC2, otherwise use system hostname
+	if infraPlatform == InfraPlatformEC2 {
+		hostname, err := getEC2Hostname()
+		if err != nil {
+			// Fall back to system hostname if EC2 hostname retrieval fails
+			return getHostname()
+		}
+		return hostname
+	}
+	return getHostname()
 }
 
 func GetAPIURLForConfigCheck(target string) (string, error) {
