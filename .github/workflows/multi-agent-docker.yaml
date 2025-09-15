@@ -1,4 +1,4 @@
-name: Kube Agent - Docker
+name: Multi Agent Docker Build & Push - Kube Agent + OpsAI + Synthetics
 
 on:
   workflow_dispatch:
@@ -17,9 +17,24 @@ on:
       - '[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
-  push_to_docker_registry:
-    name: Build & Push Docker Image for K8s Agent
+  build_and_push:
+    name: Build & Push Docker Images (Matrix)
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        agent:
+          - name: kube-agent
+            binary: mw-kube-agent
+            dockerfile: Dockerfiles/DockerfileKube.base
+            image: ghcr.io/middleware-labs/mw-kube-agent
+          - name: opsai
+            binary: mw-opsai
+            dockerfile: Dockerfiles/DockerfileKube.base
+            image: ghcr.io/middleware-labs/mw-opsai
+          - name: synthetics
+            binary: mw-synthetics
+            dockerfile: Dockerfiles/DockerfileKube.base
+            image: ghcr.io/middleware-labs/mw-synthetics
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -38,7 +53,7 @@ jobs:
             ~/.cache/go-build
             ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
@@ -50,14 +65,14 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_TOKEN }} # Consists Github Personal Access Token
+          password: ${{ secrets.GHCR_TOKEN }}
 
       - name: Extract Metadata
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ghcr.io/middleware-labs/mw-kube-agent
-      
+          images: ${{ matrix.agent.image }}
+
       - name: Setting Release Number
         run: |
           if [ -n "${{ github.event.inputs.release_version }}" ]; then
@@ -65,7 +80,7 @@ jobs:
           else
             echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
           fi
-      
+
       - name: Setting Platforms
         id: set-platforms
         run: |
@@ -81,12 +96,12 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: ./
-          file: Dockerfiles/DockerfileKube
+          file: ${{ matrix.agent.dockerfile }}
           push: true
           platforms: ${{ env.PLATFORMS }}
           build-args: |
             AGENT_VERSION=${{ env.RELEASE_VERSION }}
             GITHUB_TOKEN=${{ secrets.GHCR_TOKEN }}
-          tags: | 
-            ghcr.io/middleware-labs/mw-kube-agent:${{ env.RELEASE_VERSION }}
-            ghcr.io/middleware-labs/agent-kube-go:${{ env.RELEASE_VERSION }}
+            APP_BINARY=${{ matrix.agent.binary }}
+          tags: |
+            ${{ matrix.agent.image }}:${{ env.RELEASE_VERSION }}

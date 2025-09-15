@@ -2,27 +2,19 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
 
 	"github.com/middleware-labs/mw-agent/pkg/agent"
-	"github.com/prometheus/common/version"
+	"github.com/middleware-labs/synthetics-agent/pkg/worker"
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
-
-	"go.opentelemetry.io/collector/confmap/provider/envprovider"
-	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
-	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
-	"go.opentelemetry.io/collector/otelcol"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
-
-var agentVersion = "0.0.1"
 
 func getFlags(cfg *agent.KubeConfig) []cli.Flag {
 	return []cli.Flag{
@@ -152,6 +144,30 @@ func getFlags(cfg *agent.KubeConfig) []cli.Flag {
 			DefaultText: "false",
 			Value:       false,
 		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "synthetic-monitoring.api-url",
+			EnvVars:     []string{"MW_SYNTHETIC_MONITORING_API_URL", "MW_API_URL_FOR_SYNTHETIC_MONITORING"},
+			Destination: &cfg.SyntheticMonitoring.ApiURL,
+			DefaultText: "wss://app.middleware.io/plsrws/v2",
+			Value:       "wss://app.middleware.io/plsrws/v2",
+			Hidden:      true,
+		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "synthetic-monitoring.unsubscribe-endpoint",
+			EnvVars:     []string{"MW_SYNTHETIC_MONITORING_UNSUBSCRIBE_ENDPOINT"},
+			Destination: &cfg.SyntheticMonitoring.UnsubscribeEndpoint,
+			DefaultText: "https://app.middleware.io/api/v1/synthetics/unsubscribe",
+			Value:       "https://app.middleware.io/api/v1/synthetics/unsubscribe",
+			Hidden:      true,
+		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "agent-features.synthetic-monitoring",
+			Usage:       "Flag to enable or disable synthetic monitoring.",
+			EnvVars:     []string{"MW_AGENT_FEATURES_SYNTHETIC_MONITORING"},
+			Destination: &cfg.AgentFeatures.SyntheticMonitoring,
+			DefaultText: "false",
+			Value:       false, // synthetic monitoring is disabled by default
+		}),
 
 		&cli.StringFlag{
 			Name:    "config-file",
@@ -220,10 +236,6 @@ func main() {
 						cancel()
 					}()
 
-					kubeAgent := agent.NewKubeAgent(cfg,
-						agent.WithKubeAgentLogger(logger),
-					)
-
 					// Set the infra platform to kubernetes for now since we don't need to differentiate between
 					// vanilla kubernetes and managed kubernetes.
 					cfg.InfraPlatform = agent.InfraPlatformKubernetes
@@ -242,130 +254,38 @@ func main() {
 					logger.Info("starting host agent with config",
 						zap.Stringer("config", cfg))
 
-					configProviderSetting := otelcol.ConfigProviderSettings{
-						ResolverSettings: confmap.ResolverSettings{
-							ProviderFactories: []confmap.ProviderFactory{
-								fileprovider.NewFactory(),
-								yamlprovider.NewFactory(),
-								envprovider.NewFactory(),
-							},
-							ConverterFactories: []confmap.ConverterFactory{
-								// expandconverter.NewFactory(),
-								//overwritepropertiesconverter.New(getSetFlag()),
-							},
-							URIs: []string{cfg.OtelConfigFile},
-						},
-					}
-
-					settings := otelcol.CollectorSettings{
-						DisableGracefulShutdown: true,
-						LoggingOptions:          []zap.Option{},
-						BuildInfo: component.BuildInfo{
-							Command:     "otelcontribcol",
-							Description: "OpenTelemetry Collector Contrib",
-							Version:     version.Version,
-						},
-						Factories:              func() (otelcol.Factories, error) { return kubeAgent.GetFactories(ctx) },
-						ConfigProviderSettings: configProviderSetting,
-					}
-					collector, _ := otelcol.NewCollector(settings)
-					if err := collector.Run(context.Background()); err != nil {
-						logger.Error("collector server run finished with error", zap.Error(err))
-						return err
-					}
-					return nil
-				},
-			},
-			{
-				Name:  "update",
-				Usage: "Watch for configuration updates and restart the agent when a change is detected",
-				Flags: flags,
-				Action: func(c *cli.Context) error {
-
-					if cfg.APIURLForConfigCheck == "" {
-						var err error
-						cfg.APIURLForConfigCheck, err = agent.GetAPIURLForConfigCheck(cfg.Target)
-						// could not derive api url for config check from target
-						if err != nil {
-							logger.Info("could not derive api url for config check from target",
-								zap.String("target", cfg.Target))
-							return err
+					if cfg.AgentFeatures.SyntheticMonitoring {
+						config := worker.Config{
+							Mode:                worker.ModeAgent,
+							Token:               cfg.APIKey,
+							NCAPassword:         cfg.APIKey,
+							Hostname:            os.Getenv("MW_KUBE_CLUSTER_NAME"),
+							PulsarHost:          cfg.SyntheticMonitoring.ApiURL,
+							Location:            os.Getenv("MW_KUBE_CLUSTER_NAME"),
+							UnsubscribeEndpoint: cfg.SyntheticMonitoring.UnsubscribeEndpoint,
+							CaptureEndpoint:     cfg.Target + "/v1/metrics",
 						}
 
-						logger.Info("derived api url for config check",
-							zap.String("api-url-for-config-check", cfg.APIURLForConfigCheck))
-					}
-
-					ctx, cancel := context.WithCancel(c.Context)
-					defer cancel()
-
-					mwNamespace := os.Getenv("MW_NAMESPACE")
-					if mwNamespace == "" {
-						mwNamespace = "mw-agent-ns"
-					}
-
-					kubeAgentMonitor := agent.NewKubeAgentMonitor(cfg,
-						agent.WithKubeAgentMonitorClusterName(os.Getenv("MW_KUBE_CLUSTER_NAME")),
-						agent.WithKubeAgentMonitorAgentNamespace(mwNamespace),
-						agent.WithKubeAgentMonitorDaemonset("mw-kube-agent"),
-						agent.WithKubeAgentMonitorDeployment("mw-kube-agent"),
-						agent.WithKubeAgentMonitorDaemonsetConfigMap("mw-daemonset-otel-config"),
-						agent.WithKubeAgentMonitorDeploymentConfigMap("mw-deployment-otel-config"),
-						agent.WithKubeAgentMonitorVersion(agentVersion),
-					)
-
-					err := kubeAgentMonitor.SetClientSet()
-					if err != nil {
-						logger.Error("collector server run finished with error", zap.Error(err))
-						return err
-					}
-					if cfg.ConfigCheckInterval != "0" {
-						err = kubeAgentMonitor.ListenForKubeOtelConfigChanges(ctx)
+						logger.Info("starting synthetics worker: ", zap.String("hostname", os.Getenv("MW_KUBE_CLUSTER_NAME")))
+						synWorker, err := worker.New(&config)
 						if err != nil {
-							logger.Info("error for listening for config changes", zap.Error(err))
-							return err
+							logger.Error("Failed to create worker")
 						}
+
+						go func(ctx context.Context) {
+							for {
+								select {
+								case <-ctx.Done():
+									fmt.Println("Turning off the synthetics agent...")
+									return
+								default:
+									synWorker.Run()
+								}
+							}
+						}(ctx)
+
 					}
 					return nil
-				},
-			},
-			{
-				Name:  "force-update-configmaps",
-				Usage: "Update the configmaps as per Server settings",
-				Flags: flags,
-				Action: func(c *cli.Context) error {
-
-					ctx, cancel := context.WithCancel(c.Context)
-					defer func() {
-						cancel()
-					}()
-
-					mwNamespace := os.Getenv("MW_NAMESPACE")
-					if mwNamespace == "" {
-						mwNamespace = "mw-agent-ns"
-					}
-
-					kubeAgentMonitor := agent.NewKubeAgentMonitor(cfg,
-						agent.WithKubeAgentMonitorClusterName(os.Getenv("MW_KUBE_CLUSTER_NAME")),
-						agent.WithKubeAgentMonitorAgentNamespace(mwNamespace),
-						agent.WithKubeAgentMonitorDaemonset("mw-kube-agent"),
-						agent.WithKubeAgentMonitorDeployment("mw-kube-agent"),
-						agent.WithKubeAgentMonitorDaemonsetConfigMap("mw-daemonset-otel-config"),
-						agent.WithKubeAgentMonitorDeploymentConfigMap("mw-deployment-otel-config"),
-						agent.WithKubeAgentMonitorVersion(agentVersion),
-					)
-
-					err := kubeAgentMonitor.SetClientSet()
-					if err != nil {
-						logger.Error("collector server run finished with error", zap.Error(err))
-						return err
-					}
-
-					kubeAgentMonitor.UpdateConfigMap(ctx, agent.Deployment)
-					kubeAgentMonitor.UpdateConfigMap(ctx, agent.DaemonSet)
-
-					return nil
-
 				},
 			},
 		},

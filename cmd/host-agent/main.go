@@ -151,9 +151,9 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			Hidden:      true,
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:        "api-url-for-synthetic-monitoring",
-			EnvVars:     []string{"MW_API_URL_FOR_SYNTHETIC_MONITORING"},
-			Destination: &cfg.APIURLForSyntheticMonitoring,
+			Name:        "synthetic-monitoring.api-url",
+			EnvVars:     []string{"MW_SYNTHETIC_MONITORING_API_URL", "MW_API_URL_FOR_SYNTHETIC_MONITORING"},
+			Destination: &cfg.SyntheticMonitoring.ApiURL,
 			DefaultText: "wss://app.middleware.io/plsrws/v2",
 			Value:       "wss://app.middleware.io/plsrws/v2",
 			Hidden:      true,
@@ -219,14 +219,6 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			Usage:       "Flag to enable or disable synthetic monitoring.",
 			EnvVars:     []string{"MW_AGENT_FEATURES_SYNTHETIC_MONITORING"},
 			Destination: &cfg.AgentFeatures.SyntheticMonitoring,
-			DefaultText: "false",
-			Value:       false, // synthetic monitoring is disabled by default
-		}),
-		altsrc.NewBoolFlag(&cli.BoolFlag{
-			Name:        "agent-features.opsai-autofix",
-			Usage:       "Flag to enable or disable OpsAI Pulsar Connection.",
-			EnvVars:     []string{"MW_AGENT_FEATURES_OPSAI_AUTOFIX"},
-			Destination: &cfg.AgentFeatures.OpsAIAutoFix,
 			DefaultText: "false",
 			Value:       false, // synthetic monitoring is disabled by default
 		}),
@@ -477,8 +469,8 @@ func main() {
 							zap.String("api-url-for-config-check", cfg.APIURLForConfigCheck))
 					}
 
-					if cfg.APIURLForSyntheticMonitoring == "" {
-						cfg.APIURLForSyntheticMonitoring, err = agent.GetAPIURLForSyntheticMonitoring(cfg.Target)
+					if cfg.SyntheticMonitoring.ApiURL == "" {
+						cfg.SyntheticMonitoring.ApiURL, err = agent.GetAPIURLForSyntheticMonitoring(cfg.Target)
 						// could not derive api url for synthetic monitoring from target
 						if err != nil {
 							logger.Info("could not derive api url for synthetic monitoring from target",
@@ -487,7 +479,7 @@ func main() {
 						}
 
 						logger.Info("derived api url for synthetic monitoring",
-							zap.String("api-url-for-synthetic-monitoring", cfg.APIURLForSyntheticMonitoring))
+							zap.String("api-url-for-synthetic-monitoring", cfg.SyntheticMonitoring.ApiURL))
 					}
 
 					u, err := url.Parse(cfg.Target)
@@ -541,11 +533,10 @@ func main() {
 						config := worker.Config{
 							Mode:                worker.ModeAgent,
 							Token:               cfg.APIKey,
-							NCAPassword:         cfg.APIKey,
 							Hostname:            hostname,
-							PulsarHost:          cfg.APIURLForSyntheticMonitoring,
+							PulsarHost:          cfg.SyntheticMonitoring.ApiURL,
 							Location:            hostname,
-							UnsubscribeEndpoint: cfg.Target + "/api/v1/synthetics/unsubscribe",
+							UnsubscribeEndpoint: cfg.SyntheticMonitoring.UnsubscribeEndpoint,
 							CaptureEndpoint:     cfg.Target + "/v1/metrics",
 						}
 
@@ -563,38 +554,6 @@ func main() {
 									return
 								default:
 									syntheticWorker.Run()
-								}
-							}
-						}(ctx)
-
-					}
-
-					if cfg.AgentFeatures.OpsAIAutoFix {
-						config := worker.Config{
-							Mode:                worker.ModeMCP,
-							Token:               cfg.APIKey,
-							NCAPassword:         cfg.APIKey,
-							Hostname:            hostname,
-							PulsarHost:          cfg.APIURLForSyntheticMonitoring,
-							Location:            hostname,
-							UnsubscribeEndpoint: cfg.Target + "/api/v1/synthetics/unsubscribe",
-							CaptureEndpoint:     cfg.Target + "/v1/metrics",
-						}
-
-						logger.Info("starting opsai worker: ", zap.String("hostname", hostname))
-						opsaiWorker, err := worker.New(&config)
-						if err != nil {
-							logger.Error("Failed to create worker")
-						}
-
-						go func(ctx context.Context) {
-							for {
-								select {
-								case <-ctx.Done():
-									fmt.Println("Turning off the opsai monitoring...")
-									return
-								default:
-									opsaiWorker.Run()
 								}
 							}
 						}(ctx)
