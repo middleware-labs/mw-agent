@@ -151,9 +151,9 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			Hidden:      true,
 		}),
 		altsrc.NewStringFlag(&cli.StringFlag{
-			Name:        "api-url-for-synthetic-monitoring",
-			EnvVars:     []string{"MW_API_URL_FOR_SYNTHETIC_MONITORING"},
-			Destination: &cfg.APIURLForSyntheticMonitoring,
+			Name:        "synthetic-monitoring.api-url",
+			EnvVars:     []string{"MW_SYNTHETIC_MONITORING_API_URL", "MW_API_URL_FOR_SYNTHETIC_MONITORING"},
+			Destination: &cfg.SyntheticMonitoring.ApiURL,
 			DefaultText: "wss://app.middleware.io/plsrws/v2",
 			Value:       "wss://app.middleware.io/plsrws/v2",
 			Hidden:      true,
@@ -469,8 +469,8 @@ func main() {
 							zap.String("api-url-for-config-check", cfg.APIURLForConfigCheck))
 					}
 
-					if cfg.APIURLForSyntheticMonitoring == "" {
-						cfg.APIURLForSyntheticMonitoring, err = agent.GetAPIURLForSyntheticMonitoring(cfg.Target)
+					if cfg.SyntheticMonitoring.ApiURL == "" {
+						cfg.SyntheticMonitoring.ApiURL, err = agent.GetAPIURLForSyntheticMonitoring(cfg.Target)
 						// could not derive api url for synthetic monitoring from target
 						if err != nil {
 							logger.Info("could not derive api url for synthetic monitoring from target",
@@ -479,7 +479,7 @@ func main() {
 						}
 
 						logger.Info("derived api url for synthetic monitoring",
-							zap.String("api-url-for-synthetic-monitoring", cfg.APIURLForSyntheticMonitoring))
+							zap.String("api-url-for-synthetic-monitoring", cfg.SyntheticMonitoring.ApiURL))
 					}
 
 					u, err := url.Parse(cfg.Target)
@@ -534,9 +534,9 @@ func main() {
 							Mode:                worker.ModeAgent,
 							Token:               cfg.APIKey,
 							Hostname:            hostname,
-							PulsarHost:          cfg.APIURLForSyntheticMonitoring,
+							PulsarHost:          cfg.SyntheticMonitoring.ApiURL,
 							Location:            hostname,
-							UnsubscribeEndpoint: cfg.Target + "/api/v1/synthetics/unsubscribe",
+							UnsubscribeEndpoint: cfg.SyntheticMonitoring.UnsubscribeEndpoint,
 							CaptureEndpoint:     cfg.Target + "/v1/metrics",
 						}
 

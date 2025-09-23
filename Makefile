@@ -1,4 +1,4 @@
-RELEASE_VERSION=0.0.0
+RELEASE_VERSION=1.17.1
 LD_FLAGS="-s -w -X main.agentVersion=${RELEASE_VERSION}"
 build-windows:
 	GOOS=windows CGO_ENABLED=0 go build -ldflags=${LD_FLAGS} -o build/mw-windows-agent.exe cmd/host-agent/main.go
@@ -14,6 +14,10 @@ build-linux-arm64:
 	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags=${LD_FLAGS} -o build/mw-host-agent-arm64 cmd/host-agent/main.go
 build-kube:
 	GOOS=linux CGO_ENABLED=0 go build -ldflags=${LD_FLAGS} -o build/mw-kube-agent cmd/kube-agent/main.go
+build-synthetics:
+	GOOS=linux CGO_ENABLED=0 go build -ldflags=${LD_FLAGS} -o build/mw-synthetics cmd/synthetics/main.go
+build-opsai:
+	GOOS=linux CGO_ENABLED=0 go build -ldflags=${LD_FLAGS} -o build/mw-opsai cmd/opsai/main.go
 build-kube-config-updater:
 	CGO_ENABLED=0 go build -ldflags=${LD_FLAGS} -o build/mw-kube-agent-config-updater cmd/kube-config-updater/main.go
 build: build-linux build-windows build-kube
@@ -31,6 +35,21 @@ package-linux: package-linux-deb package-linux-rpm package-linux-docker
 
 package-linux-docker:
 	docker build .  --target build --build-arg GITHUB_TOKEN=$(GH_TOKEN) -t ghcr.io/middleware-labs/mw-agent:local -f Dockerfiles/DockerfileLinux
+
+package-kube-docker:
+	docker build -f Dockerfiles/DockerfileKube.base --build-arg APP_BINARY=mw-kube-agent -t ghcr.io/middleware-labs/mw-kube-agent:${RELEASE_VERSION} .
+package-opsai-docker:
+	docker build -f Dockerfiles/DockerfileKube.base --build-arg APP_BINARY=mw-opsai -t ghcr.io/middleware-labs/mw-kube-agent-opsai:${RELEASE_VERSION} .
+package-synthetics-docker:
+	docker build -f Dockerfiles/DockerfileKube.base --build-arg APP_BINARY=mw-synthetics -t ghcr.io/middleware-labs/mw-kube-agent-synthetics:${RELEASE_VERSION} .
+
+
+package-kube-docker-local:
+	docker build -f Dockerfiles/DockerfileKubeLocal.base --build-arg APP_BINARY=mw-kube-agent -t ghcr.io/middleware-labs/mw-kube-agent:${RELEASE_VERSION} .
+package-opsai-docker-local:
+	docker build -f Dockerfiles/DockerfileKubeLocal.base  --build-arg APP_BINARY=mw-opsai -t ghcr.io/middleware-labs/mw-kube-agent-opsai:${RELEASE_VERSION} .
+package-synthetics-docker-local:
+	docker build -f Dockerfiles/DockerfileKubeLocal.base --build-arg APP_BINARY=mw-synthetics -t ghcr.io/middleware-labs/mw-kube-agent-synthetics:${RELEASE_VERSION} .
 
 package-kube-config-updater:
 	docker buildx build . --push --platform linux/arm64,linux/amd64 --target prod --build-arg GITHUB_TOKEN=$(GH_TOKEN) --build-arg AGENT_VERSION=${RELEASE_VERSION}  -t ghcr.io/middleware-labs/mw-kube-agent-config-updater:${RELEASE_VERSION} -f Dockerfiles/DockerfileKubeConfigUpdater

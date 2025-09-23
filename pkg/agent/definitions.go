@@ -78,28 +78,39 @@ type AgentFeatures struct {
 	MetricCollection    bool
 	LogCollection       bool
 	SyntheticMonitoring bool
+	OpsAIAutoFix        bool
 }
 
 // BaseConfig stores general configuration for all agent types
+type SyntheticMonitoring struct {
+	ApiURL              string
+	UnsubscribeEndpoint string
+}
+type OpsAI struct {
+	ApiURL              string
+	UnsubscribeEndpoint string
+}
+
 type BaseConfig struct {
-	APIKey                       string
-	Target                       string
-	EnableSyntheticMonitoring    bool
-	ConfigCheckInterval          string
-	FetchAccountOtelConfig       bool
-	DockerEndpoint               string
-	APIURLForConfigCheck         string
-	APIURLForSyntheticMonitoring string
-	GRPCPort                     string
-	HTTPPort                     string
-	FluentPort                   string
-	InfraPlatform                InfraPlatform
-	OtelConfigFile               string
-	AgentFeatures                AgentFeatures
-	SelfProfiling                bool
-	ProfilngServerURL            string
-	InternalMetricsPort          uint
-	EnableDataDogReceiver        bool
+	APIKey                    string
+	Target                    string
+	EnableSyntheticMonitoring bool
+	ConfigCheckInterval       string
+	FetchAccountOtelConfig    bool
+	DockerEndpoint            string
+	APIURLForConfigCheck      string
+	SyntheticMonitoring
+	OpsAI
+	GRPCPort              string
+	HTTPPort              string
+	FluentPort            string
+	InfraPlatform         InfraPlatform
+	OtelConfigFile        string
+	AgentFeatures         AgentFeatures
+	SelfProfiling         bool
+	ProfilngServerURL     string
+	InternalMetricsPort   uint
+	EnableDataDogReceiver bool
 }
 
 // String() implements stringer interface for BaseConfig
