@@ -254,37 +254,35 @@ func main() {
 					logger.Info("starting host agent with config",
 						zap.Stringer("config", cfg))
 
-					if cfg.AgentFeatures.SyntheticMonitoring {
-						config := worker.Config{
-							Mode:                worker.ModeAgent,
-							Token:               cfg.APIKey,
-							NCAPassword:         cfg.APIKey,
-							Hostname:            os.Getenv("MW_KUBE_CLUSTER_NAME"),
-							PulsarHost:          cfg.SyntheticMonitoring.ApiURL,
-							Location:            os.Getenv("MW_KUBE_CLUSTER_NAME"),
-							UnsubscribeEndpoint: cfg.SyntheticMonitoring.UnsubscribeEndpoint,
-							CaptureEndpoint:     cfg.Target + "/v1/metrics",
-						}
-
-						logger.Info("starting synthetics worker: ", zap.String("hostname", os.Getenv("MW_KUBE_CLUSTER_NAME")))
-						synWorker, err := worker.New(&config)
-						if err != nil {
-							logger.Error("Failed to create worker")
-						}
-
-						go func(ctx context.Context) {
-							for {
-								select {
-								case <-ctx.Done():
-									fmt.Println("Turning off the synthetics agent...")
-									return
-								default:
-									synWorker.Run()
-								}
-							}
-						}(ctx)
-
+					config := worker.Config{
+						Mode:                worker.ModeAgent,
+						Token:               cfg.APIKey,
+						NCAPassword:         cfg.APIKey,
+						Hostname:            os.Getenv("MW_KUBE_CLUSTER_NAME"),
+						PulsarHost:          cfg.SyntheticMonitoring.ApiURL,
+						Location:            os.Getenv("MW_KUBE_CLUSTER_NAME"),
+						UnsubscribeEndpoint: cfg.SyntheticMonitoring.UnsubscribeEndpoint,
+						CaptureEndpoint:     cfg.Target + "/v1/metrics",
 					}
+
+					logger.Info("starting synthetics worker: ", zap.String("hostname", os.Getenv("MW_KUBE_CLUSTER_NAME")))
+					synWorker, err := worker.New(&config)
+					if err != nil {
+						logger.Error("Failed to create worker")
+					}
+
+					func(ctx context.Context) {
+						for {
+							select {
+							case <-ctx.Done():
+								fmt.Println("Turning off the synthetics agent...")
+								return
+							default:
+								synWorker.Run()
+							}
+						}
+					}(ctx)
+
 					return nil
 				},
 			},
