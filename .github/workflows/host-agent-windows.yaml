@@ -59,13 +59,17 @@ jobs:
         wget https://github.com/ebourg/jsign/releases/download/5.0/jsign_5.0_all.deb
         sudo dpkg -i jsign_5.0_all.deb
        
-    - name: Setup Code Signing Certificate
+    - name: Setup KeyLocker Client Authentication Certificate
       run: | 
-        echo "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}" | base64 --decode > certificate_pkcs12.p12
+        echo "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}" | base64 --decode > client_auth_cert.p12
 
     - name: Sign MW Agent Installer Package
       run: |
-        jsign --storetype ${{ secrets.SM_CLIENT_CERT_STORE_TYPE }} --alias ${{ secrets.SM_CLIENT_CERT_ALIAS }} --tsaurl ${{ secrets.SM_TIMESTAMP_AUTHORITY_URL }} --storepass "${{ secrets.SM_API_KEY }}|./certificate_pkcs12.p12|${{ secrets.SM_CLIENT_CERT_PASSWORD }}"  package-tooling/windows/mw-windows-agent-${{ env.RELEASE_VERSION }}-setup.exe
+        jsign --storetype DIGICERTONE \
+              --alias "${{ secrets.SM_KEYPAIR_ALIAS }}" \
+              --tsaurl "${{ secrets.SM_TIMESTAMP_AUTHORITY_URL }}" \
+              --storepass "${{ secrets.SM_API_KEY }}|${{ secrets.SM_HOST }}|./client_auth_cert.p12|${{ secrets.SM_CLIENT_CERT_PASSWORD }}" \
+              package-tooling/windows/mw-windows-agent-${{ env.RELEASE_VERSION }}-setup.exe
              
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
