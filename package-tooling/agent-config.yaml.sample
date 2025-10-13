@@ -30,6 +30,9 @@ agent-internal-metrics-port: 8888
 # E.g. C:\\Program Files (x86)\\Middleware Windows Agent\\mw-agent.log
 #logfile: "mw-agent.log"
 
+# Listen to otel config changes from Middleware backend
+# fetch-account-otel-config: true
+
 # agent-features provides feature flags to enable or disable features.
 # The list of agent-features that can be enabled or disabled is given below
 #
