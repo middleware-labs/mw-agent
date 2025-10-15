@@ -248,6 +248,7 @@ func assertContainsComponent(t *testing.T, factoryMap interface{}, componentName
 
 func TestHostAgentGetFactories(t *testing.T) {
 	baseConfig := BaseConfig{
+		ConfigCheckInterval: "1m",
 		AgentFeatures: AgentFeatures{
 			MetricCollection: true,
 			LogCollection:    true,
@@ -255,10 +256,13 @@ func TestHostAgentGetFactories(t *testing.T) {
 	}
 
 	zapCore := zapcore.NewNopCore()
-	agent, _ := NewHostAgent(HostConfig{
+	agent, err := NewHostAgent(HostConfig{
 		BaseConfig: baseConfig,
 	}, zapCore,
 		WithHostAgentInfraPlatform(InfraPlatformECSEC2))
+
+	assert.NoError(t, err)
+	assert.NotNil(t, agent, "agent should not be nil")
 
 	factories, err := agent.getFactories()
 	assert.NoError(t, err)
@@ -273,7 +277,7 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assert.Len(t, factories.Extensions, 1)
 	assertContainsComponent(t, factories.Extensions, "health_check")
 	// check if factories contains expected receivers
-	assert.Len(t, factories.Receivers, 22)
+	assert.Len(t, factories.Receivers, 23)
 	assertContainsComponent(t, factories.Receivers, "otlp")
 	assertContainsComponent(t, factories.Receivers, "fluentforward")
 	assertContainsComponent(t, factories.Receivers, "filelog")
