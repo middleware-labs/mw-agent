@@ -198,6 +198,14 @@
         "collection_interval": "10s"
     },
     {
+        "type": "rabbitmq",
+        "prefixes": ["rabbitmq"],
+        "files": [
+            "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/rabbitmqreceiver/metadata.yaml"
+        ],
+        "collection_interval": "10s"
+    },
+    {
         "type": "oracledb",
         "prefixes": ["oracledb"],
         "files": [
