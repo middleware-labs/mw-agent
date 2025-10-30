@@ -238,6 +238,22 @@
         "collection_interval": "10s"
     },
     {
+        "type": "mongodb",
+        "prefixes": ["mongodb"],
+        "files": [
+            "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/mongodbreceiver/metadata.yaml"
+        ],
+        "collection_interval": "10s"
+    },
+    {
+        "type": "mongodb_atlas",
+        "prefixes": ["mongodb_atlas"],
+        "files": [
+            "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/mongodbatlasreceiver/metadata.yaml"
+        ],
+        "collection_interval": "10s"
+    },
+    {
         "type": "service",
         "prefixes": ["service"],
         "files": [
