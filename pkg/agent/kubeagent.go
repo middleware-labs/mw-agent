@@ -37,12 +37,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/debugexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -138,17 +138,23 @@ func NewKubeAgentMonitor(cfg KubeConfig, opts ...KubeAgentMonitorOptions) *KubeA
 
 // GetFactories get otel factories for KubeAgent
 func (k *KubeAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
-	var err error
-	factories := otelcol.Factories{}
-	factories.Extensions, err = extension.MakeFactoryMap(
+	factories := otelcol.Factories{
+		Extensions: make(map[component.Type]extension.Factory),
+		Receivers:  make(map[component.Type]receiver.Factory),
+		Exporters:  make(map[component.Type]exporter.Factory),
+		Processors: make(map[component.Type]processor.Factory),
+	}
+	factories.Extensions = make(map[component.Type]extension.Factory)
+	exts := []extension.Factory{
 		healthcheckextension.NewFactory(),
-	// frontend.NewAuthFactory(),
-	)
-	if err != nil {
-		return otelcol.Factories{}, err
+		// frontend.NewAuthFactory(),
 	}
 
-	factories.Receivers, err = receiver.MakeFactoryMap([]receiver.Factory{
+	for _, f := range exts {
+		factories.Extensions[f.Type()] = f
+	}
+
+	receiverfactories := []receiver.Factory{
 		otlpreceiver.NewFactory(),
 		fluentforwardreceiver.NewFactory(),
 		filelogreceiver.NewFactory(),
@@ -166,23 +172,24 @@ func (k *KubeAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 		nginxreceiver.NewFactory(),
 		mongodbatlasreceiver.NewFactory(),
 		datadogreceiver.NewFactory(),
-		mongodbreceiver.NewFactory(),
-	}...)
-	if err != nil {
-		return otelcol.Factories{}, err
 	}
 
-	factories.Exporters, err = exporter.MakeFactoryMap([]exporter.Factory{
+	for _, f := range receiverfactories {
+		factories.Receivers[f.Type()] = f
+	}
+
+	exps := []exporter.Factory{
 		debugexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
 		kafkaexporter.NewFactory(),
-	}...)
-	if err != nil {
-		return otelcol.Factories{}, err
 	}
 
-	factories.Processors, err = processor.MakeFactoryMap([]processor.Factory{
+	for _, f := range exps {
+		factories.Exporters[f.Type()] = f
+	}
+
+	procs := []processor.Factory{
 		// frontend.NewProcessorFactory(),
 		batchprocessor.NewFactory(),
 		memorylimiterprocessor.NewFactory(),
@@ -199,11 +206,10 @@ func (k *KubeAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 		logdedupprocessor.NewFactory(),
 		probabilisticsamplerprocessor.NewFactory(),
 		redactionprocessor.NewFactory(),
-	}...)
-	if err != nil {
-		return otelcol.Factories{}, err
 	}
-
+	for _, f := range procs {
+		factories.Processors[f.Type()] = f
+	}
 	return factories, nil
 }
 
