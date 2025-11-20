@@ -37,6 +37,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/debugexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -52,14 +53,21 @@ import (
 
 // GetFactories get otel factories for HostAgent
 func (c *HostAgent) getFactories() (otelcol.Factories, error) {
-	var err error
-	factories := otelcol.Factories{}
-	factories.Extensions, err = extension.MakeFactoryMap(
+	factories := otelcol.Factories{
+		Extensions: make(map[component.Type]extension.Factory),
+		Receivers:  make(map[component.Type]receiver.Factory),
+		Exporters:  make(map[component.Type]exporter.Factory),
+		Processors: make(map[component.Type]processor.Factory),
+	}
+
+	factories.Extensions = make(map[component.Type]extension.Factory)
+	exts := []extension.Factory{
 		healthcheckextension.NewFactory(),
 		// frontend.NewAuthFactory(),
-	)
-	if err != nil {
-		return otelcol.Factories{}, err
+	}
+
+	for _, f := range exts {
+		factories.Extensions[f.Type()] = f
 	}
 
 	receiverfactories := []receiver.Factory{
@@ -92,23 +100,23 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 			awsecscontainermetricsreceiver.NewFactory())
 	}
 
-	factories.Receivers, err = receiver.MakeFactoryMap(receiverfactories...)
-	if err != nil {
-		return otelcol.Factories{}, err
+	for _, f := range receiverfactories {
+		factories.Receivers[f.Type()] = f
 	}
 
-	factories.Exporters, err = exporter.MakeFactoryMap([]exporter.Factory{
+	exps := []exporter.Factory{
 		debugexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
 		kafkaexporter.NewFactory(),
 		fileexporter.NewFactory(),
-	}...)
-	if err != nil {
-		return otelcol.Factories{}, err
 	}
 
-	factories.Processors, err = processor.MakeFactoryMap([]processor.Factory{
+	for _, f := range exps {
+		factories.Exporters[f.Type()] = f
+	}
+
+	procs := []processor.Factory{
 		// frontend.NewProcessorFactory(),
 		metricstransformprocessor.NewFactory(),
 		batchprocessor.NewFactory(),
@@ -124,10 +132,10 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 		logdedupprocessor.NewFactory(),
 		probabilisticsamplerprocessor.NewFactory(),
 		redactionprocessor.NewFactory(),
-	}...)
-	if err != nil {
-		return otelcol.Factories{}, err
 	}
 
+	for _, f := range procs {
+		factories.Processors[f.Type()] = f
+	}
 	return factories, nil
 }
