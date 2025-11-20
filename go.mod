@@ -122,7 +122,9 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.45.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.45.0
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.45.0
+	go.opentelemetry.io/collector/connector v0.139.0
 	go.opentelemetry.io/collector/otelcol v0.139.0
+	go.opentelemetry.io/collector/service v0.139.0
 )
 
 require (
@@ -450,7 +452,6 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.139.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.45.0 // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.139.0 // indirect
-	go.opentelemetry.io/collector/connector v0.139.0 // indirect
 	go.opentelemetry.io/collector/connector/connectortest v0.139.0 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.139.0 // indirect
 	go.opentelemetry.io/collector/consumer v1.45.0 // indirect
@@ -488,7 +489,6 @@ require (
 	go.opentelemetry.io/collector/scraper v0.139.0 // indirect
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.139.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.128.1-0.20250610090210-188191247685 // indirect
-	go.opentelemetry.io/collector/service v0.139.0 // indirect
 	go.opentelemetry.io/collector/service/hostcapabilities v0.139.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.13.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.63.0 // indirect
