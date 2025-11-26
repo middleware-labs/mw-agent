@@ -1,20 +1,25 @@
 package configupdater
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
+	"k8s.io/client-go/kubernetes"
+
 	yaml "gopkg.in/yaml.v2"
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
+
+	"github.com/middleware-labs/mw-agent/pkg/agent"
 )
 
 const Timestamp string = "timestamp"
@@ -86,7 +91,6 @@ func (c *KubeAgent) ListenForConfigChanges(ctx context.Context, errCh chan<- err
 // callRestartStatusAPI checks if there is an update in the otel-config at Middleware Backend
 // For a particular account
 func (c *KubeAgent) callRestartStatusAPI(ctx context.Context, first bool) error {
-
 	u, err := url.Parse(c.APIURLForConfigCheck)
 	if err != nil {
 		return err
@@ -115,10 +119,12 @@ func (c *KubeAgent) callRestartStatusAPI(ctx context.Context, first bool) error 
 		return fmt.Errorf("restart api returned non-200 status: %d", resp.StatusCode)
 	}
 
-	var apiResponse apiResponseForRestart
+	var apiResponse agent.ApiResponseForRestart
 	if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
 		return fmt.Errorf("failed to unmarshal restart api response: %w", err)
 	}
+
+	c.HandleIntegrationHealthChecks(apiResponse.Response)
 
 	if apiResponse.Rollout.Daemonset || first {
 		c.logger.Info("redeploying mw-agent daemonset")
@@ -320,4 +326,211 @@ func (c *KubeAgent) UpdateConfigMap(ctx context.Context, componentType Component
 
 	return nil
 
+}
+
+func (c *KubeAgent) HandleIntegrationHealthChecks(setting agent.AgentSettingModels) error {
+	meta := setting.MetaData
+	if meta == nil {
+		return fmt.Errorf("metadata missing in API response")
+	}
+
+	platformMeta, ok := meta["k8s"].(map[string]interface{})
+	if !ok {
+		err := fmt.Errorf("metadata missing for platform: %s", "k8s")
+		c.logger.Error("metadata missing for platform", zap.String("platform", "k8s"))
+		return err
+	}
+
+	// Fetch config for the platform for extracting settings
+	cfgPlatform, ok := setting.Config["k8s"]
+	if !ok {
+		err := fmt.Errorf("config missing for platform: %s", "k8s")
+		c.logger.Error("config missing for platform", zap.String("platform", "k8s"))
+		return err
+	}
+
+	// Iterate all integrations: rabbitmq_config, mysql_config, etc.
+	for integrationKey, rawCfg := range platformMeta {
+		integrationCfg, ok := rawCfg.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		shouldTest, ok := integrationCfg["should_test"].(bool)
+		if !ok || !shouldTest {
+			continue
+		}
+
+		// Extract settings from config (NOT metadata)
+		cfgEntryRaw, ok := cfgPlatform[integrationKey].(map[string]interface{})
+		if !ok {
+			err := fmt.Errorf("config entry missing for integration: %s", integrationKey)
+			c.logger.Error("config entry missing for integration", zap.String("integration", integrationKey))
+			return err
+		}
+
+		settingsArr, ok := cfgEntryRaw["settings"].([]interface{})
+		if !ok || len(settingsArr) == 0 {
+			err := fmt.Errorf("%s.settings missing or empty", integrationKey)
+			c.logger.Error("integration settings missing or empty", zap.String("integration", integrationKey))
+			return err
+		}
+
+		// GET FIRST ENTRY
+		settings, ok := settingsArr[0].(map[string]interface{})
+		if !ok {
+			err := fmt.Errorf("%s invalid settings format", integrationKey)
+			c.logger.Error("invalid settings format", zap.String("integration", integrationKey))
+			return err
+		}
+
+		// Supported integrations
+		switch integrationKey {
+		case "rabbitmq_config":
+			if err := c.testRabbitMQFromMetadata(integrationKey, settings); err != nil {
+				c.logger.Error("RabbitMQ health check failed", zap.String("integration", integrationKey))
+				return err
+			}
+		default:
+			c.logger.Warn("Unsupported integration", zap.String("integration", integrationKey))
+			continue
+		}
+	}
+
+	return nil
+}
+
+func (c *KubeAgent) testRabbitMQFromMetadata(
+	integrationKey string,
+	settings map[string]interface{},
+) error {
+	// --- STEP 1: Perform aliveness test ---
+	isAlive, err := c.testRabbitMQConnection(settings)
+	if err != nil {
+		c.logger.Error("RabbitMQ aliveness test failed",
+			zap.String("integration", integrationKey),
+			zap.Error(err),
+		)
+		return err
+	}
+
+	c.logger.Info("RabbitMQ aliveness test completed",
+		zap.Bool("alive", isAlive),
+		zap.String("integration", integrationKey),
+	)
+
+	// --- STEP 2: Update server with status ---
+	if err := c.updateRabbitMQHealthStatus(integrationKey, isAlive); err != nil {
+		c.logger.Error("Failed to update health check status",
+			zap.String("integration", integrationKey),
+			zap.Error(err),
+		)
+		return err
+	}
+
+	return nil
+}
+
+func (c *KubeAgent) testRabbitMQConnection(settings map[string]interface{}) (bool, error) {
+	username, _ := settings["username"].(string)
+	password, _ := settings["password"].(string)
+	endpoint, _ := settings["endpoint"].(string)
+	if username == "" || password == "" || endpoint == "" {
+		err := fmt.Errorf("rabbitmq credentials missing")
+		c.logger.Error("Missing RabbitMQ credentials", zap.Error(err))
+		return false, err
+	}
+
+	// If endpoint does not start with http:// or https:// then add http://
+	if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
+		endpoint = "http://" + endpoint
+	}
+
+	// Build the final API URL
+	apiURL := fmt.Sprintf("%s/%s", endpoint, agent.ApiRabbitMQAliveness)
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	req, err := http.NewRequest("GET", apiURL, nil)
+	if err != nil {
+		return false, fmt.Errorf("error creating aliveness request: %w", err)
+	}
+	req.SetBasicAuth(username, password)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, fmt.Errorf("error calling aliveness API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+
+	var data map[string]interface{}
+	if err := json.Unmarshal(bodyBytes, &data); err != nil {
+		return false, fmt.Errorf("invalid JSON from RabbitMQ: %w", err)
+	}
+
+	status, _ := data["status"].(string)
+	isAlive := status == "ok"
+
+	return isAlive, nil
+}
+
+func (c *KubeAgent) updateRabbitMQHealthStatus(integrationKey string, isAlive bool) error {
+	u, err := url.Parse(c.Target)
+	if err != nil {
+		return err
+	}
+
+	// Remove port if present
+	host := u.Hostname()
+
+	// Build final base URL without port
+	baseURL := fmt.Sprintf("%s://%s", u.Scheme, host)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	updateURL := fmt.Sprintf(
+		"%s/%s/%s/%s",
+		baseURL,
+		agent.ApiAgentHealthCheckUpdate,
+		c.APIKey,
+		c.ClusterName)
+
+	reqBody := agent.HealthCheckRequest{
+		Platform:         "k8s",
+		IntegrationKey:   integrationKey,
+		ShouldTest:       false,
+		IsConnectionLive: isAlive,
+	}
+
+	jsonBody, _ := json.Marshal(reqBody)
+
+	req, err := http.NewRequest("PUT", updateURL, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return fmt.Errorf("failed to create PUT request: %w", err)
+	}
+
+	req.Header.Set("accept", "application/json")
+	req.Header.Set("ApiKey", c.APIKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("update request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		c.logger.Warn("RabbitMQ update API returned non-200",
+			zap.Int("status", resp.StatusCode),
+			zap.String("integration", integrationKey),
+		)
+		return fmt.Errorf("update API returned non-200: %d", resp.StatusCode)
+	}
+
+	c.logger.Info("RabbitMQ health check update successful",
+		zap.String("integration", integrationKey),
+		zap.String("clusterName", c.ClusterName),
+	)
+
+	return nil
 }

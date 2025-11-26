@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"io"
 	"io/fs"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/grafana/pyroscope-go"
+	"github.com/sqlc-dev/pqtype"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.uber.org/zap"
 )
@@ -426,4 +428,34 @@ func (p *Profiler) StartProfiling(appName string, target string, tags string) {
 	}
 
 	p.Logger.Info("PROFILER: Running on mw-agent")
+}
+
+type HealthCheckRequest struct {
+	Platform         string `json:"platform" binding:"required"`
+	IntegrationKey   string `json:"integration_key" binding:"required"`
+	ShouldTest       bool   `json:"should_test" binding:"omitempty"`
+	IsConnectionLive bool   `json:"is_connection_live" binding:"omitempty"`
+}
+
+type AgentSettingModels struct {
+	Id           int                               `json:"id"`
+	AccountId    int                               `json:"account_id"`
+	HostId       string                            `json:"host_id"`
+	HostToken    string                            `json:"token"`
+	Config       map[string]map[string]interface{} `json:"config"`
+	MetaData     map[string]interface{}            `json:"meta_data"`
+	CreatedAt    time.Time                         `json:"created_at"`
+	UpdatedAt    time.Time                         `json:"updated_at"`
+	ProjectId    int                               `json:"project_id"`
+	ConfigNull   pqtype.NullRawMessage             `json:"config_null"`
+	MetaDataNull pqtype.NullRawMessage             `json:"meta_data_null"`
+	GroupId      sql.NullInt64                     `json:"group_id"`
+}
+
+type ApiResponseForRestart struct {
+	Status   bool               `json:"status"`
+	Restart  bool               `json:"restart"`
+	Rollout  rollout            `json:"rollout"`
+	Message  string             `json:"message"`
+	Response AgentSettingModels `json:"response"`
 }

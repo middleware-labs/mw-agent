@@ -251,7 +251,7 @@ func (c *KubeAgentMonitor) callRestartStatusAPI(ctx context.Context) error {
 		return fmt.Errorf("restart api returned non-200 status: %d", resp.StatusCode)
 	}
 
-	var apiResponse apiResponseForRestart
+	var apiResponse ApiResponseForRestart
 	if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
 		return fmt.Errorf("failed to unmarshal restart api response: %w", err)
 	}

@@ -82,13 +82,6 @@ type rollout struct {
 	Daemonset  bool `json:"daemonset"`
 }
 
-type apiResponseForRestart struct {
-	Status  bool    `json:"status"`
-	Restart bool    `json:"restart"`
-	Rollout rollout `json:"rollout"`
-	Message string  `json:"message"`
-}
-
 type Client struct {
 	APIURLForConfigCheck string
 	APIKey               string

@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/otelcol"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -182,13 +183,6 @@ type rollout struct {
 	Daemonset  bool `json:"daemonset"`
 }
 
-type apiResponseForRestart struct {
-	Status  bool    `json:"status"`
-	Restart bool    `json:"restart"`
-	Rollout rollout `json:"rollout"`
-	Message string  `json:"message"`
-}
-
 type TrackingMetadata struct {
 	HostID        string `json:"host_id"`
 	Platform      string `json:"platform"`
@@ -202,9 +196,11 @@ type TrackingPayload struct {
 }
 
 var (
-	apiPathForYAML    = "api/v1/agent/ingestion-rules"
-	apiPathForRestart = "api/v1/agent/restart-status"
-	apiAgentTrack     = "api/v1/agent/tracking"
+	apiPathForYAML            = "api/v1/agent/ingestion-rules"
+	apiPathForRestart         = "api/v1/agent/restart-status"
+	apiAgentTrack             = "api/v1/agent/tracking"
+	ApiAgentHealthCheckUpdate = "api/v1/agent/setting/health-check" // Agent update integration health status
+	ApiRabbitMQAliveness      = "api/aliveness-test/%2F"            // RabbitMQ internal test endpoint
 )
 
 func (d IntegrationType) String() string {
@@ -554,7 +550,6 @@ func (c *HostAgent) checkIntConfigValidity(integrationType IntegrationType, cnf 
 }
 
 func (c *HostAgent) callRestartStatusAPI() error {
-
 	// apiURLForRestart, _ := checkForConfigURLOverrides()
 	hostname := GetHostnameForPlatform(c.InfraPlatform)
 	u, err := url.Parse(c.APIURLForConfigCheck)
@@ -593,10 +588,12 @@ func (c *HostAgent) callRestartStatusAPI() error {
 		return fmt.Errorf("restart api returned non-200 status: %d", resp.StatusCode)
 	}
 
-	var apiResponse apiResponseForRestart
+	var apiResponse ApiResponseForRestart
 	if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
 		return fmt.Errorf("failed to unmarshal restart api response: %w", err)
 	}
+
+	c.HandleIntegrationHealthChecks(apiResponse.Response)
 
 	if apiResponse.Restart {
 		c.logger.Info("fetching updated configuration from backend")
@@ -724,4 +721,216 @@ func (c *HostAgent) StopCollector(err error) {
 		c.logger.Info("stopped telemetry collection at", zap.Time("time", time.Now()))
 		c.collector = nil
 	}
+}
+
+func (c *HostAgent) HandleIntegrationHealthChecks(setting AgentSettingModels) error {
+	meta := setting.MetaData
+	if meta == nil {
+		return fmt.Errorf("metadata missing in API response")
+	}
+
+	// Detect platform key (linux/windows/darwin/k8s/etc.)
+	platformMeta, ok := meta[runtime.GOOS].(map[string]interface{})
+	if !ok {
+		err := fmt.Errorf("metadata missing for platform: %s", runtime.GOOS)
+		c.logger.Error("metadata missing for platform", zap.String("platform", runtime.GOOS))
+		return err
+	}
+
+	// Fetch config for the platform for extracting settings
+	cfgPlatform, ok := setting.Config[runtime.GOOS]
+	if !ok {
+		err := fmt.Errorf("config missing for platform: %s", runtime.GOOS)
+		c.logger.Error("config missing for platform", zap.String("platform", runtime.GOOS))
+		return err
+	}
+
+	// Iterate all integrations: rabbitmq_config, mysql_config, etc.
+	for integrationKey, rawCfg := range platformMeta {
+		integrationCfg, ok := rawCfg.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		shouldTest, ok := integrationCfg["should_test"].(bool)
+		if !ok || !shouldTest {
+			continue
+		}
+
+		// Extract settings from config (NOT metadata)
+		cfgEntryRaw, ok := cfgPlatform[integrationKey].(map[string]interface{})
+		if !ok {
+			err := fmt.Errorf("config entry missing for integration: %s", integrationKey)
+			c.logger.Error("config entry missing for integration", zap.String("integration", integrationKey))
+			return err
+		}
+
+		settingsArr, ok := cfgEntryRaw["settings"].([]interface{})
+		if !ok || len(settingsArr) == 0 {
+			err := fmt.Errorf("%s.settings missing or empty", integrationKey)
+			c.logger.Error("integration settings missing or empty", zap.String("integration", integrationKey))
+			return err
+		}
+
+		// GET FIRST ENTRY
+		settings, ok := settingsArr[0].(map[string]interface{})
+		if !ok {
+			err := fmt.Errorf("%s invalid settings format", integrationKey)
+			c.logger.Error("invalid settings format", zap.String("integration", integrationKey))
+			return err
+		}
+
+		// Supported integrations
+		switch integrationKey {
+		case "rabbitmq_config":
+			if err := c.testRabbitMQFromMetadata(integrationKey, settings); err != nil {
+				c.logger.Error("RabbitMQ health check failed", zap.String("integration", integrationKey))
+				return err
+			}
+		default:
+			c.logger.Warn("Unsupported integration", zap.String("integration", integrationKey))
+			continue
+		}
+	}
+
+	return nil
+}
+
+func (c *HostAgent) testRabbitMQFromMetadata(
+	integrationKey string,
+	settings map[string]interface{},
+) error {
+
+	// --- STEP 1: Perform aliveness test ---
+	isAlive, err := c.testRabbitMQConnection(settings)
+	if err != nil {
+		c.logger.Error("RabbitMQ aliveness test failed",
+			zap.String("integration", integrationKey),
+			zap.Error(err),
+		)
+		return err
+	}
+
+	c.logger.Info("RabbitMQ aliveness test completed",
+		zap.Bool("alive", isAlive),
+		zap.String("integration", integrationKey),
+	)
+
+	// --- STEP 2: Update server with status ---
+	if err := c.updateRabbitMQHealthStatus(integrationKey, isAlive); err != nil {
+		c.logger.Error("Failed to update health check status",
+			zap.String("integration", integrationKey),
+			zap.Error(err),
+		)
+		return err
+	}
+
+	return nil
+}
+
+func (c *HostAgent) testRabbitMQConnection(settings map[string]interface{}) (bool, error) {
+	username, _ := settings["username"].(string)
+	password, _ := settings["password"].(string)
+	endpoint, _ := settings["endpoint"].(string)
+	if username == "" || password == "" || endpoint == "" {
+		err := fmt.Errorf("rabbitmq credentials missing")
+		c.logger.Error("Missing RabbitMQ credentials", zap.Error(err))
+		return false, err
+	}
+
+	// If endpoint does not start with http:// or https:// then add http://
+	if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
+		endpoint = "http://" + endpoint
+	}
+
+	// Build the final API URL
+	apiURL := fmt.Sprintf("%s/%s", endpoint, ApiRabbitMQAliveness)
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	req, err := http.NewRequest("GET", apiURL, nil)
+	if err != nil {
+		return false, fmt.Errorf("error creating aliveness request: %w", err)
+	}
+	req.SetBasicAuth(username, password)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, fmt.Errorf("error calling aliveness API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+
+	var data map[string]interface{}
+	if err := json.Unmarshal(bodyBytes, &data); err != nil {
+		return false, fmt.Errorf("invalid JSON from RabbitMQ: %w", err)
+	}
+
+	status, _ := data["status"].(string)
+	isAlive := status == "ok"
+
+	return isAlive, nil
+}
+
+func (c *HostAgent) updateRabbitMQHealthStatus(integrationKey string, isAlive bool) error {
+	u, err := url.Parse(c.Target)
+	if err != nil {
+		return err
+	}
+
+	// Remove port if present
+	host := u.Hostname()
+
+	// Build final base URL without port
+	baseURL := fmt.Sprintf("%s://%s", u.Scheme, host)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	hostname := GetHostnameForPlatform(c.InfraPlatform)
+	updateURL := fmt.Sprintf(
+		"%s/%s/%s/%s",
+		baseURL,
+		ApiAgentHealthCheckUpdate,
+		c.APIKey,
+		hostname,
+	)
+
+	reqBody := HealthCheckRequest{
+		Platform:         runtime.GOOS,
+		IntegrationKey:   integrationKey,
+		ShouldTest:       false,
+		IsConnectionLive: isAlive,
+	}
+
+	jsonBody, _ := json.Marshal(reqBody)
+
+	req, err := http.NewRequest("PUT", updateURL, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return fmt.Errorf("failed to create PUT request: %w", err)
+	}
+
+	req.Header.Set("accept", "application/json")
+	req.Header.Set("ApiKey", c.APIKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("update request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		c.logger.Warn("RabbitMQ update API returned non-200",
+			zap.Int("status", resp.StatusCode),
+			zap.String("integration", integrationKey),
+		)
+		return fmt.Errorf("update API returned non-200: %d", resp.StatusCode)
+	}
+
+	c.logger.Info("RabbitMQ health check update successful",
+		zap.String("integration", integrationKey),
+		zap.String("host", hostname),
+	)
+
+	return nil
 }
