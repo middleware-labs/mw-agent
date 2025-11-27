@@ -3,6 +3,7 @@ package agent
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -794,6 +795,11 @@ func (c *HostAgent) HandleIntegrationHealthChecks(setting AgentSettingModels) er
 				c.logger.Error("Redpanda health check failed", zap.String("integration", integrationKey))
 				return err
 			}
+		case "sql_server_config":
+			if err := c.testSQLServerFromMetadata(integrationKey, settings); err != nil {
+				c.logger.Error("SQLServer health check failed", zap.String("integration", integrationKey))
+				return err
+			}
 		default:
 			c.logger.Warn("Unsupported integration", zap.String("integration", integrationKey))
 			continue
@@ -857,6 +863,38 @@ func (c *HostAgent) testRedpandaFromMetadata(
 
 	// --- STEP 2: Update server with status ---
 	if err := c.updateIntegrationHealthStatus("Redpanda", integrationKey, isAlive); err != nil {
+		c.logger.Error("Failed to update health check status",
+			zap.String("integration", integrationKey),
+			zap.Error(err),
+		)
+		return err
+	}
+
+	return nil
+}
+
+func (c *HostAgent) testSQLServerFromMetadata(
+	integrationKey string,
+	settings map[string]interface{},
+) error {
+
+	// --- STEP 1: Perform Health Check ---
+	isAlive, err := c.CheckMSSQLHealth("SQLServer", settings)
+	if err != nil {
+		c.logger.Error("SQLServer Health Check test failed",
+			zap.String("integration", integrationKey),
+			zap.Error(err),
+		)
+		return err
+	}
+
+	c.logger.Info("SQLServer Health Check test completed",
+		zap.Bool("alive", isAlive),
+		zap.String("integration", integrationKey),
+	)
+
+	// --- STEP 2: Update server with status ---
+	if err := c.updateIntegrationHealthStatus("SQLServer", integrationKey, isAlive); err != nil {
 		c.logger.Error("Failed to update health check status",
 			zap.String("integration", integrationKey),
 			zap.Error(err),
@@ -1023,4 +1061,73 @@ func (c *HostAgent) testRedpandaConnection(settings map[string]interface{}) (boo
 	status, _ := data["status"].(string)
 	isAlive := status == "ready"
 	return isAlive, nil
+}
+
+func (c *HostAgent) CheckMSSQLHealth(
+	integration string,
+	settings map[string]interface{},
+) (bool, error) {
+	username, _ := settings["username"].(string)
+	password, _ := settings["password"].(string)
+	if username == "" || password == "" {
+		err := fmt.Errorf("%s credentials missing (username/password)", integration)
+		c.logger.Error("Credentials missing for MSSQL integration",
+			zap.String("integration", integration),
+			zap.Error(err),
+		)
+		return false, err
+	}
+
+	server, _ := settings["server"].(string)
+	if server == "" {
+		err := fmt.Errorf("%s server missing", integration)
+		c.logger.Error("Server field missing for MSSQL integration",
+			zap.String("integration", integration),
+			zap.Error(err),
+		)
+		return false, err
+	}
+
+	connString := fmt.Sprintf(
+		"sqlserver://%s:%s@%s?encrypt=disable",
+		username, password, server,
+	)
+
+	db, err := sql.Open("sqlserver", connString)
+	if err != nil {
+		c.logger.Error("Failed to open MSSQL connection",
+			zap.String("integration", integration),
+			zap.String("server", server),
+			zap.Error(err),
+		)
+		return false, err
+	}
+	defer db.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	// Step 1 — ping server before querying
+	if err := db.PingContext(ctx); err != nil {
+		c.logger.Error("MSSQL ping failed",
+			zap.String("integration", integration),
+			zap.String("server", server),
+			zap.Error(err),
+		)
+		return false, err
+	}
+
+	// Step 2 — run health query
+	var result int
+	err = db.QueryRowContext(ctx, "SELECT 1").Scan(&result)
+	if err != nil {
+		c.logger.Error("MSSQL health query failed",
+			zap.String("integration", integration),
+			zap.String("server", server),
+			zap.Error(err),
+		)
+		return false, err
+	}
+
+	return result == 1, nil
 }
