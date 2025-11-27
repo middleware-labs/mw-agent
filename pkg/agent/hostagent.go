@@ -201,6 +201,7 @@ var (
 	apiAgentTrack             = "api/v1/agent/tracking"
 	ApiAgentHealthCheckUpdate = "api/v1/agent/setting/health-check" // Agent update integration health status
 	ApiRabbitMQAliveness      = "api/aliveness-test/%2F"            // RabbitMQ internal test endpoint
+	ApiRedpandaStatus         = "v1/status/ready"                   // Redpanda internal test endpoint
 )
 
 func (d IntegrationType) String() string {
@@ -765,19 +766,20 @@ func (c *HostAgent) HandleIntegrationHealthChecks(setting AgentSettingModels) er
 			return err
 		}
 
-		settingsArr, ok := cfgEntryRaw["settings"].([]interface{})
-		if !ok || len(settingsArr) == 0 {
-			err := fmt.Errorf("%s.settings missing or empty", integrationKey)
-			c.logger.Error("integration settings missing or empty", zap.String("integration", integrationKey))
-			return err
-		}
+		var settings map[string]interface{}
 
-		// GET FIRST ENTRY
-		settings, ok := settingsArr[0].(map[string]interface{})
-		if !ok {
-			err := fmt.Errorf("%s invalid settings format", integrationKey)
-			c.logger.Error("invalid settings format", zap.String("integration", integrationKey))
-			return err
+		// CASE 1: settings array exists (RabbitMQ, MySQL, etc.)
+		if settingsArr, ok := cfgEntryRaw["settings"].([]interface{}); ok && len(settingsArr) > 0 {
+			first, ok := settingsArr[0].(map[string]interface{})
+			if !ok {
+				err := fmt.Errorf("%s invalid settings format", integrationKey)
+				c.logger.Error("invalid settings format", zap.String("integration", integrationKey))
+				return err
+			}
+			settings = first
+		} else {
+			// CASE 2: direct endpoint config (Redpanda, etc.)
+			settings = cfgEntryRaw
 		}
 
 		// Supported integrations
@@ -785,6 +787,11 @@ func (c *HostAgent) HandleIntegrationHealthChecks(setting AgentSettingModels) er
 		case "rabbitmq_config":
 			if err := c.testRabbitMQFromMetadata(integrationKey, settings); err != nil {
 				c.logger.Error("RabbitMQ health check failed", zap.String("integration", integrationKey))
+				return err
+			}
+		case "redpanda_config":
+			if err := c.testRedpandaFromMetadata(integrationKey, settings); err != nil {
+				c.logger.Error("Redpanda health check failed", zap.String("integration", integrationKey))
 				return err
 			}
 		default:
@@ -802,7 +809,7 @@ func (c *HostAgent) testRabbitMQFromMetadata(
 ) error {
 
 	// --- STEP 1: Perform aliveness test ---
-	isAlive, err := c.testRabbitMQConnection(settings)
+	isAlive, err := c.testIntegrationConnection("RabbitMQ", ApiRabbitMQAliveness, settings)
 	if err != nil {
 		c.logger.Error("RabbitMQ aliveness test failed",
 			zap.String("integration", integrationKey),
@@ -817,7 +824,7 @@ func (c *HostAgent) testRabbitMQFromMetadata(
 	)
 
 	// --- STEP 2: Update server with status ---
-	if err := c.updateRabbitMQHealthStatus(integrationKey, isAlive); err != nil {
+	if err := c.updateIntegrationHealthStatus("RabbitMQ", integrationKey, isAlive); err != nil {
 		c.logger.Error("Failed to update health check status",
 			zap.String("integration", integrationKey),
 			zap.Error(err),
@@ -828,34 +835,71 @@ func (c *HostAgent) testRabbitMQFromMetadata(
 	return nil
 }
 
-func (c *HostAgent) testRabbitMQConnection(settings map[string]interface{}) (bool, error) {
+func (c *HostAgent) testRedpandaFromMetadata(
+	integrationKey string,
+	settings map[string]interface{},
+) error {
+
+	// --- STEP 1: Perform aliveness test ---
+	isAlive, err := c.testRedpandaConnection(settings)
+	if err != nil {
+		c.logger.Error("Redpanda aliveness test failed",
+			zap.String("integration", integrationKey),
+			zap.Error(err),
+		)
+		return err
+	}
+
+	c.logger.Info("Redpanda aliveness test completed",
+		zap.Bool("alive", isAlive),
+		zap.String("integration", integrationKey),
+	)
+
+	// --- STEP 2: Update server with status ---
+	if err := c.updateIntegrationHealthStatus("Redpanda", integrationKey, isAlive); err != nil {
+		c.logger.Error("Failed to update health check status",
+			zap.String("integration", integrationKey),
+			zap.Error(err),
+		)
+		return err
+	}
+
+	return nil
+}
+
+func (c *HostAgent) testIntegrationConnection(
+	integration string,
+	healthCheckPath string,
+	settings map[string]interface{},
+) (bool, error) {
 	username, _ := settings["username"].(string)
 	password, _ := settings["password"].(string)
 	endpoint, _ := settings["endpoint"].(string)
 	if username == "" || password == "" || endpoint == "" {
-		err := fmt.Errorf("rabbitmq credentials missing")
-		c.logger.Error("Missing RabbitMQ credentials", zap.Error(err))
+		err := fmt.Errorf("%s credentials missing", integration)
+		c.logger.Error(fmt.Sprintf("Missing %s credentials", integration), zap.Error(err))
 		return false, err
 	}
 
-	// If endpoint does not start with http:// or https:// then add http://
+	// Add http:// if endpoint does not already include scheme
 	if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
 		endpoint = "http://" + endpoint
 	}
 
-	// Build the final API URL
-	apiURL := fmt.Sprintf("%s/%s", endpoint, ApiRabbitMQAliveness)
+	// Construct full API URL
+	apiURL := fmt.Sprintf("%s/%s", endpoint, healthCheckPath)
 	client := &http.Client{Timeout: 10 * time.Second}
 
 	req, err := http.NewRequest("GET", apiURL, nil)
 	if err != nil {
-		return false, fmt.Errorf("error creating aliveness request: %w", err)
+		return false, fmt.Errorf("error creating %s health check request: %w", integration, err)
 	}
+
 	req.SetBasicAuth(username, password)
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return false, fmt.Errorf("error calling aliveness API: %w", err)
+		return false, fmt.Errorf("error calling %s health check API: %w", integration, err)
 	}
 	defer resp.Body.Close()
 
@@ -863,7 +907,7 @@ func (c *HostAgent) testRabbitMQConnection(settings map[string]interface{}) (boo
 
 	var data map[string]interface{}
 	if err := json.Unmarshal(bodyBytes, &data); err != nil {
-		return false, fmt.Errorf("invalid JSON from RabbitMQ: %w", err)
+		return false, fmt.Errorf("invalid JSON from %s health API: %w", integration, err)
 	}
 
 	status, _ := data["status"].(string)
@@ -872,7 +916,11 @@ func (c *HostAgent) testRabbitMQConnection(settings map[string]interface{}) (boo
 	return isAlive, nil
 }
 
-func (c *HostAgent) updateRabbitMQHealthStatus(integrationKey string, isAlive bool) error {
+func (c *HostAgent) updateIntegrationHealthStatus(
+	integration string,
+	integrationKey string,
+	isAlive bool,
+) error {
 	u, err := url.Parse(c.Target)
 	if err != nil {
 		return err
@@ -906,7 +954,7 @@ func (c *HostAgent) updateRabbitMQHealthStatus(integrationKey string, isAlive bo
 
 	req, err := http.NewRequest("PUT", updateURL, bytes.NewBuffer(jsonBody))
 	if err != nil {
-		return fmt.Errorf("failed to create PUT request: %w", err)
+		return fmt.Errorf("failed to create %s update PUT request: %w", integration, err)
 	}
 
 	req.Header.Set("accept", "application/json")
@@ -915,22 +963,64 @@ func (c *HostAgent) updateRabbitMQHealthStatus(integrationKey string, isAlive bo
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("update request failed: %w", err)
+		return fmt.Errorf("%s update request failed: %w", integration, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		c.logger.Warn("RabbitMQ update API returned non-200",
+		c.logger.Warn(fmt.Sprintf("%s update API returned non-200", integration),
 			zap.Int("status", resp.StatusCode),
-			zap.String("integration", integrationKey),
+			zap.String("integrationKey", integrationKey),
 		)
-		return fmt.Errorf("update API returned non-200: %d", resp.StatusCode)
+
+		return fmt.Errorf("%s update API returned non-200: %d", integration, resp.StatusCode)
 	}
 
-	c.logger.Info("RabbitMQ health check update successful",
-		zap.String("integration", integrationKey),
+	c.logger.Info(
+		fmt.Sprintf("%s health check update successful", integration),
+		zap.String("integrationKey", integrationKey),
 		zap.String("host", hostname),
 	)
 
 	return nil
+}
+
+func (c *HostAgent) testRedpandaConnection(settings map[string]interface{}) (bool, error) {
+	endpoint, _ := settings["endpoint"].(string)
+	if endpoint == "" {
+		err := fmt.Errorf("redpanda endpoint missing")
+		c.logger.Error("Missing Redpanda credentials", zap.Error(err))
+		return false, err
+
+	}
+
+	// If endpoint does not start with http:// or https:// then add http://
+	if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
+		endpoint = "http://" + endpoint
+	}
+
+	// Build the final API URL
+	apiURL := fmt.Sprintf("%s/%s", endpoint, ApiRedpandaStatus)
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	req, err := http.NewRequest("GET", apiURL, nil)
+	if err != nil {
+		return false, fmt.Errorf("error creating aliveness request: %w", err)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, fmt.Errorf("error calling aliveness API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	var data map[string]interface{}
+	if err := json.Unmarshal(bodyBytes, &data); err != nil {
+		return false, fmt.Errorf("invalid JSON from RabbitMQ: %w", err)
+	}
+
+	status, _ := data["status"].(string)
+	isAlive := status == "ready"
+	return isAlive, nil
 }
