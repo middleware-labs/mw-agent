@@ -42,17 +42,28 @@ jobs:
           token: ${{ secrets.GHCR_TOKEN }}
           ssh-key: ${{ secrets.CHECK_AGENT_ACCESS }}
           submodules: 'recursive'
+      
+      - name: Free Disk Space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo docker system prune -af
+          sudo apt-get clean
+          echo "Available disk space:"
+          df -h
 
       - name: Set up GOPRIVATE
         run: echo "GOPRIVATE=your.private.repo" >> $GITHUB_ENV
 
-      - name: Caching Go Modules and Build Cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+      # - name: Caching Go Modules and Build Cache
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: |
+      #       ~/.cache/go-build
+      #       ~/go/pkg/mod
+      #     key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -105,3 +116,9 @@ jobs:
             APP_BINARY=${{ matrix.agent.binary }}
           tags: |
             ${{ matrix.agent.image }}:${{ env.RELEASE_VERSION }}
+      
+      - name: Clean Up Docker
+        if: always()
+        run: |
+          docker system prune -af --volumes
+          df -h
