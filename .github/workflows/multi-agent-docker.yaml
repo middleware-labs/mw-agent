@@ -36,6 +36,16 @@ jobs:
             dockerfile: Dockerfiles/DockerfileKube.base
             image: ghcr.io/middleware-labs/mw-synthetics
     steps:
+
+      - name: Debug Inputs
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "Tag input: '${{ github.event.inputs.tag }}'"
+          echo "Platform input: '${{ github.event.inputs.platform }}'"
+          echo "GITHUB_REF: ${{ github.ref }}"
+          echo "GITHUB_SHA: ${{ github.sha }}"
+
+          
       - name: Checkout Repo
         uses: actions/checkout@v3
         with:
