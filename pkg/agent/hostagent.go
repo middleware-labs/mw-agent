@@ -478,9 +478,8 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 		return fmt.Errorf("failed to get factories: %w", err)
 	}
 
-	//fmt.Printf("factories %#v ", factories)
 	cfgProviderSettings := c.getConfigProviderSettings("yaml:" + string(apiYAMLBytes))
-	//fmt.Println("REACHED HERE ")
+
 	configProvider, err := otelcol.NewConfigProvider(cfgProviderSettings)
 	if err != nil {
 		return err
@@ -488,24 +487,18 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 	if configProvider == nil {
 		return fmt.Errorf("config provider is nil, check YAML format and provider settings")
 	}
-	//fmt.Println("RconfigProvider ", configProvider)
 	cfg, err := configProvider.Get(context.Background(), factories)
 	if err != nil {
-		//fmt.Println("cfg err", err)
 		return err
 	}
-	//fmt.Println("STart validationm")
 	if err := cfg.Validate(); err != nil {
-		//fmt.Println("end validationm failed")
 		trackErr := c.UpdateAgentTrackStatus(err)
 		if trackErr != nil {
 			c.logger.Error("failed to update agent track status", zap.Error(trackErr))
 		}
 		return fmt.Errorf("%w: %v", ErrInvalidConfig, err)
 	}
-	//fmt.Println("write validationm")
 	if err := os.WriteFile(c.OtelConfigFile, apiYAMLBytes, 0644); err != nil {
-		//fmt.Println("write ", err)
 		return fmt.Errorf("failed to write new configuration data to file %s: %w", c.OtelConfigFile, err)
 	}
 
