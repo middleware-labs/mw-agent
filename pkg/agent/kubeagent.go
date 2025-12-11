@@ -39,7 +39,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
@@ -168,7 +167,6 @@ func (k *KubeAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 		mongodbatlasreceiver.NewFactory(),
 		datadogreceiver.NewFactory(),
 		mongodbreceiver.NewFactory(),
-		postgresqlreceiver.NewFactory(),
 	}...)
 	if err != nil {
 		return otelcol.Factories{}, err
