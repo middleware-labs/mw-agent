@@ -19,6 +19,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
@@ -77,6 +79,8 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 		hostmetricsreceiver.NewFactory(),
 		filelogreceiver.NewFactory(),
 		dockerstatsreceiver.NewFactory(),
+		statsdreceiver.NewFactory(),
+		journaldreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
 		postgresqlreceiver.NewFactory(),
 		mongodbreceiver.NewFactory(),
