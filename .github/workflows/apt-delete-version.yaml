@@ -1,0 +1,156 @@
+name: Delete DEB Version from APT Repo
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_version:
+        description: 'Version to delete (e.g., 1.17.6)'
+        required: true
+        type: string
+      architecture:
+        description: 'Architecture to delete'
+        required: true
+        type: choice
+        options:
+          - all
+          - amd64
+          - arm64
+      dry_run:
+        description: 'Dry run (show what would be deleted without actually deleting)'
+        required: false
+        type: boolean
+        default: true
+
+env:
+  PACKAGE_NAME: mw-agent
+
+jobs:
+  delete-version:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GHCR_TOKEN }}
+
+    - name: Set up aptly
+      run: |
+        wget https://github.com/aptly-dev/aptly/releases/download/v1.5.0/aptly_1.5.0_linux_amd64.tar.gz
+        tar -xzf aptly_1.5.0_linux_amd64.tar.gz
+        chmod +x aptly_1.5.0_linux_amd64/aptly
+        sudo mv aptly_1.5.0_linux_amd64/aptly /usr/local/bin/
+        rm -rf aptly_1.5.0_linux_amd64.tar.gz aptly_1.5.0_linux_amd64/
+        aptly version
+
+    - name: Clone APT Repository
+      run: |
+        sudo apt-get install -y gnupg
+        
+        git clone --depth=1 https://.:${{ secrets.GHCR_TOKEN }}@github.com/middleware-labs/apt.middleware.io.git
+        cd apt.middleware.io
+        
+        echo "=== APT repo size after checkout ==="
+        du -sh .
+        
+        mkdir -p db public pool
+        chmod 755 db public pool
+
+    - name: Import GPG Keys
+      run: |
+        gpg --import apt.middleware.io/gpg-keys/mw-agent-apt-private.key
+        gpg --import apt.middleware.io/gpg-keys/mw-agent-apt-public.key
+
+    - name: Configure aptly
+      run: |
+        APTLY_HOME=$(pwd)/apt.middleware.io
+        echo "APTLY_HOME=$APTLY_HOME" >> $GITHUB_ENV
+        
+        echo '{"rootDir":"'"$APTLY_HOME"'","downloadConcurrency":4,"downloadSpeedLimit":0,"architectures":[],"dependencyFollowSuggests":false,"dependencyFollowRecommends":false,"dependencyFollowAllVariants":false,"dependencyFollowSource":false,"dependencyVerboseResolve":false,"gpgDisableSign":false,"gpgDisableVerify":false,"gpgProvider":"gpg","downloadSourcePackages":false,"skipLegacyPool":true,"ppaDistributorID":"ubuntu","ppaCodename":"","skipContentsPublishing":false,"FileSystemPublishEndpoints":{},"S3PublishEndpoints":{},"SwiftPublishEndpoints":{}}' > ~/.aptly.conf
+        cat ~/.aptly.conf
+
+    - name: List current packages
+      run: |
+        echo "=== Current packages in repository ==="
+        aptly repo show -with-packages mw-repo
+        echo ""
+
+    - name: Build package query
+      id: query
+      run: |
+        VERSION="${{ github.event.inputs.package_version }}"
+        ARCH="${{ github.event.inputs.architecture }}"
+        
+        if [ "$ARCH" == "all" ]; then
+          QUERY="Name (${PACKAGE_NAME}), Version (${VERSION})"
+        else
+          QUERY="Name (${PACKAGE_NAME}), Version (${VERSION}), Architecture (${ARCH})"
+        fi
+        
+        echo "Package query: $QUERY"
+        echo "QUERY=$QUERY" >> $GITHUB_OUTPUT
+
+    - name: Show packages to be deleted
+      run: |
+        echo "=== Packages matching query ==="
+        aptly repo search mw-repo '${{ steps.query.outputs.QUERY }}' || echo "No packages found matching the query"
+
+    - name: Delete package (Dry Run)
+      if: ${{ github.event.inputs.dry_run == 'true' }}
+      run: |
+        echo "=== DRY RUN MODE - No changes will be made ==="
+        echo "Would delete packages matching: ${{ steps.query.outputs.QUERY }}"
+        echo ""
+        echo "Packages that would be deleted:"
+        aptly repo search mw-repo '${{ steps.query.outputs.QUERY }}' || echo "No packages found"
+        echo ""
+        echo "To actually delete, run this workflow again with 'Dry run' unchecked."
+
+    - name: Delete package
+      if: ${{ github.event.inputs.dry_run == 'false' }}
+      run: |
+        echo "=== Removing packages from repository ==="
+        aptly repo remove mw-repo '${{ steps.query.outputs.QUERY }}'
+        
+        echo ""
+        echo "=== Packages after removal ==="
+        aptly repo show -with-packages mw-repo
+
+    - name: Publish update
+      if: ${{ github.event.inputs.dry_run == 'false' }}
+      run: |
+        echo "=== Publishing updated repository ==="
+        aptly publish update -force-overwrite stable
+
+    - name: Push changes to APT repo
+      if: ${{ github.event.inputs.dry_run == 'false' }}
+      run: |
+        cd apt.middleware.io
+        git config --global user.email "keval@middleware.io"
+        git config --global user.name "bhogayatakb"
+        git add .
+        git status
+        
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Removed ${PACKAGE_NAME} version ${{ github.event.inputs.package_version }} (${{ github.event.inputs.architecture }})"
+          git push origin master
+          echo "=== Successfully pushed changes ==="
+        fi
+
+    - name: Summary
+      run: |
+        echo "## Deletion Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Package:** ${PACKAGE_NAME}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Version:** ${{ github.event.inputs.package_version }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Architecture:** ${{ github.event.inputs.architecture }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Dry Run:** ${{ github.event.inputs.dry_run }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+          echo "⚠️ **This was a dry run. No changes were made.**" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "✅ **Package successfully removed from APT repository.**" >> $GITHUB_STEP_SUMMARY
+        fi
+

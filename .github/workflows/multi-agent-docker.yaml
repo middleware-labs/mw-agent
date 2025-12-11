@@ -36,23 +36,44 @@ jobs:
             dockerfile: Dockerfiles/DockerfileKube.base
             image: ghcr.io/middleware-labs/mw-synthetics
     steps:
+
+      - name: Debug Inputs
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "Tag input: '${{ github.event.inputs.tag }}'"
+          echo "Platform input: '${{ github.event.inputs.platform }}'"
+          echo "GITHUB_REF: ${{ github.ref }}"
+          echo "GITHUB_SHA: ${{ github.sha }}"
+
+
       - name: Checkout Repo
         uses: actions/checkout@v3
         with:
           token: ${{ secrets.GHCR_TOKEN }}
           ssh-key: ${{ secrets.CHECK_AGENT_ACCESS }}
           submodules: 'recursive'
+      
+      - name: Free Disk Space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo docker system prune -af
+          sudo apt-get clean
+          echo "Available disk space:"
+          df -h
 
       - name: Set up GOPRIVATE
         run: echo "GOPRIVATE=your.private.repo" >> $GITHUB_ENV
 
-      - name: Caching Go Modules and Build Cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+      # - name: Caching Go Modules and Build Cache
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: |
+      #       ~/.cache/go-build
+      #       ~/go/pkg/mod
+      #     key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -75,11 +96,33 @@ jobs:
 
       - name: Setting Release Number
         run: |
-          if [ -n "${{ github.event.inputs.release_version }}" ]; then
-            echo "RELEASE_VERSION=${{ github.event.inputs.release_version }}" >> $GITHUB_ENV
-          else
+          # For workflow_dispatch, always use the tag input
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "RELEASE_VERSION=${{ github.event.inputs.tag }}" >> $GITHUB_ENV
+            echo "Using manual tag: ${{ github.event.inputs.tag }}"
+          # For tag push, extract the tag name
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
             echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+            echo "Using git tag: ${GITHUB_REF#refs/tags/}"
+          # Fallback for branch pushes
+          else
+            BRANCH=$(echo "${{ github.ref }}" | sed 's|refs/heads/||' | sed 's|/|-|g')
+            SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-7)
+            echo "RELEASE_VERSION=${BRANCH}-${SHA_SHORT}" >> $GITHUB_ENV
+            echo "Using branch+SHA: ${BRANCH}-${SHA_SHORT}"
           fi
+
+      # - name: Setting Release Number
+      #   run: |
+
+      #     TAG_INPUT="${{ github.event.inputs.tag }}"
+      #     echo "Debug: TAG_INPUT = '$TAG_INPUT'"
+    
+      #     if [ -n "${{ github.event.inputs.release_version }}" ]; then
+      #       echo "RELEASE_VERSION=${{ github.event.inputs.release_version }}" >> $GITHUB_ENV
+      #     else
+      #       echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+      #     fi
 
       - name: Setting Platforms
         id: set-platforms
@@ -105,3 +148,9 @@ jobs:
             APP_BINARY=${{ matrix.agent.binary }}
           tags: |
             ${{ matrix.agent.image }}:${{ env.RELEASE_VERSION }}
+      
+      - name: Clean Up Docker
+        if: always()
+        run: |
+          docker system prune -af --volumes
+          df -h

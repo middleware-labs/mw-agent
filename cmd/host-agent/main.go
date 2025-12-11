@@ -40,6 +40,7 @@ type program struct {
 // on Linux, Windows, MacOS & BSD
 func (p *program) Start(s service.Service) error {
 	// Start should not block. Do the actual work async.
+
 	p.logger.Info("starting service", zap.Stringer("name", s))
 
 	p.programWG.Add(1)

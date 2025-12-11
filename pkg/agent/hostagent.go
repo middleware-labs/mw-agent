@@ -465,6 +465,7 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 			return err
 		}
 	}
+	//apiYAMLConfig = c.fixTelemetryConfig(apiYAMLConfig)
 
 	apiYAMLBytes, err := yaml.Marshal(apiYAMLConfig)
 	if err != nil {
@@ -472,18 +473,24 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 	}
 
 	// check if the config is valid, otherwise return an error
-	factories, _ := c.getFactories()
+	factories, err := c.getFactories()
+	if err != nil {
+		return fmt.Errorf("failed to get factories: %w", err)
+	}
+
 	cfgProviderSettings := c.getConfigProviderSettings("yaml:" + string(apiYAMLBytes))
+
 	configProvider, err := otelcol.NewConfigProvider(cfgProviderSettings)
 	if err != nil {
 		return err
 	}
-
+	if configProvider == nil {
+		return fmt.Errorf("config provider is nil, check YAML format and provider settings")
+	}
 	cfg, err := configProvider.Get(context.Background(), factories)
 	if err != nil {
 		return err
 	}
-
 	if err := cfg.Validate(); err != nil {
 		trackErr := c.UpdateAgentTrackStatus(err)
 		if trackErr != nil {
@@ -491,7 +498,6 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 		}
 		return fmt.Errorf("%w: %v", ErrInvalidConfig, err)
 	}
-
 	if err := os.WriteFile(c.OtelConfigFile, apiYAMLBytes, 0644); err != nil {
 		return fmt.Errorf("failed to write new configuration data to file %s: %w", c.OtelConfigFile, err)
 	}
@@ -724,4 +730,16 @@ func (c *HostAgent) StopCollector(err error) {
 		c.logger.Info("stopped telemetry collection at", zap.Time("time", time.Now()))
 		c.collector = nil
 	}
+}
+
+func (c *HostAgent) fixTelemetryConfig(config map[string]interface{}) map[string]interface{} {
+	serviceData, ok := config["service"].(map[string]interface{})
+	if !ok {
+		return config
+	}
+
+	// Remove the entire telemetry section
+	delete(serviceData, "telemetry")
+
+	return config
 }
