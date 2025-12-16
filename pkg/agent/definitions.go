@@ -111,6 +111,7 @@ type BaseConfig struct {
 	ProfilngServerURL     string
 	InternalMetricsPort   uint
 	EnableDataDogReceiver bool
+	EnableInjector        bool
 }
 
 // String() implements stringer interface for BaseConfig
@@ -427,3 +428,35 @@ func (p *Profiler) StartProfiling(appName string, target string, tags string) {
 
 	p.Logger.Info("PROFILER: Running on mw-agent")
 }
+
+// ServiceSetting represents the detailed status for a single service/process.
+type ServiceSetting struct {
+	PID               int    `json:"pid"`
+	ServiceName       string `json:"service_name"`
+	Owner             string `json:"owner"`
+	Status            string `json:"status"`
+	Enabled           bool   `json:"enabled"`
+	ServiceType       string `json:"service_type"`
+	Language          string `json:"language"`
+	RuntimeVersion    string `json:"runtime_version"`
+	SystemdUnit       string `json:"systemd_unit,omitempty"`
+	JarFile           string `json:"jar_file,omitempty"`
+	MainClass         string `json:"main_class,omitempty"`
+	HasAgent          bool   `json:"has_agent"`
+	IsMiddlewareAgent bool   `json:"is_middleware_agent"`
+	AgentPath         string `json:"agent_path,omitempty"`
+	ConfigPath        string `json:"config_path,omitempty"`
+	Instrumented      bool   `json:"instrumented"`
+	Key               string `json:"key"`
+}
+
+// OSConfig represents the configuration and status for a specific OS (e.g., "linux").
+type OSConfig struct {
+	AgentRestartStatus          bool                      `json:"agent_restart_status"`
+	AutoInstrumentationInit     bool                      `json:"auto_instrumentation_init"`
+	AutoInstrumentationSettings map[string]ServiceSetting `json:"auto_instrumentation_settings"`
+	// Add other OS-specific fields (darwin, windows, k8s, etc.) if needed
+}
+
+// AgentReportValue is the root structure for the 'value' field's JSON content.
+type AgentReportValue map[string]OSConfig

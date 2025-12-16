@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/k0kubun/pp"
 	"github.com/middleware-labs/mw-agent/pkg/agent"
 	"github.com/middleware-labs/synthetics-agent/pkg/worker"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -18,7 +19,6 @@ import (
 	"github.com/kardianos/service"
 	cli "github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -45,7 +45,17 @@ func (p *program) Start(s service.Service) error {
 
 	p.programWG.Add(1)
 	go p.run()
-
+	if p.hostAgent.EnableInjector {
+		pp.Println("Oh baby we injecting .....")
+		p.programWG.Add(1)
+		go func() {
+			p.hostAgent.ReportServices(p.errCh, p.stopCh)
+			p.programWG.Done()
+		}()
+		p.logger.Info("Oh baby we injectin' real hard...")
+	} else {
+		p.logger.Info("injector status reporting disabled")
+	}
 	// Start any goroutines that can control collection
 	if p.hostAgent.FetchAccountOtelConfig {
 		// Listen to the config changes provided by Middleware API
@@ -132,6 +142,14 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			EnvVars:     []string{"MW_FETCH_ACCOUNT_OTEL_CONFIG"},
 			Usage:       "Get the otel-config from Middleware backend.",
 			Destination: &cfg.FetchAccountOtelConfig,
+			DefaultText: "true",
+			Value:       true,
+		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "enable_injector",
+			EnvVars:     []string{"MW_ENABLE_INJECTOR "},
+			Usage:       "Enables the mw-injector",
+			Destination: &cfg.EnableInjector,
 			DefaultText: "true",
 			Value:       true,
 		}),
