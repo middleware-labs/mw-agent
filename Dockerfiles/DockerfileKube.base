@@ -24,7 +24,13 @@ RUN GOPRIVATE=github.com/middleware-labs go mod tidy
 # Build the Go binary
 ARG AGENT_VERSION
 ENV AGENT_VERSION=$AGENT_VERSION
-RUN CGO_ENABLED=0 go build -ldflags "-s -w -X main.agentVersion=${AGENT_VERSION}" -o /tmp/mw-agent cmd/kube-agent/main.go
+ARG APP_BINARY
+ENV APP_BINARY=$APP_BINARY
+# Dynamically select the main.go file based on APP_BINARY by removing 'mw-' prefix
+RUN AGENT_FOLDER="$(echo $APP_BINARY | sed 's/^mw-//')" && \
+    SRC="cmd/${AGENT_FOLDER}/main.go" && \
+    if [ ! -f "$SRC" ]; then echo "Source file $SRC does not exist!" && exit 1; fi && \
+    CGO_ENABLED=0 go build -ldflags "-s -w -X main.agentVersion=${AGENT_VERSION}" -o /tmp/mw-agent "$SRC"
 
 # Stage 2: Production Stage
 FROM ubuntu:24.04 AS prod
