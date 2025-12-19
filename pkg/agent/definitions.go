@@ -435,6 +435,8 @@ type HealthCheckRequest struct {
 	IntegrationKey   string `json:"integration_key" binding:"required"`
 	ShouldTest       bool   `json:"should_test" binding:"omitempty"`
 	IsConnectionLive bool   `json:"is_connection_live" binding:"omitempty"`
+	TestStartedAt    string `json:"test_started_at" binding:"omitempty"`
+	TestCompletedAt  string `json:"test_completed_at" binding:"omitempty"`
 }
 
 type AgentSettingModels struct {

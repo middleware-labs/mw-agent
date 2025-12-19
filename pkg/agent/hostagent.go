@@ -986,6 +986,7 @@ func (c *HostAgent) updateIntegrationHealthStatus(
 		IntegrationKey:   integrationKey,
 		ShouldTest:       false,
 		IsConnectionLive: isAlive,
+		TestCompletedAt:  time.Now().UTC().Format(time.RFC3339),
 	}
 
 	jsonBody, _ := json.Marshal(reqBody)
