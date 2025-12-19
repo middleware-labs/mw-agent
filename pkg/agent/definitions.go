@@ -111,6 +111,7 @@ type BaseConfig struct {
 	ProfilngServerURL     string
 	InternalMetricsPort   uint
 	EnableDataDogReceiver bool
+	EnableInjector        bool
 }
 
 // String() implements stringer interface for BaseConfig

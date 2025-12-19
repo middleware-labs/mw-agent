@@ -42,6 +42,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/reso
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders => github.com/middleware-labs/opentelemetry-collector-contrib/internal/metadataproviders v0.0.0-20251119125747-84554b33c7be
 
+replace github.com/middleware-labs/java-injector => ../mw-injector
+
 replace go.opentelemetry.io/collector => go.opentelemetry.io/collector v0.139.0
 
 require (
@@ -117,6 +119,8 @@ require (
 )
 
 require (
+	github.com/k0kubun/pp v3.0.1+incompatible
+	github.com/middleware-labs/java-injector v0.0.0-00010101000000-000000000000
 	github.com/middleware-labs/synthetics-agent v1.0.56
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.139.0
@@ -216,7 +220,7 @@ require (
 	github.com/eapache/go-resiliency v1.7.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20230731223053-c322873962e3 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
-	github.com/ebitengine/purego v0.9.0 // indirect
+	github.com/ebitengine/purego v0.9.1 // indirect
 	github.com/edsrzf/mmap-go v1.2.0 // indirect
 	github.com/elastic/go-grok v0.3.1 // indirect
 	github.com/elastic/lunes v0.1.0 // indirect
@@ -304,7 +308,6 @@ require (
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/julienschmidt/httprouter v1.3.0 // indirect
-	github.com/k0kubun/pp v3.0.1+incompatible // indirect
 	github.com/klauspost/compress v1.18.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
 	github.com/knadh/koanf v1.5.0 // indirect
@@ -406,7 +409,7 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.35 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.9.0 // indirect
-	github.com/shirou/gopsutil/v4 v4.25.9 // indirect
+	github.com/shirou/gopsutil/v4 v4.25.11 // indirect
 	github.com/shurcooL/httpfs v0.0.0-20230704072500-f1e31cf0ba5c // indirect
 	github.com/sijms/go-ora/v2 v2.9.0 // indirect
 	github.com/spf13/cobra v1.10.1 // indirect
@@ -416,8 +419,8 @@ require (
 	github.com/tidwall/gjson v1.14.2 // indirect
 	github.com/tilinna/clock v1.1.0 // indirect
 	github.com/tinylib/msgp v1.5.0 // indirect
-	github.com/tklauser/go-sysconf v0.3.15 // indirect
-	github.com/tklauser/numcpus v0.10.0 // indirect
+	github.com/tklauser/go-sysconf v0.3.16 // indirect
+	github.com/tklauser/numcpus v0.11.0 // indirect
 	github.com/twmb/franz-go v1.20.2 // indirect
 	github.com/twmb/franz-go/pkg/kadm v1.17.1 // indirect
 	github.com/twmb/franz-go/pkg/kmsg v1.12.0 // indirect
@@ -529,7 +532,7 @@ require (
 	golang.org/x/net v0.46.0 // indirect
 	golang.org/x/oauth2 v0.32.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
-	golang.org/x/sys v0.37.0 // indirect
+	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/term v0.36.0 // indirect
 	golang.org/x/text v0.30.0 // indirect
 	golang.org/x/time v0.14.0 // indirect

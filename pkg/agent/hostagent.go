@@ -16,6 +16,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/k0kubun/pp"
+	"github.com/middleware-labs/java-injector/pkg/discovery"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
@@ -354,6 +356,7 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 
 	// Call Webhook
 	u, err := url.Parse(c.APIURLForConfigCheck)
+	pp.Println("Snitching for: ", c.APIURLForConfigCheck)
 	if err != nil {
 		return err
 	}
@@ -742,4 +745,35 @@ func (c *HostAgent) fixTelemetryConfig(config map[string]interface{}) map[string
 	delete(serviceData, "telemetry")
 
 	return config
+}
+
+func (c *HostAgent) ReportServices(
+	errCh chan<- error,
+	stopCh <-chan struct{},
+) error {
+	ticker := time.NewTicker(time.Second * 3)
+	pp.Println("we be snitchin'")
+
+	for {
+		c.logger.Debug("we be snitchin'")
+		select {
+		case <-stopCh:
+			ticker.Stop()
+			return nil
+		case <-ticker.C:
+			err := c.ReportAgentStatusAPI()
+			errCh <- err
+		}
+	}
+	return nil
+}
+
+func (c *HostAgent) ReportAgentStatusAPI() error {
+	hostname := getHostname()
+	apikey := c.APIKey
+	err := discovery.Reportlol(hostname, apikey, c.APIURLForConfigCheck, c.Version, c.InfraPlatform.String())
+	if err != nil {
+		pp.Println(err)
+	}
+	return nil
 }
