@@ -94,6 +94,9 @@ type OpsAI struct {
 type BaseConfig struct {
 	APIKey                    string
 	Target                    string
+	OpAMPServerURL            string
+	RemoteAgentEnabled        bool
+	AgentID                   string
 	EnableSyntheticMonitoring bool
 	ConfigCheckInterval       string
 	FetchAccountOtelConfig    bool

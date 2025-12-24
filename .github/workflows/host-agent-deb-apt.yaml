@@ -21,12 +21,13 @@ jobs:
     strategy:
       matrix:
         arch:
-          - arm64
+          #- arm64
           - amd64
       max-parallel: 1
 
     steps:
     - name: Free up disk space
+      if: ${{ github.actor != 'nektos/act' }}
       run: |
         echo "=== Disk space before cleanup ==="
         df -h /
@@ -54,17 +55,28 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y gettext-base
   
-    - name: Checkout Repo
+    - name: Checkout MW Agent Repo
       uses: actions/checkout@v4
       with:
         token: ${{ secrets.GHCR_TOKEN }}
         ssh-key: ${{ secrets.CHECK_AGENT_ACCESS }}
         submodules: 'recursive'
+        path: agent
+
+    - name: Checkout MW Supervisor Repo
+      uses: actions/checkout@v4
+      with:
+        repository: middleware-labs/mw-opampsupervisor 
+        token: ${{ secrets.GHCR_TOKEN }}
+        submodules: 'recursive'
+        path: supervisor
+        ref: beta
 
     - name: Set Architecture Variables
       run: |
-        echo "::set-env name=PACKAGE_NAME::mw-agent"
-        echo "::set-env name=BINARY_SOURCE::release/mw-agent"
+        echo "PACKAGE_NAME=mw-agent" >> $GITHUB_ENV
+        echo "AGENT_BINARY=release/mw-agent" >> $GITHUB_ENV
+        echo "SUPERVISOR_BINARY=release/mw-opamp-supervisor" >> $GITHUB_ENV
         if [ -n "${{ github.event.inputs.release_version }}" ]; then
           echo "RELEASE_VERSION=${{ github.event.inputs.release_version }}" >> $GITHUB_ENV
         else
@@ -81,7 +93,7 @@ jobs:
       if: ${{ github.actor != 'nektos/act' }}
       uses: actions/setup-go@v4
       with:
-        go-version: 1.23.4
+        go-version: 1.24.0
 
     - name: Set up Git credentials for Go
       run: |
@@ -94,7 +106,17 @@ jobs:
     - name: Go Build
       if: ${{ github.actor != 'nektos/act' }}
       run: |
-        CGO_ENABLED=0 GOPRIVATE=github.com/middleware-labs GOOS=linux GOARCH=${{ matrix.arch }} go build -ldflags="-s -w -X main.agentVersion=${RELEASE_VERSION}" -v -a -o $BINARY_SOURCE cmd/host-agent/main.go
+        cd agent
+        CGO_ENABLED=0 GOPRIVATE=github.com/middleware-labs GOOS=linux GOARCH=${{ matrix.arch }} go build -ldflags="-s -w -X main.agentVersion=${RELEASE_VERSION}" -v -a -o ../${AGENT_BINARY} cmd/host-agent/main.go
+
+    - name: Build Supervisor Binary
+      if: ${{ github.actor != 'nektos/act' }}
+      run: |
+        cd supervisor
+        CGO_ENABLED=0 GOPRIVATE=github.com/middleware-labs \
+          GOOS=linux GOARCH=${{ matrix.arch }} \
+          go build -ldflags="-s -w -X main.version=${RELEASE_VERSION}" \
+          -v -a -o ../${SUPERVISOR_BINARY} .
 
     - name: Clean Go cache to free space
       if: ${{ github.actor != 'nektos/act' }}
@@ -108,31 +130,42 @@ jobs:
           if [ ${{ github.actor }} == "nektos/act" ]
           then
               cp build/mw-host-agent-${{ matrix.arch }} build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/opt/${PACKAGE_NAME}/bin/${PACKAGE_NAME}
+              cp build/mw-opamp-supervisor-${{ matrix.arch }} build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/opt/${PACKAGE_NAME}/bin/mw-opamp-supervisor
           else 
-            cp $BINARY_SOURCE build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/opt/${PACKAGE_NAME}/bin/${PACKAGE_NAME}
+            # For GitHub Actions, copy freshly built binaries
+            cp $AGENT_BINARY build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/opt/${PACKAGE_NAME}/bin/${PACKAGE_NAME}
+            cp ${SUPERVISOR_BINARY} build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/opt/${PACKAGE_NAME}/bin/mw-opamp-supervisor
           fi
 
     - name: Copy Linux root files & generate dpkg Control file
       run: |
           mkdir -p build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN
           mkdir -p build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/etc/${PACKAGE_NAME}
+          mkdir -p build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/etc/${PACKAGE_NAME}/opamp
           mkdir -p build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/lib/systemd/system
 
-          cp package-tooling/agent-config.yaml.sample build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/etc/${PACKAGE_NAME}/agent-config.yaml.sample
-          cp package-tooling/mw-agent.env.sample build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/etc/${PACKAGE_NAME}/mw-agent.env.sample
-          cp package-tooling/otel-config.yaml.sample build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/etc/${PACKAGE_NAME}/otel-config.yaml.sample
+          cp agent/package-tooling/agent-config.yaml.sample build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/etc/${PACKAGE_NAME}/agent-config.yaml.sample
+          cp agent/package-tooling/mw-agent.env.sample build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/etc/${PACKAGE_NAME}/mw-agent.env.sample
+          # cp agent/package-tooling/mw-supervisor.env build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/etc/${PACKAGE_NAME}/mw-supervisor.env
+          cp agent/package-tooling/otel-config.yaml.sample build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/etc/${PACKAGE_NAME}/otel-config.yaml.sample
+          cp supervisor/package-tooling/supervisor-config.yaml.sample build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/etc/${PACKAGE_NAME}/supervisor-config.yaml.sample
 
-
-          cp package-tooling/linux/postinst build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/postinst
-          cp package-tooling/linux/prerm build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/prerm
-          cp package-tooling/linux/postrm build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/postrm
+          cp agent/package-tooling/linux/postinst build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/postinst
+          cp agent/package-tooling/linux/prerm build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/prerm
+          cp agent/package-tooling/linux/postrm build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/postrm
           chmod 0755 build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/postinst
           chmod 0755 build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/prerm
           chmod 0755 build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/postrm
 
-          cp package-tooling/linux/mw-agent.service build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/lib/systemd/system/mw-agent.service
+          cp agent/package-tooling/linux/mw-agent.service build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/lib/systemd/system/mw-agent.service
+          cp agent/package-tooling/linux/mw-agent-opamp.service build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/lib/systemd/system/mw-agent-opamp.service
 
-          PACKAGE=${PACKAGE_NAME} VERSION=${RELEASE_VERSION} ARCHITECTURE=${{ matrix.arch }} envsubst < package-tooling/linux/deb/control > build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/control
+          cd agent
+          PACKAGE=${PACKAGE_NAME} VERSION=${RELEASE_VERSION} ARCHITECTURE=${{ matrix.arch }} \
+            envsubst < package-tooling/linux/deb/control > \
+            ../build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/control
+          # cd agent
+          # PACKAGE=${PACKAGE_NAME} VERSION=${RELEASE_VERSION} ARCHITECTURE=${{ matrix.arch }} envsubst < package-tooling/linux/deb/control > build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/control
 
     - name: Creating DEB package
       run: |
@@ -141,13 +174,23 @@ jobs:
           dpkg-deb --contents build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}.deb
 
     - name: Upload DEB as artifact
+      if: ${{ github.actor != 'nektos/act' }}
       uses: actions/upload-artifact@v4
       with:
         name: mw-agent-${{ matrix.arch }}-deb
         path: build/mw-agent_${{ env.RELEASE_VERSION }}_${{ matrix.arch }}.deb
         retention-days: 1
+    
+    - name: Upload agent binary as artifact
+      if: ${{ github.actor != 'nektos/act' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: mw-agent-${{ matrix.arch }}-binary
+        path: release/mw-agent
+        retention-days: 1
 
     - name: Clean up build artifacts to free space
+      if: ${{ github.actor != 'nektos/act' }}
       run: |
         # Remove the package directory (keep only the .deb file)
         rm -rf build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}
@@ -287,6 +330,41 @@ jobs:
             fi
           fi
         done
+
+        echo ""
+        echo "=== Creating and uploading agent tarballs ==="
+        for arch in arm64 amd64; do
+          BINARY_FILE="./artifacts/mw-agent-${arch}-binary/mw-agent"
+          if [ -f "$BINARY_FILE" ]; then
+            # Create tarball directory
+            TARBALL_DIR="mw-agent-${VERSION}-${arch}"
+            mkdir -p "$TARBALL_DIR"
+
+            cp "$BINARY_FILE" "$TARBALL_DIR/mw-agent"
+            chmod +x "$TARBALL_DIR/mw-agent"
+
+             # Create VERSION file
+            echo "$VERSION" > "$TARBALL_DIR/VERSION"
+            
+            # Create tarball
+            tar -czf "mw-agent-${VERSION}-${arch}.tar.gz" "$TARBALL_DIR"
+            
+            echo "Uploading: mw-agent-${VERSION}-${arch}.tar.gz"
+            gh release upload "$VERSION" "mw-agent-${VERSION}-${arch}.tar.gz" --clobber --repo ${{ github.repository }}
+            
+            # Cleanup
+            rm -rf "$TARBALL_DIR"
+          else
+            echo "Warning: Binary not found at $BINARY_FILE"
+          fi
+        done
+
+        echo ""
+        echo "Upload complete! Release assets:"
+        echo "  - mw-agent_${VERSION}_amd64.deb"
+        echo "  - mw-agent_${VERSION}_arm64.deb"
+        echo "  - mw-agent-${VERSION}-amd64.tar.gz"
+        echo "  - mw-agent-${VERSION}-arm64.tar.gz"
 
 
    

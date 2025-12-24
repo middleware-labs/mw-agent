@@ -1,0 +1,41 @@
+[Unit]
+Description=Middleware Agent (Remote Management Mode - OpAMP)
+Documentation=https://docs.middleware.io
+After=network-online.target
+Wants=network-online.target
+
+# Prevent both services from running simultaneously
+Conflicts=mw-agent.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/mw-agent
+
+# Load environment configuration
+EnvironmentFile=-/etc/mw-agent/mw-agent.env
+EnvironmentFile=-/etc/mw-agent/mw-supervisor.env
+
+# Start the OpAMP supervisor (which will spawn the agent)
+ExecStart=/opt/mw-agent/bin/mw-opamp-supervisor --config /etc/mw-agent/supervisor-config.yaml
+
+# KillMode=mixed ensures child processes (spawned agent) are also terminated
+KillMode=mixed
+KillSignal=SIGTERM
+
+# Restart policy
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+
+# Security hardening
+#NoNewPrivileges=true
+#PrivateTmp=true
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=512
+
+[Install]
+WantedBy=multi-user.target

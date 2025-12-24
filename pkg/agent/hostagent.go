@@ -498,12 +498,35 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 		}
 		return fmt.Errorf("%w: %v", ErrInvalidConfig, err)
 	}
-	if err := os.WriteFile(c.OtelConfigFile, apiYAMLBytes, 0644); err != nil {
-		return fmt.Errorf("failed to write new configuration data to file %s: %w", c.OtelConfigFile, err)
+	fmt.Println("pushing new config to supervisor")
+	if err := c.pushConfigToSupervisor(apiYAMLBytes); err != nil {
+		return fmt.Errorf("failed to push config to supervisor: %w", err)
 	}
+	//fmt.Println("write validationm")
+	// if err := os.WriteFile(c.OtelConfigFile, apiYAMLBytes, 0644); err != nil {
+	// 	//fmt.Println("write ", err)
+	// 	return fmt.Errorf("failed to write new configuration data to file %s: %w", c.OtelConfigFile, err)
+	// }
 
 	return nil
 }
+
+// func (c *HostAgent) pushConfigToSupervisor(config []byte) error {
+// 	resp, err := http.Post(
+// 		"http://localhost:4321/v1/config", // Supervisor's HTTP endpoint
+// 		"application/yaml",
+// 		bytes.NewReader(config),
+// 	)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to push config to supervisor: %w", err)
+// 	}
+// 	defer resp.Body.Close()
+
+// 	if resp.StatusCode != http.StatusOK {
+// 		return fmt.Errorf("supervisor returned status: %d", resp.StatusCode)
+// 	}
+// 	return nil
+// }
 
 // GetUpdatedYAMLPath gets the correct otel configuration file
 func (c *HostAgent) getOtelConfig() (string, error) {
@@ -623,7 +646,19 @@ func (c *HostAgent) ListenForConfigChanges(errCh chan<- error,
 	stopCh <-chan struct{}) error {
 
 	// First fetch the config
-	_, err := c.getOtelConfig()
+	//fmt.Println("BACKGROUND FERTCH SERVICE")
+
+	// TO UNBLOCK
+	//errCh <- nil
+
+	//time.Sleep(30 * time.Second)
+	//_, err := c.getOtelConfig()
+	c.logger.Info(
+		"Inside the mw agent ListenForConfig Changes",
+		zap.String("time", time.Now().Format("02 Jan 2006 15:04:05 MST")),
+	)
+
+	_, err := c.hello()
 	if err != nil {
 		errCh <- err
 	} else {
@@ -644,6 +679,11 @@ func (c *HostAgent) ListenForConfigChanges(errCh chan<- error,
 			errCh <- err
 		}
 	}
+}
+
+func (c *HostAgent) hello() (string, error) {
+
+	return "", nil
 }
 
 func (c *HostAgent) UpdateAgentTrackStatus(reason error) error {
@@ -742,4 +782,47 @@ func (c *HostAgent) fixTelemetryConfig(config map[string]interface{}) map[string
 	delete(serviceData, "telemetry")
 
 	return config
+}
+
+func (c *HostAgent) pushConfigToSupervisor(config []byte) error {
+	// Get the agent ID (instance ID from supervisor)
+	//agentID := c.getAgentID() // You need to implement this
+
+	// Call OpAMP server to push config
+	url := fmt.Sprintf("%s/api/v1/agents/%s/config/push", "http://localhost:8080", c.AgentID)
+
+	fmt.Println("The new url is", url)
+
+	req, err := http.NewRequest("POST", url, bytes.NewReader(config))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// 3. Set Headers
+	req.Header.Set("Content-Type", "application/yaml")
+	req.Header.Set("Authorization", "Bearer "+c.APIKey) // Add the API Key
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to push config to OpAMP server: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("OpAMP server returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	// Read response
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		c.logger.Warn("Failed to decode response", zap.Error(err))
+	} else {
+		c.logger.Info("Config pushed to OpAMP server",
+			zap.Any("response", result),
+		)
+	}
+
+	return nil
 }
