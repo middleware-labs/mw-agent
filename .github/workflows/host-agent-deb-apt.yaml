@@ -26,28 +26,40 @@ jobs:
       max-parallel: 1
 
     steps:
-    - name: Free up disk space
+    - name: Free Disk Space (Ubuntu)
       if: ${{ github.actor != 'nektos/act' }}
-      run: |
-        echo "=== Disk space before cleanup ==="
-        df -h /
+      uses: jlumbroso/free-disk-space@main
+      with:
+        android: true
+        large-packages: true
+        dotnet: true
+        haskell: true
+        tool-cache: true
+        docker-images: true
+        swap-storage: true
+
+    # - name: Free up disk space
+    #   if: ${{ github.actor != 'nektos/act' }}
+    #   run: |
+    #     echo "=== Disk space before cleanup ==="
+    #     df -h /
         
-        # Remove large unnecessary packages
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /usr/local/lib/android
-        sudo rm -rf /opt/ghc
-        sudo rm -rf /opt/hostedtoolcache/CodeQL
-        sudo rm -rf /usr/local/share/boost
-        sudo rm -rf /usr/share/swift
+    #     # Remove large unnecessary packages
+    #     sudo rm -rf /usr/share/dotnet
+    #     sudo rm -rf /usr/local/lib/android
+    #     sudo rm -rf /opt/ghc
+    #     sudo rm -rf /opt/hostedtoolcache/CodeQL
+    #     sudo rm -rf /usr/local/share/boost
+    #     sudo rm -rf /usr/share/swift
         
-        # Remove Docker images if not needed
-        sudo docker image prune -af || true
+    #     # Remove Docker images if not needed
+    #     sudo docker image prune -af || true
         
-        # Clean apt cache
-        sudo apt-get clean
+    #     # Clean apt cache
+    #     sudo apt-get clean
         
-        echo "=== Disk space after cleanup ==="
-        df -h /
+    #     echo "=== Disk space after cleanup ==="
+    #     df -h /
 
     - name: Install rpm build for ACT runs
       if: ${{ github.actor == 'nektos/act' }}
@@ -306,6 +318,10 @@ jobs:
         if [ -z "$VERSION" ]; then
           VERSION="${GITHUB_REF#refs/tags/}"
         fi
+
+        # Initialize Checksum file
+        CHECKSUM_FILE="checksums.txt"
+        touch "$CHECKSUM_FILE"
         
         # Debug info
         echo "VERSION: $VERSION"
@@ -326,6 +342,13 @@ jobs:
             FOUND_FILE=$(find ./artifacts -type f -name "*.deb" | grep "${arch}" | head -n 1)
             if [ ! -z "$FOUND_FILE" ]; then
               echo "Found file at $FOUND_FILE, attempting upload"
+
+              # --- GENERATE CHECKSUM FOR DEB ---
+              # We use awk to ensure the output is just "HASH  filename.deb" without path prefixes
+              DEB_BASENAME=$(basename "$UPLOAD_FILE")
+              sha256sum "$UPLOAD_FILE" | awk -v name="$DEB_BASENAME" '{print $1 "  " name}' >> "$CHECKSUM_FILE"
+              # ---------------------------------
+
               gh release upload "$VERSION" "$FOUND_FILE" --clobber --repo ${{ github.repository }}
             fi
           fi
@@ -348,6 +371,10 @@ jobs:
             
             # Create tarball
             tar -czf "mw-agent-${VERSION}-${arch}.tar.gz" "$TARBALL_DIR"
+
+            # --- GENERATE CHECKSUM FOR TARBALL ---
+            sha256sum "$TAR_NAME" >> "$CHECKSUM_FILE"
+            # -------------------------------------
             
             echo "Uploading: mw-agent-${VERSION}-${arch}.tar.gz"
             gh release upload "$VERSION" "mw-agent-${VERSION}-${arch}.tar.gz" --clobber --repo ${{ github.repository }}
