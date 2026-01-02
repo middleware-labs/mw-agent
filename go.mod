@@ -4,43 +4,43 @@ go 1.24.2
 
 toolchain go1.24.5
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => github.com/middleware-labs/opentelemetry-collector-contrib/internal/filter v0.0.0-20251119125747-84554b33c7be
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => github.com/middleware-labs/opentelemetry-collector-contrib/internal/filter v0.0.0-20260102104725-fbfdc5456363
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => github.com/middleware-labs/opentelemetry-collector-contrib/pkg/ottl v0.0.0-20251120061228-834bf980456b
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => github.com/middleware-labs/opentelemetry-collector-contrib/pkg/ottl v0.0.0-20260102104725-fbfdc5456363
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor => github.com/middleware-labs/opentelemetry-collector-contrib/processor/transformprocessor v0.0.0-20251119125747-84554b33c7be
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor => github.com/middleware-labs/opentelemetry-collector-contrib/processor/transformprocessor v0.0.0-20260102104725-fbfdc5456363
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.0.0-20251119125747-84554b33c7be
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.0.0-20260102104725-fbfdc5456363
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker => github.com/middleware-labs/opentelemetry-collector-contrib/internal/docker v0.0.0-20251205062552-5df9592deca9
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker => github.com/middleware-labs/opentelemetry-collector-contrib/internal/docker v0.0.0-20260102104725-fbfdc5456363
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.0.0-20251205062552-5df9592deca9
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.0.0-20260102104725-fbfdc5456363
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.0.0-20251121100328-41460e2771a5
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.0.0-20260102104725-fbfdc5456363
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.0.0-20251119125747-84554b33c7be
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.0.0-20260102104725-fbfdc5456363
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.0.0-20251119125747-84554b33c7be
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mongodbreceiver v0.0.0-20260102104725-fbfdc5456363
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.0.0-20251119125747-84554b33c7be
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.0.0-20260102104725-fbfdc5456363
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kafkametricsreceiver v0.0.0-20251119125747-84554b33c7be
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kafkametricsreceiver v0.0.0-20260102104725-fbfdc5456363
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/apachereceiver v0.0.0-20251119125747-84554b33c7be
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/apachereceiver v0.0.0-20260102104725-fbfdc5456363
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mysqlreceiver v0.0.0-20251119125747-84554b33c7be
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mysqlreceiver v0.0.0-20260102104725-fbfdc5456363
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/rabbitmqreceiver v0.0.0-20251119125747-84554b33c7be
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/rabbitmqreceiver v0.0.0-20260102104725-fbfdc5456363
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/sqlserverreceiver v0.0.0-20251119125747-84554b33c7be
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/sqlserverreceiver v0.0.0-20260102104725-fbfdc5456363
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/nginxreceiver v0.0.0-20251119125747-84554b33c7be
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/nginxreceiver v0.0.0-20260102104725-fbfdc5456363
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver v0.0.0-20251119125747-84554b33c7be
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver v0.0.0-20260102104725-fbfdc5456363
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor => github.com/middleware-labs/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.0.0-20251119125747-84554b33c7be
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor => github.com/middleware-labs/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.0.0-20260102104725-fbfdc5456363
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders => github.com/middleware-labs/opentelemetry-collector-contrib/internal/metadataproviders v0.0.0-20251119125747-84554b33c7be
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders => github.com/middleware-labs/opentelemetry-collector-contrib/internal/metadataproviders v0.0.0-20260102104725-fbfdc5456363
 
 replace go.opentelemetry.io/collector => go.opentelemetry.io/collector v0.139.0
 
