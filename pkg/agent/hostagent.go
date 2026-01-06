@@ -752,7 +752,6 @@ func (c *HostAgent) ReportServices(
 	ticker := time.NewTicker(time.Second * 60)
 
 	for {
-		c.logger.Debug("we be snitchin'")
 		select {
 		case <-stopCh:
 			ticker.Stop()

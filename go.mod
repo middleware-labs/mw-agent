@@ -42,8 +42,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/reso
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders => github.com/middleware-labs/opentelemetry-collector-contrib/internal/metadataproviders v0.0.0-20251119125747-84554b33c7be
 
-replace github.com/middleware-labs/java-injector => ../mw-injector
-
 replace go.opentelemetry.io/collector => go.opentelemetry.io/collector v0.139.0
 
 require (
@@ -119,8 +117,7 @@ require (
 )
 
 require (
-	github.com/k0kubun/pp v3.0.1+incompatible
-	github.com/middleware-labs/java-injector v0.0.0-00010101000000-000000000000
+	github.com/middleware-labs/java-injector v1.0.0-beta
 	github.com/middleware-labs/synthetics-agent v1.0.56
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.139.0
@@ -308,6 +305,7 @@ require (
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/julienschmidt/httprouter v1.3.0 // indirect
+	github.com/k0kubun/pp v3.0.1+incompatible // indirect
 	github.com/klauspost/compress v1.18.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
 	github.com/knadh/koanf v1.5.0 // indirect

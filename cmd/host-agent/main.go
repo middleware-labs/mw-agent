@@ -51,7 +51,6 @@ func (p *program) Start(s service.Service) error {
 			p.hostAgent.ReportServices(p.errCh, p.stopCh)
 			p.programWG.Done()
 		}()
-		p.logger.Info("Oh baby we injectin' real hard...")
 	} else {
 		p.logger.Info("injector status reporting disabled")
 	}
