@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/k0kubun/pp"
 	"github.com/middleware-labs/mw-agent/pkg/agent"
 	"github.com/middleware-labs/synthetics-agent/pkg/worker"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -47,7 +46,6 @@ func (p *program) Start(s service.Service) error {
 	p.programWG.Add(1)
 	go p.run()
 	if p.hostAgent.EnableInjector {
-		pp.Println("Oh baby we injecting .....")
 		p.programWG.Add(1)
 		go func() {
 			p.hostAgent.ReportServices(p.errCh, p.stopCh)

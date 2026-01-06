@@ -16,7 +16,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/k0kubun/pp"
 	"github.com/middleware-labs/java-injector/pkg/discovery"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -356,7 +355,6 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 
 	// Call Webhook
 	u, err := url.Parse(c.APIURLForConfigCheck)
-	pp.Println("Snitching for: ", c.APIURLForConfigCheck)
 	if err != nil {
 		return err
 	}
@@ -751,8 +749,7 @@ func (c *HostAgent) ReportServices(
 	errCh chan<- error,
 	stopCh <-chan struct{},
 ) error {
-	ticker := time.NewTicker(time.Second * 3)
-	pp.Println("we be snitchin'")
+	ticker := time.NewTicker(time.Second * 60)
 
 	for {
 		c.logger.Debug("we be snitchin'")
@@ -769,11 +766,18 @@ func (c *HostAgent) ReportServices(
 }
 
 func (c *HostAgent) ReportAgentStatusAPI() error {
+	defer func() {
+		if r := recover(); r != nil {
+			// Capture the panic and assign it to the named 'err' return variable
+			err := fmt.Errorf("recovered from panic in ReportStatus: %v", r)
+			zap.Error(err)
+		}
+	}()
 	hostname := getHostname()
 	apikey := c.APIKey
-	err := discovery.Reportlol(hostname, apikey, c.APIURLForConfigCheck, c.Version, c.InfraPlatform.String())
+	err := discovery.ReportStatus(hostname, apikey, c.APIURLForConfigCheck, c.Version, c.InfraPlatform.String())
 	if err != nil {
-		pp.Println(err)
+		zap.Error(err)
 	}
 	return nil
 }
