@@ -749,7 +749,7 @@ func (c *HostAgent) ReportServices(
 	errCh chan<- error,
 	stopCh <-chan struct{},
 ) error {
-	ticker := time.NewTicker(time.Second * 60)
+	ticker := time.NewTicker(time.Second * 30)
 
 	for {
 		select {

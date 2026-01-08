@@ -117,7 +117,7 @@ require (
 )
 
 require (
-	github.com/middleware-labs/java-injector v1.0.0-beta
+	github.com/middleware-labs/java-injector v1.0.1
 	github.com/middleware-labs/synthetics-agent v1.0.56
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.139.0
