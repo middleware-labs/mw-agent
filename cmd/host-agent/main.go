@@ -45,7 +45,15 @@ func (p *program) Start(s service.Service) error {
 
 	p.programWG.Add(1)
 	go p.run()
-
+	if p.hostAgent.EnableInjector {
+		p.programWG.Add(1)
+		go func() {
+			p.hostAgent.ReportServices(p.errCh, p.stopCh)
+			p.programWG.Done()
+		}()
+	} else {
+		p.logger.Info("injector status reporting disabled")
+	}
 	// Start any goroutines that can control collection
 	if p.hostAgent.FetchAccountOtelConfig {
 		// Listen to the config changes provided by Middleware API
@@ -283,6 +291,15 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			Destination: &cfg.EnableDataDogReceiver,
 			DefaultText: "false",
 			Value:       false,
+		}),
+
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "enable_injector",
+			EnvVars:     []string{"MW_ENABLE_INJECTOR "},
+			Usage:       "Enables the mw-injector",
+			Destination: &cfg.EnableInjector,
+			DefaultText: "true",
+			Value:       true,
 		}),
 
 		&cli.StringFlag{

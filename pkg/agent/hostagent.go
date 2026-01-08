@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/middleware-labs/java-injector/pkg/discovery"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
@@ -742,4 +743,40 @@ func (c *HostAgent) fixTelemetryConfig(config map[string]interface{}) map[string
 	delete(serviceData, "telemetry")
 
 	return config
+}
+
+func (c *HostAgent) ReportServices(
+	errCh chan<- error,
+	stopCh <-chan struct{},
+) error {
+	ticker := time.NewTicker(time.Second * 30)
+
+	for {
+		select {
+		case <-stopCh:
+			ticker.Stop()
+			return nil
+		case <-ticker.C:
+			err := c.ReportAgentStatusAPI()
+			errCh <- err
+		}
+	}
+	return nil
+}
+
+func (c *HostAgent) ReportAgentStatusAPI() error {
+	defer func() {
+		if r := recover(); r != nil {
+			// Capture the panic and assign it to the named 'err' return variable
+			err := fmt.Errorf("recovered from panic in ReportStatus: %v", r)
+			zap.Error(err)
+		}
+	}()
+	hostname := getHostname()
+	apikey := c.APIKey
+	err := discovery.ReportStatus(hostname, apikey, c.APIURLForConfigCheck, c.Version, c.InfraPlatform.String())
+	if err != nil {
+		zap.Error(err)
+	}
+	return nil
 }
