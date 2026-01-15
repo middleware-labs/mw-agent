@@ -75,7 +75,6 @@ func (p *program) run() {
 	defer p.programWG.Done()
 
 	for err := range p.errCh {
-		fmt.Println("Inside the collector channel loop and err is", err)
 		// if invalid config is received from the backend, then keep collector
 		// in its current state. If it is stopped, keep it stopped until we receive
 		// a valid config. If it is already running, don't restart it.

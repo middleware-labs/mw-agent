@@ -213,8 +213,8 @@ else
     echo "PATH=$PATH" > /etc/mw-agent/mw-agent.env
 fi
 
-if [ -f "${CONFIG_FILE}" ]; then
-    echo "/etc/mw-agent/agent-config.yaml file already exists. Not modifying it."
+if [ -f "${CONFIG_FILE}" ] || [ -f /etc/mw-agent/supervisor-config.yaml ]; then
+    echo "Configuration file(s) already exist. Not modifying them."
     
     # Detect mode based on which config exists
     if [ -f /etc/mw-agent/supervisor-config.yaml ]; then
@@ -233,11 +233,13 @@ fi
 #   exit 0
 # fi
 
-# Create agent-config.yaml from sample
-cp /etc/mw-agent/agent-config.yaml.sample "${CONFIG_FILE}"
-# Ensure proper permissions for the configuration file
-chmod 644 "${CONFIG_FILE}"
-chown mw-agent:mw-agent "${CONFIG_FILE}"
+# Create agent-config.yaml from sample only for standalone mode
+if [ "${INSTALL_MODE}" != "managed" ]; then
+    cp /etc/mw-agent/agent-config.yaml.sample "${CONFIG_FILE}"
+    # Ensure proper permissions for the configuration file
+    chmod 644 "${CONFIG_FILE}"
+    chown mw-agent:mw-agent "${CONFIG_FILE}"
+fi
 
 
 if [ "${INSTALL_MODE}" = "managed" ]; then
@@ -257,12 +259,50 @@ if [ "${INSTALL_MODE}" = "managed" ]; then
     # Add each variable only if it has a value
     [ -n "${MW_API_KEY}" ] && echo "MW_API_KEY=${MW_API_KEY}" >> "${SUPERVISOR_ENV_FILE}"
     [ -n "${MW_TARGET}" ] && echo "MW_TARGET=${MW_TARGET}" >> "${SUPERVISOR_ENV_FILE}"
-    [ -n "${MW_CONFIG_CHECK_INTERVAL}" ] && echo "MW_CONFIG_CHECK_INTERVAL=${MW_CONFIG_CHECK_INTERVAL}" >> "${SUPERVISOR_ENV_FILE}"
     [ -n "${MW_OPAMP_SERVER_URL}" ] && echo "MW_OPAMP_SERVER_URL=${MW_OPAMP_SERVER_URL}" >> "${SUPERVISOR_ENV_FILE}"
     [ -n "${MW_AGENT_GROUP}" ] && echo "MW_AGENT_GROUP=${MW_AGENT_GROUP}" >> "${SUPERVISOR_ENV_FILE}"
 
+    # Configuration with defaults
+    echo "MW_CONFIG_CHECK_INTERVAL=${MW_CONFIG_CHECK_INTERVAL:-5m}" >> "${SUPERVISOR_ENV_FILE}"
+    echo "MW_FETCH_ACCOUNT_OTEL_CONFIG=${MW_FETCH_ACCOUNT_OTEL_CONFIG:-true}" >> "${SUPERVISOR_ENV_FILE}"
+    echo "MW_DOCKER_ENDPOINT=${MW_DOCKER_ENDPOINT:-unix:///var/run/docker.sock}" >> "${SUPERVISOR_ENV_FILE}"
+    echo "MW_API_URL_FOR_SYNTHETIC_MONITORING=${MW_API_URL_FOR_SYNTHETIC_MONITORING:-wss://app.middleware.io/plsrws/v2}" >> "${SUPERVISOR_ENV_FILE}"
+
+    # Optional configuration
+    [ -n "${MW_HOST_TAGS}" ] && echo "MW_HOST_TAGS=${MW_HOST_TAGS}" >> "${SUPERVISOR_ENV_FILE}"
+    [ -n "${MW_API_URL_FOR_CONFIG_CHECK}" ] && echo "MW_API_URL_FOR_CONFIG_CHECK=${MW_API_URL_FOR_CONFIG_CHECK}" >> "${SUPERVISOR_ENV_FILE}"
+    [ -n "${MW_SYNTHETIC_MONITORING_API_URL}" ] && echo "MW_SYNTHETIC_MONITORING_API_URL=${MW_SYNTHETIC_MONITORING_API_URL}" >> "${SUPERVISOR_ENV_FILE}"
+    [ -n "${MW_API_URL_FOR_SYNTHETIC_MONITORING}" ] && echo "MW_API_URL_FOR_SYNTHETIC_MONITORING=${MW_API_URL_FOR_SYNTHETIC_MONITORING}" >> "${SUPERVISOR_ENV_FILE}"
+
+     # Logging configuration
+    [ -n "${MW_LOGFILE}" ] && echo "MW_LOGFILE=${MW_LOGFILE}" >> "${SUPERVISOR_ENV_FILE}"
+    echo "MW_LOGFILE_SIZE=${MW_LOGFILE_SIZE:-1}" >> "${SUPERVISOR_ENV_FILE}"
+    echo "MW_LOGGING_LEVEL=${MW_LOGGING_LEVEL:-info}" >> "${SUPERVISOR_ENV_FILE}"
+
+    # Agent features with defaults
+    echo "MW_AGENT_FEATURES_INFRA_MONITORING=${MW_AGENT_FEATURES_INFRA_MONITORING:-true}" >> "${SUPERVISOR_ENV_FILE}"
+    echo "MW_AGENT_FEATURES_METRIC_COLLECTION=${MW_AGENT_FEATURES_METRIC_COLLECTION:-true}" >> "${SUPERVISOR_ENV_FILE}"
+    echo "MW_AGENT_FEATURES_LOG_COLLECTION=${MW_AGENT_FEATURES_LOG_COLLECTION:-true}" >> "${SUPERVISOR_ENV_FILE}"
+    echo "MW_AGENT_FEATURES_SYNTHETIC_MONITORING=${MW_AGENT_FEATURES_SYNTHETIC_MONITORING:-false}" >> "${SUPERVISOR_ENV_FILE}"
+    
+    # Profiling
+    echo "MW_AGENT_SELF_PROFILING=${MW_AGENT_SELF_PROFILING:-false}" >> "${SUPERVISOR_ENV_FILE}"
+    echo "MW_PROFILING_SERVER_URL=${MW_PROFILING_SERVER_URL:-https://profiling.middleware.io}" >> "${SUPERVISOR_ENV_FILE}"
+    
+    # Ports with defaults
+    echo "MW_AGENT_GRPC_PORT=${MW_AGENT_GRPC_PORT:-9319}" >> "${SUPERVISOR_ENV_FILE}"
+    echo "MW_AGENT_HTTP_PORT=${MW_AGENT_HTTP_PORT:-9320}" >> "${SUPERVISOR_ENV_FILE}"
+    echo "MW_AGENT_FLUENT_PORT=${MW_AGENT_FLUENT_PORT:-8006}" >> "${SUPERVISOR_ENV_FILE}"
+    echo "MW_AGENT_INTERNAL_METRICS_PORT=${MW_AGENT_INTERNAL_METRICS_PORT:-8888}" >> "${SUPERVISOR_ENV_FILE}"
+    
+    # Additional features
+    echo "MW_ENABLE_DATADOG_RECEIVER=${MW_ENABLE_DATADOG_RECEIVER:-false}" >> "${SUPERVISOR_ENV_FILE}"
+    echo "MW_REMOTE_AGENT_ENABLED=${MW_REMOTE_AGENT_ENABLED:-true}" >> "${SUPERVISOR_ENV_FILE}"
+
     chmod 644 "${SUPERVISOR_ENV_FILE}"
     chown mw-agent:mw-agent "${SUPERVISOR_ENV_FILE}"
+
+    echo "Managed mode: Configuration saved to ${SUPERVISOR_ENV_FILE}"
 fi
 
 # Check for old installation and convert it to config file
@@ -315,78 +355,79 @@ else
         fi
         exit 0
     else 
-        # Update configuration file with environment variable values
-        handle_variable "MW_API_KEY" "${MW_API_KEY}"
-        handle_variable "MW_TARGET" "${MW_TARGET}"
+        if [ "${INSTALL_MODE}" != "managed" ]; then
+            # Update configuration file with environment variable values
+            handle_variable "MW_API_KEY" "${MW_API_KEY}"
+            handle_variable "MW_TARGET" "${MW_TARGET}"
 
-        if [ -n "${MW_CONFIG_CHECK_INTERVAL}" ]; then
-            handle_variable "MW_CONFIG_CHECK_INTERVAL" "${MW_CONFIG_CHECK_INTERVAL}"
+            if [ -n "${MW_CONFIG_CHECK_INTERVAL}" ]; then
+                handle_variable "MW_CONFIG_CHECK_INTERVAL" "${MW_CONFIG_CHECK_INTERVAL}"
+            fi
+
+            if [ -n "${MW_HOST_TAGS}" ]; then
+                handle_variable "MW_HOST_TAGS" "${MW_HOST_TAGS}"
+            fi
+
+            if [ -n "${MW_AGENT_INTERNAL_METRICS_PORT}" ]; then
+                handle_variable "MW_AGENT_INTERNAL_METRICS_PORT" "${MW_AGENT_INTERNAL_METRICS_PORT}"
+            fi
+
+            if [ -n "${MW_API_URL_FOR_CONFIG_CHECK}" ]; then
+                handle_variable "MW_API_URL_FOR_CONFIG_CHECK" "${MW_API_URL_FOR_CONFIG_CHECK}"
+            fi
+
+            if [ -n "${MW_ENABLE_SYNTHETIC_MONITORING}" ]; then
+                handle_variable "MW_ENABLE_SYNTHETIC_MONITORING" "${MW_ENABLE_SYNTHETIC_MONITORING}"
+            fi 
+
+            if [ -n "${MW_FETCH_ACCOUNT_OTEL_CONFIG}" ]; then
+                handle_variable "MW_FETCH_ACCOUNT_OTEL_CONFIG" "${MW_FETCH_ACCOUNT_OTEL_CONFIG}"
+            fi
+
+            if [ -n "${MW_AGENT_FEATURES_SYNTHETIC_MONITORING}" ]; then
+                handle_variable "MW_AGENT_FEATURES_SYNTHETIC_MONITORING" "${MW_AGENT_FEATURES_SYNTHETIC_MONITORING}"
+            fi
+
+            if [ -n "${MW_AGENT_FEATURES_METRIC_COLLECTION}" ]; then
+                handle_variable "MW_AGENT_FEATURES_METRIC_COLLECTION" "${MW_AGENT_FEATURES_METRIC_COLLECTION}"
+            fi
+
+            if [ -n "${MW_AGENT_FEATURES_LOG_COLLECTION}" ]; then
+                handle_variable "MW_AGENT_FEATURES_LOG_COLLECTION" "${MW_AGENT_FEATURES_LOG_COLLECTION}"
+            fi
+
+            if [ -n "${MW_API_URL_FOR_SYNTHETIC_MONITORING}" ]; then
+                handle_variable "MW_API_URL_FOR_SYNTHETIC_MONITORING" "${MW_API_URL_FOR_SYNTHETIC_MONITORING}"
+            fi
+
+            if [ -n "${MW_AGENT_SELF_PROFILING}" ]; then
+                handle_variable "MW_AGENT_SELF_PROFILING" "${MW_AGENT_SELF_PROFILING}"
+            fi
+
+            if [ -n "${MW_PROFILING_SERVER_URL}" ]; then
+                handle_variable "MW_PROFILING_SERVER_URL" "${MW_PROFILING_SERVER_URL}"
+            fi
+
+            if [ -n "${MW_LOGFILE}" ]; then
+                handle_variable "MW_LOGFILE" "${MW_LOGFILE}"
+            fi
+
+            if [ -n "${MW_LOGFILE_SIZE}" ]; then
+                handle_variable "MW_LOGFILE_SIZE" "${MW_LOGFILE_SIZE}"
+            fi
+
+            if [ -n "${MW_FLUENT_PORT}" ]; then
+                handle_variable "MW_FLUENT_PORT" "${MW_FLUENT_PORT}"
+            fi
+
+            if [ -n "${MW_DOCKER_ENDPOINT}" ]; then
+                handle_variable "MW_DOCKER_ENDPOINT" "${MW_DOCKER_ENDPOINT}"
+            fi
+
+            if [ -n "${MW_ENABLE_DATADOG_RECEIVER}" ]; then
+                handle_variable "MW_ENABLE_DATADOG_RECEIVER" "${MW_ENABLE_DATADOG_RECEIVER}"
+            fi
         fi
-
-        if [ -n "${MW_HOST_TAGS}" ]; then
-            handle_variable "MW_HOST_TAGS" "${MW_HOST_TAGS}"
-        fi
-
-        if [ -n "${MW_AGENT_INTERNAL_METRICS_PORT}" ]; then
-            handle_variable "MW_AGENT_INTERNAL_METRICS_PORT" "${MW_AGENT_INTERNAL_METRICS_PORT}"
-        fi
-
-        if [ -n "${MW_API_URL_FOR_CONFIG_CHECK}" ]; then
-            handle_variable "MW_API_URL_FOR_CONFIG_CHECK" "${MW_API_URL_FOR_CONFIG_CHECK}"
-        fi
-
-        if [ -n "${MW_ENABLE_SYNTHETIC_MONITORING}" ]; then
-            handle_variable "MW_ENABLE_SYNTHETIC_MONITORING" "${MW_ENABLE_SYNTHETIC_MONITORING}"
-        fi 
-
-        if [ -n "${MW_FETCH_ACCOUNT_OTEL_CONFIG}" ]; then
-            handle_variable "MW_FETCH_ACCOUNT_OTEL_CONFIG" "${MW_FETCH_ACCOUNT_OTEL_CONFIG}"
-        fi
-
-        if [ -n "${MW_AGENT_FEATURES_SYNTHETIC_MONITORING}" ]; then
-            handle_variable "MW_AGENT_FEATURES_SYNTHETIC_MONITORING" "${MW_AGENT_FEATURES_SYNTHETIC_MONITORING}"
-        fi
-
-        if [ -n "${MW_AGENT_FEATURES_METRIC_COLLECTION}" ]; then
-            handle_variable "MW_AGENT_FEATURES_METRIC_COLLECTION" "${MW_AGENT_FEATURES_METRIC_COLLECTION}"
-        fi
-
-        if [ -n "${MW_AGENT_FEATURES_LOG_COLLECTION}" ]; then
-            handle_variable "MW_AGENT_FEATURES_LOG_COLLECTION" "${MW_AGENT_FEATURES_LOG_COLLECTION}"
-        fi
-
-        if [ -n "${MW_API_URL_FOR_SYNTHETIC_MONITORING}" ]; then
-            handle_variable "MW_API_URL_FOR_SYNTHETIC_MONITORING" "${MW_API_URL_FOR_SYNTHETIC_MONITORING}"
-        fi
-
-        if [ -n "${MW_AGENT_SELF_PROFILING}" ]; then
-            handle_variable "MW_AGENT_SELF_PROFILING" "${MW_AGENT_SELF_PROFILING}"
-        fi
-
-        if [ -n "${MW_PROFILING_SERVER_URL}" ]; then
-            handle_variable "MW_PROFILING_SERVER_URL" "${MW_PROFILING_SERVER_URL}"
-        fi
-
-        if [ -n "${MW_LOGFILE}" ]; then
-            handle_variable "MW_LOGFILE" "${MW_LOGFILE}"
-        fi
-
-        if [ -n "${MW_LOGFILE_SIZE}" ]; then
-            handle_variable "MW_LOGFILE_SIZE" "${MW_LOGFILE_SIZE}"
-        fi
-
-        if [ -n "${MW_FLUENT_PORT}" ]; then
-            handle_variable "MW_FLUENT_PORT" "${MW_FLUENT_PORT}"
-        fi
-
-        if [ -n "${MW_DOCKER_ENDPOINT}" ]; then
-            handle_variable "MW_DOCKER_ENDPOINT" "${MW_DOCKER_ENDPOINT}"
-        fi
-
-        if [ -n "${MW_ENABLE_DATADOG_RECEIVER}" ]; then
-            handle_variable "MW_ENABLE_DATADOG_RECEIVER" "${MW_ENABLE_DATADOG_RECEIVER}"
-        fi
-        
     fi
 fi
 

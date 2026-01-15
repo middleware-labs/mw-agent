@@ -498,15 +498,17 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 		}
 		return fmt.Errorf("%w: %v", ErrInvalidConfig, err)
 	}
-	fmt.Println("pushing new config to supervisor")
-	if err := c.pushConfigToSupervisor(apiYAMLBytes); err != nil {
-		return fmt.Errorf("failed to push config to supervisor: %w", err)
+
+	if c.RemoteAgentEnabled {
+		c.logger.Info("pushing new config to supervisor")
+		if err := c.pushConfigToSupervisor(apiYAMLBytes); err != nil {
+			return fmt.Errorf("failed to push config to supervisor: %w", err)
+		}
+	} else {
+		if err := os.WriteFile(c.OtelConfigFile, apiYAMLBytes, 0644); err != nil {
+			return fmt.Errorf("failed to write new configuration data to file %s: %w", c.OtelConfigFile, err)
+		}
 	}
-	//fmt.Println("write validationm")
-	// if err := os.WriteFile(c.OtelConfigFile, apiYAMLBytes, 0644); err != nil {
-	// 	//fmt.Println("write ", err)
-	// 	return fmt.Errorf("failed to write new configuration data to file %s: %w", c.OtelConfigFile, err)
-	// }
 
 	return nil
 }
@@ -633,6 +635,9 @@ func (c *HostAgent) callRestartStatusAPI() error {
 			return err
 		}
 
+		// if c.RemoteAgentEnabled {
+		// 	return nil
+		// }
 		return ErrRestartAgent
 	}
 
@@ -645,25 +650,30 @@ func (c *HostAgent) callRestartStatusAPI() error {
 func (c *HostAgent) ListenForConfigChanges(errCh chan<- error,
 	stopCh <-chan struct{}) error {
 
-	// First fetch the config
-	//fmt.Println("BACKGROUND FERTCH SERVICE")
+	var err error
 
-	// TO UNBLOCK
-	//errCh <- nil
+	if c.RemoteAgentEnabled {
+		c.logger.Info("Remote agent enabled, skipping config fetch")
+		_, err = c.noop()
+		if err != nil {
+			errCh <- err
+		} else {
+			errCh <- nil
+		}
+	} else {
+		// First fetch the config on start in case of non-remote agent
+		_, err = c.getOtelConfig()
+		if err != nil {
+			errCh <- err
+		} else {
+			errCh <- nil
+		}
+	}
 
-	//time.Sleep(30 * time.Second)
-	//_, err := c.getOtelConfig()
 	c.logger.Info(
-		"Inside the mw agent ListenForConfig Changes",
+		"Start the mw agent ListenForConfig Changes",
 		zap.String("time", time.Now().Format("02 Jan 2006 15:04:05 MST")),
 	)
-
-	_, err := c.hello()
-	if err != nil {
-		errCh <- err
-	} else {
-		errCh <- nil
-	}
 
 	ticker := time.NewTicker(c.configCheckDuration)
 
@@ -681,8 +691,7 @@ func (c *HostAgent) ListenForConfigChanges(errCh chan<- error,
 	}
 }
 
-func (c *HostAgent) hello() (string, error) {
-
+func (c *HostAgent) noop() (string, error) {
 	return "", nil
 }
 
@@ -825,4 +834,109 @@ func (c *HostAgent) pushConfigToSupervisor(config []byte) error {
 	}
 
 	return nil
+}
+
+func (c *HostAgent) ProcessInputConfig(inputConfig string) (outputConfig string, err error) {
+	// Unmarshal JSON response into ApiResponse struct
+
+	configType := "docker"
+	dockerSocketPath := strings.Split(c.DockerEndpoint, "//")
+	if len(dockerSocketPath) != 2 || !isSocketFn(dockerSocketPath[1]) {
+		configType = "nodocker"
+	}
+
+	var apiResponse apiResponseForYAML
+	if err := json.Unmarshal([]byte(inputConfig), &apiResponse); err != nil {
+		return "", fmt.Errorf("failed to unmarshal api response: %w", err)
+	}
+
+	var apiYAMLConfig map[string]interface{}
+	if len(apiResponse.Config.Docker) == 0 && len(apiResponse.Config.NoDocker) == 0 {
+		return "", fmt.Errorf("failed to get valid response, config docker len: %d, config no docker len: %d",
+			len(apiResponse.Config.Docker), len(apiResponse.Config.NoDocker))
+	}
+
+	apiYAMLConfig = apiResponse.Config.NoDocker
+	if configType == "docker" {
+		apiYAMLConfig = apiResponse.Config.Docker
+	}
+
+	integrationConfigs := map[IntegrationType]integrationConfiguration{
+		PostgreSQL:    apiResponse.PgdbConfig,
+		MongoDB:       apiResponse.MongodbConfig,
+		MySQL:         apiResponse.MysqlConfig,
+		MariaDB:       apiResponse.MariaDBConfig,
+		Redis:         apiResponse.RedisConfig,
+		Elasticsearch: apiResponse.ElasticsearchConfig,
+		Cassandra:     apiResponse.CassandraConfig,
+		Clickhouse:    apiResponse.ClickhouseConfig,
+	}
+
+	for integrationType, integrationConfig := range integrationConfigs {
+		if c.checkIntConfigValidity(integrationType, integrationConfig) {
+			apiYAMLConfig, err = c.updateConfig(apiYAMLConfig, integrationConfig)
+			if err != nil {
+				return "", err
+			}
+		}
+	}
+
+	// Add awsecscontainermetrics receiver dynamically if the agent is running inside ECS + Fargate setup
+	if c.InfraPlatform == InfraPlatformECSFargate || c.InfraPlatform == InfraPlatformECSEC2 {
+
+		apiYAMLConfig, err = c.updateConfigForECS(apiYAMLConfig)
+		if err != nil {
+			return "", err
+		}
+
+	}
+
+	if !c.AgentFeatures.LogCollection || !c.AgentFeatures.MetricCollection {
+		apiYAMLConfig, err = c.updateConfigWithRestrictions(apiYAMLConfig)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	// Adding host tags as resource attributes
+	if c.HostTags != "" {
+		apiYAMLConfig, err = c.updateConfigForHostTags(apiYAMLConfig)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	apiYAMLBytes, err := yaml.Marshal(apiYAMLConfig)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal api data: %w", err)
+	}
+
+	// check if the config is valid, otherwise return an error
+	factories, err := c.getFactories()
+	if err != nil {
+		return "", fmt.Errorf("failed to get factories: %w", err)
+	}
+
+	cfgProviderSettings := c.getConfigProviderSettings("yaml:" + string(apiYAMLBytes))
+
+	configProvider, err := otelcol.NewConfigProvider(cfgProviderSettings)
+	if err != nil {
+		return "", err
+	}
+	if configProvider == nil {
+		return "", fmt.Errorf("config provider is nil, check YAML format and provider settings")
+	}
+	cfg, err := configProvider.Get(context.Background(), factories)
+	if err != nil {
+		return "", err
+	}
+	if err := cfg.Validate(); err != nil {
+		trackErr := c.UpdateAgentTrackStatus(err)
+		if trackErr != nil {
+			c.logger.Error("failed to update agent track status", zap.Error(trackErr))
+		}
+		return "", fmt.Errorf("%w: %v", ErrInvalidConfig, err)
+	}
+
+	return string(apiYAMLBytes), nil
 }
