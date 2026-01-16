@@ -39,6 +39,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
@@ -100,6 +101,7 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 		nginxreceiver.NewFactory(),
 		mongodbatlasreceiver.NewFactory(),
 		datadogreceiver.NewFactory(),
+		vcenterreceiver.NewFactory(),
 	}
 
 	// if the host agent is running on ECS EC2, add

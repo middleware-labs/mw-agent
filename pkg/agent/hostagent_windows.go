@@ -19,6 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
@@ -94,6 +95,7 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 		nginxreceiver.NewFactory(),
 		mongodbatlasreceiver.NewFactory(),
 		datadogreceiver.NewFactory(),
+		vcenterreceiver.NewFactory(),
 	}
 
 	for _, f := range receiverfactories {
