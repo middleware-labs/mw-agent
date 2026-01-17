@@ -395,5 +395,12 @@ jobs:
         echo "  - mw-agent-${VERSION}-amd64.tar.gz"
         echo "  - mw-agent-${VERSION}-arm64.tar.gz"
 
+        if [ -s "$CHECKSUM_FILE" ]; then
+          echo ""
+          echo "=== Uploading checksums file ==="
+          cat "$CHECKSUM_FILE"
+          gh release upload "$VERSION" "$CHECKSUM_FILE" --clobber --repo ${{ github.repository }}
+        fi
+
 
    
