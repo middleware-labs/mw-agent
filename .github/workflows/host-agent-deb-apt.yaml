@@ -345,8 +345,8 @@ jobs:
 
               # --- GENERATE CHECKSUM FOR DEB ---
               # We use awk to ensure the output is just "HASH  filename.deb" without path prefixes
-              DEB_BASENAME=$(basename "$UPLOAD_FILE")
-              sha256sum "$UPLOAD_FILE" | awk -v name="$DEB_BASENAME" '{print $1 "  " name}' >> "$CHECKSUM_FILE"
+              DEB_BASENAME=$(basename "$FILE")
+              sha256sum "$FILE" | awk -v name="$DEB_BASENAME" '{print $1 "  " name}' >> "$CHECKSUM_FILE"
               # ---------------------------------
 
               gh release upload "$VERSION" "$FOUND_FILE" --clobber --repo ${{ github.repository }}
@@ -372,8 +372,10 @@ jobs:
             # Create tarball
             tar -czf "mw-agent-${VERSION}-${arch}.tar.gz" "$TARBALL_DIR"
 
+            TARBALL_NAME="mw-agent-${VERSION}-${arch}.tar.gz"
+
             # --- GENERATE CHECKSUM FOR TARBALL ---
-            sha256sum "$TAR_NAME" >> "$CHECKSUM_FILE"
+            sha256sum "$TARBALL_NAME" >> "$CHECKSUM_FILE"
             # -------------------------------------
             
             echo "Uploading: mw-agent-${VERSION}-${arch}.tar.gz"
