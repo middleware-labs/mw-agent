@@ -758,7 +758,11 @@ func (c *HostAgent) ReportServices(
 			return nil
 		case <-ticker.C:
 			err := c.ReportAgentStatusAPI()
-			errCh <- err
+			select {
+			case errCh <- err:
+			case <-stopCh:
+				return nil
+			}
 		}
 	}
 	return nil
@@ -777,6 +781,7 @@ func (c *HostAgent) ReportAgentStatusAPI() error {
 	err := discovery.ReportStatus(hostname, apikey, c.APIURLForConfigCheck, c.Version, c.InfraPlatform.String())
 	if err != nil {
 		zap.Error(err)
+		return err
 	}
 	return nil
 }
