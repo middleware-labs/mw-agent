@@ -93,6 +93,11 @@ func (p *program) run() {
 			continue
 		}
 
+		if errors.Is(err, agent.ErrReportApiFailure) {
+			p.logger.Error("discovery reporting failed; telemetry collection continuing", zap.Error(err))
+			continue
+		}
+
 		if err != nil {
 			// stop collection only if it's running
 			p.hostAgent.StopCollector(err)

@@ -29,8 +29,9 @@ import (
 )
 
 var (
-	ErrRestartAgent  = errors.New("restart agent due to config change")
-	ErrInvalidConfig = errors.New("invalid config received from backend")
+	ErrRestartAgent     = errors.New("restart agent due to config change")
+	ErrInvalidConfig    = errors.New("invalid config received from backend")
+	ErrReportApiFailure = errors.New("failed to report service discovery status to backend")
 )
 
 // HostAgent implements Agent interface for Hosts (e.g Linux)
@@ -781,7 +782,7 @@ func (c *HostAgent) ReportAgentStatusAPI() error {
 	err := discovery.ReportStatus(hostname, apikey, c.APIURLForConfigCheck, c.Version, c.InfraPlatform.String())
 	if err != nil {
 		zap.Error(err)
-		return err
+		return fmt.Errorf("%w: %v", ErrReportApiFailure, err)
 	}
 	return nil
 }
