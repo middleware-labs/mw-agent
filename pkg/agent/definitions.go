@@ -79,6 +79,7 @@ type AgentFeatures struct {
 	LogCollection       bool
 	SyntheticMonitoring bool
 	OpsAIAutoFix        bool
+	ServiceReporting    bool
 }
 
 // BaseConfig stores general configuration for all agent types
@@ -112,6 +113,7 @@ type BaseConfig struct {
 	InternalMetricsPort   uint
 	EnableDataDogReceiver bool
 	EnableInjector        bool
+	ServiceReportInterval string
 }
 
 // String() implements stringer interface for BaseConfig

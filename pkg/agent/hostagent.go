@@ -750,23 +750,49 @@ func (c *HostAgent) ReportServices(
 	errCh chan<- error,
 	stopCh <-chan struct{},
 ) error {
-	ticker := time.NewTicker(time.Second * 30)
+
+	if !c.AgentFeatures.ServiceReporting {
+		c.logger.Info("service discovery reporting is disabled; skipping")
+		return nil
+	}
+
+	// Parse duration, fallback to 5m if invalid or empty
+	reportInterval, err := time.ParseDuration(c.ServiceReportInterval)
+	if err != nil || reportInterval <= 0 {
+		c.logger.Warn("invalid or missing service report interval; defaulting to 5m",
+			zap.String("value", c.ServiceReportInterval))
+		reportInterval = 5 * time.Minute
+	}
+
+	// 1. FIRE IMMEDIATELY ON START
+	c.logger.Info("starting initial service discovery report")
+	if err := c.ReportAgentStatusAPI(); err != nil {
+		select {
+		case errCh <- err:
+		case <-stopCh:
+			return nil
+		}
+	}
+
+	// 2. START THE TICKER FOR SUBSEQUENT REPORTS
+	ticker := time.NewTicker(reportInterval)
+	defer ticker.Stop()
 
 	for {
 		select {
 		case <-stopCh:
-			ticker.Stop()
 			return nil
 		case <-ticker.C:
 			err := c.ReportAgentStatusAPI()
-			select {
-			case errCh <- err:
-			case <-stopCh:
-				return nil
+			if err != nil {
+				select {
+				case errCh <- err:
+				case <-stopCh:
+					return nil
+				}
 			}
 		}
 	}
-	return nil
 }
 
 func (c *HostAgent) ReportAgentStatusAPI() error {

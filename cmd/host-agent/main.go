@@ -306,6 +306,23 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			DefaultText: "true",
 			Value:       true,
 		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "service-report-interval",
+			EnvVars:     []string{"MW_SERVICE_REPORT_INTERVAL"},
+			Usage:       "Interval to report service discovery status.",
+			Destination: &cfg.ServiceReportInterval,
+			DefaultText: "5m",
+			Value:       "5m",
+		}),
+
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "agent-features.service-reporting",
+			Usage:       "Enable or disable service discovery reporting.",
+			EnvVars:     []string{"MW_REPORT_SERVICES"},
+			Destination: &cfg.AgentFeatures.ServiceReporting,
+			DefaultText: "true",
+			Value:       true,
+		}),
 
 		&cli.StringFlag{
 			Name:    "config-file",
