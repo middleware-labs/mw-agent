@@ -45,6 +45,11 @@ func (p *program) Start(s service.Service) error {
 
 	p.programWG.Add(1)
 	go p.run()
+	p.programWG.Add(1)
+	go func() {
+		p.hostAgent.ReportServices(p.errCh, p.stopCh)
+		p.programWG.Done()
+	}()
 
 	// Start any goroutines that can control collection
 	if p.hostAgent.FetchAccountOtelConfig {
@@ -82,6 +87,11 @@ func (p *program) run() {
 		if errors.Is(err, agent.ErrInvalidConfig) {
 			p.logger.Error("invalid config. keeping collector in its current state",
 				zap.Error(err))
+			continue
+		}
+
+		if errors.Is(err, agent.ErrReportApiFailure) {
+			p.logger.Error("discovery reporting failed; telemetry collection continuing", zap.Error(err))
 			continue
 		}
 
@@ -283,6 +293,24 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			Destination: &cfg.EnableDataDogReceiver,
 			DefaultText: "false",
 			Value:       false,
+		}),
+
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "service-report-interval",
+			EnvVars:     []string{"MW_SERVICE_REPORT_INTERVAL"},
+			Usage:       "Interval to report service discovery status.",
+			Destination: &cfg.ServiceReportInterval,
+			DefaultText: "5m",
+			Value:       "5m",
+		}),
+
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "agent-features.service-reporting",
+			Usage:       "Enable or disable service discovery reporting.",
+			EnvVars:     []string{"MW_REPORT_SERVICES"},
+			Destination: &cfg.AgentFeatures.ServiceReporting,
+			DefaultText: "true",
+			Value:       true,
 		}),
 
 		&cli.StringFlag{

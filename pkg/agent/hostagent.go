@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/middleware-labs/java-injector/pkg/discovery"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
@@ -28,8 +29,9 @@ import (
 )
 
 var (
-	ErrRestartAgent  = errors.New("restart agent due to config change")
-	ErrInvalidConfig = errors.New("invalid config received from backend")
+	ErrRestartAgent     = errors.New("restart agent due to config change")
+	ErrInvalidConfig    = errors.New("invalid config received from backend")
+	ErrReportApiFailure = errors.New("failed to report service discovery status to backend")
 )
 
 // HostAgent implements Agent interface for Hosts (e.g Linux)
@@ -742,4 +744,71 @@ func (c *HostAgent) fixTelemetryConfig(config map[string]interface{}) map[string
 	delete(serviceData, "telemetry")
 
 	return config
+}
+
+func (c *HostAgent) ReportServices(
+	errCh chan<- error,
+	stopCh <-chan struct{},
+) error {
+
+	if !c.AgentFeatures.ServiceReporting {
+		c.logger.Info("service discovery reporting is disabled; skipping")
+		return nil
+	}
+
+	// Parse duration, fallback to 5m if invalid or empty
+	reportInterval, err := time.ParseDuration(c.ServiceReportInterval)
+	if err != nil || reportInterval <= 0 {
+		c.logger.Warn("invalid or missing service report interval; defaulting to 5m",
+			zap.String("value", c.ServiceReportInterval))
+		reportInterval = 5 * time.Minute
+	}
+
+	// 1. FIRE IMMEDIATELY ON START
+	c.logger.Info("starting initial service discovery report")
+	if err := c.ReportAgentStatusAPI(); err != nil {
+		select {
+		case errCh <- err:
+		case <-stopCh:
+			return nil
+		}
+	}
+
+	// 2. START THE TICKER FOR SUBSEQUENT REPORTS
+	ticker := time.NewTicker(reportInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-stopCh:
+			return nil
+		case <-ticker.C:
+			err := c.ReportAgentStatusAPI()
+			if err != nil {
+				select {
+				case errCh <- err:
+				case <-stopCh:
+					return nil
+				}
+			}
+		}
+	}
+}
+
+func (c *HostAgent) ReportAgentStatusAPI() error {
+	defer func() {
+		if r := recover(); r != nil {
+			// Capture the panic and assign it to the named 'err' return variable
+			err := fmt.Errorf("recovered from panic in ReportStatus: %v", r)
+			zap.Error(err)
+		}
+	}()
+	hostname := getHostname()
+	apikey := c.APIKey
+	err := discovery.ReportStatus(hostname, apikey, c.APIURLForConfigCheck, c.Version, c.InfraPlatform.String())
+	if err != nil {
+		zap.Error(err)
+		return fmt.Errorf("%w: %v", ErrReportApiFailure, err)
+	}
+	return nil
 }
