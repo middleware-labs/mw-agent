@@ -42,6 +42,16 @@ jobs:
         token: ${{ secrets.GHCR_TOKEN }}
         ssh-key: ${{ secrets.CHECK_AGENT_ACCESS }}
         submodules: 'recursive'
+        path: agent
+
+    - name: Checkout MW Supervisor Repo
+      uses: actions/checkout@v4
+      with:
+        repository: middleware-labs/mw-opampsupervisor 
+        token: ${{ secrets.GHCR_TOKEN }}
+        submodules: 'recursive'
+        path: supervisor
+        ref: beta
         
     - name: Set Architecture Variables
       run: |
@@ -71,8 +81,11 @@ jobs:
         ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/mw-agent.env.sample
         cp package-tooling/otel-config.yaml.sample \
         ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/otel-config.yaml.sample
+        cp supervisor/package-tooling/supervisor-config.yaml.sample \
+        ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/supervisor-config.yaml.sample
         cp package-tooling/linux/postinst ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/postinstall.sh
         cp package-tooling/linux/mw-agent.service ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/mw-agent.service
+        cp package-tooling/linux/mw-agent-opamp.service ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/mw-agent-opamp.service
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
@@ -97,11 +110,31 @@ jobs:
         
         if [ ${{ github.actor }} != "nektos/act" ]
         then
+          cd agent
           CGO_ENABLED=0 GOPRIVATE=github.com/middleware-labs GOOS=linux GOARCH=${buildarch} go build \
           -ldflags="-s -w -X main.agentVersion=${RELEASE_VERSION}" \
           -v -a -o ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/${PACKAGE_NAME} cmd/host-agent/main.go
         else
           cp ~/build/mw-host-agent-${buildarch} ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/${PACKAGE_NAME}
+        fi
+
+    - name: Build Supervisor Binary
+      run: |
+        buildarch="amd64"
+        if [ ${{ matrix.arch }} == "aarch64" ]
+        then
+            buildarch="arm64"
+        fi
+        
+        if [ ${{ github.actor }} != "nektos/act" ]
+        then
+          cd supervisor
+          CGO_ENABLED=0 GOPRIVATE=github.com/middleware-labs GOOS=linux GOARCH=${buildarch} \
+          go build -ldflags="-s -w -X main.version=${RELEASE_VERSION}" \
+          -v -a -o ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/mw-opamp-supervisor .
+        else
+          cp ~/build/mw-opamp-supervisor-${buildarch} \
+          ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/mw-opamp-supervisor
         fi
         
     - name: Tar Building
