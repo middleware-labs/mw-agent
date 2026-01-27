@@ -702,14 +702,13 @@ func (c *HostAgent) ListenForConfigChanges(errCh chan<- error,
 			return nil
 		case <-ticker.C:
 			err = c.callRestartStatusAPI()
-			if err == nil {
-				// If restart check succeeded, try to apply config class (only once)
-				c.applyConfigOnce.Do(func() {
-					if applyErr := c.applyConfigClassToHosts(); applyErr != nil {
-						c.logger.Error("failed to apply config class", zap.Error(applyErr))
-					}
-				})
-			}
+
+			// Apply config class to hosts only once when the agent starts
+			c.applyConfigOnce.Do(func() {
+				if applyErr := c.applyConfigClassToHosts(); applyErr != nil {
+					c.logger.Error("failed to apply config class", zap.Error(applyErr))
+				}
+			})
 			errCh <- err
 		}
 	}
@@ -793,7 +792,7 @@ func (c *HostAgent) StartCollector() error {
 
 func (c *HostAgent) StopCollector(err error) {
 	if c.collector != nil {
-		c.logger.Info("stopping telemetry collection", zap.Error(err))
+		c.logger.Error("stopping telemetry collection", zap.Error(err))
 		c.collector.Shutdown()
 		c.collectorWG.Wait()
 		c.logger.Info("stopped telemetry collection at", zap.Time("time", time.Now()))

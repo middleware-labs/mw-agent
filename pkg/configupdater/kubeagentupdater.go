@@ -80,14 +80,13 @@ func (c *KubeAgent) ListenForConfigChanges(ctx context.Context, errCh chan<- err
 			return nil
 		case <-ticker.C:
 			err := c.callRestartStatusAPI(ctx, false)
-			if err == nil {
-				// If restart check succeeded, try to apply config class (only once)
-				c.applyConfigOnce.Do(func() {
-					if applyErr := c.applyConfigClassToCluster(); applyErr != nil {
-						c.logger.Error("failed to apply config class", zap.Error(applyErr))
-					}
-				})
-			}
+
+			// Apply config class to cluster only once when the agent starts
+			c.applyConfigOnce.Do(func() {
+				if applyErr := c.applyConfigClassToCluster(); applyErr != nil {
+					c.logger.Error("failed to apply config class", zap.Error(applyErr))
+				}
+			})
 			errCh <- err
 		}
 	}
