@@ -46,6 +46,7 @@ type HostAgent struct {
 	logger              *zap.Logger
 	httpGetFunc         func(url string) (resp *http.Response, err error)
 	Version             string
+	applyConfigOnce     sync.Once
 }
 
 // HostOptions takes in various options for HostAgent
@@ -204,9 +205,10 @@ type TrackingPayload struct {
 }
 
 var (
-	apiPathForYAML    = "api/v1/agent/ingestion-rules"
-	apiPathForRestart = "api/v1/agent/restart-status"
-	apiAgentTrack     = "api/v1/agent/tracking"
+	apiPathForYAML         = "api/v1/agent/ingestion-rules"
+	apiPathForRestart      = "api/v1/agent/restart-status"
+	apiAgentTrack          = "api/v1/agent/tracking"
+	apiPathForConfigGroups = "api/v1/agent/public/setting/config-groups" // Apply config class to hosts
 )
 
 func (d IntegrationType) String() string {
@@ -618,6 +620,65 @@ func (c *HostAgent) callRestartStatusAPI() error {
 	return err
 }
 
+func (c *HostAgent) applyConfigClassToHosts() error {
+	hostname := GetHostnameForPlatform(c.InfraPlatform)
+	u, err := url.Parse(c.APIURLForConfigCheck)
+	if err != nil {
+		return err
+	}
+
+	// Build the URL: /agent/public/setting/config-groups/{groupName}/{token}
+	baseURL := u.JoinPath(apiPathForConfigGroups)
+	baseURL = baseURL.JoinPath(c.APIKey)
+	baseURL = baseURL.JoinPath("default")
+
+	// Prepare request body
+	reqBody := map[string][]string{
+		"hostIds": {hostname},
+	}
+	jsonData, err := json.Marshal(reqBody)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	req, err := http.NewRequest(http.MethodPut, baseURL.String(), bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to call config groups api for url %s: %w", baseURL.String(), err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("config groups api returned non-200 status: %d", resp.StatusCode)
+	}
+
+	var apiResponse struct {
+		Status  bool        `json:"status"`
+		Message string      `json:"message"`
+		Setting interface{} `json:"setting"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
+		return fmt.Errorf("failed to unmarshal config groups api response: %w", err)
+	}
+
+	if !apiResponse.Status {
+		return fmt.Errorf("config groups api returned error: %s", apiResponse.Message)
+	}
+
+	c.logger.Info("successfully applied config class to host",
+		zap.String("group_name", "default"),
+		zap.String("host_id", hostname))
+
+	return nil
+}
+
 // ListenForConfigChanges listens for configuration changes for the
 // agent on the Middleware backend and restarts the agent if configuration
 // has changed.
@@ -643,6 +704,13 @@ func (c *HostAgent) ListenForConfigChanges(errCh chan<- error,
 			return nil
 		case <-ticker.C:
 			err = c.callRestartStatusAPI()
+
+			// Apply config class to hosts only once when the agent starts
+			c.applyConfigOnce.Do(func() {
+				if applyErr := c.applyConfigClassToHosts(); applyErr != nil {
+					c.logger.Error("failed to apply config class", zap.Error(applyErr))
+				}
+			})
 			errCh <- err
 		}
 	}
@@ -726,7 +794,7 @@ func (c *HostAgent) StartCollector() error {
 
 func (c *HostAgent) StopCollector(err error) {
 	if c.collector != nil {
-		c.logger.Info("stopping telemetry collection", zap.Error(err))
+		c.logger.Error("stopping telemetry collection", zap.Error(err))
 		c.collector.Shutdown()
 		c.collectorWG.Wait()
 		c.logger.Info("stopped telemetry collection at", zap.Time("time", time.Now()))

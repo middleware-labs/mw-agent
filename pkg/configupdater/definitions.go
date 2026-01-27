@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -67,8 +68,9 @@ type configType struct {
 }
 
 var (
-	apiPathForYAML    = "api/v1/agent/ingestion-rules"
-	apiPathForRestart = "api/v1/agent/restart-status"
+	apiPathForYAML         = "api/v1/agent/ingestion-rules"
+	apiPathForRestart      = "api/v1/agent/restart-status"
+	apiPathForConfigGroups = "api/v1/agent/public/setting/config-groups" // Apply config class to cluster
 )
 
 type apiResponseForYAML struct {
@@ -139,6 +141,7 @@ type KubeAgent struct {
 	configCheckDuration time.Duration
 	logger              *zap.Logger
 	version             string
+	applyConfigOnce     sync.Once
 }
 
 func GetAPIURLForConfigCheck(target string) (string, error) {

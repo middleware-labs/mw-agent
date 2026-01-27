@@ -1,6 +1,7 @@
 package configupdater
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -78,7 +79,15 @@ func (c *KubeAgent) ListenForConfigChanges(ctx context.Context, errCh chan<- err
 			ticker.Stop()
 			return nil
 		case <-ticker.C:
-			errCh <- c.callRestartStatusAPI(ctx, false)
+			err := c.callRestartStatusAPI(ctx, false)
+
+			// Apply config class to cluster only once when the agent starts
+			c.applyConfigOnce.Do(func() {
+				if applyErr := c.applyConfigClassToCluster(); applyErr != nil {
+					c.logger.Error("failed to apply config class", zap.Error(applyErr))
+				}
+			})
+			errCh <- err
 		}
 	}
 }
@@ -319,5 +328,63 @@ func (c *KubeAgent) UpdateConfigMap(ctx context.Context, componentType Component
 	}
 
 	return nil
+}
 
+// applyConfigClassToCluster applies config class to the Kubernetes cluster
+func (c *KubeAgent) applyConfigClassToCluster() error {
+	u, err := url.Parse(c.APIURLForConfigCheck)
+	if err != nil {
+		return err
+	}
+
+	// Build the URL: /agent/public/setting/config-groups/{groupName}/{token}
+	baseURL := u.JoinPath(apiPathForConfigGroups)
+	baseURL = baseURL.JoinPath(c.APIKey)
+	baseURL = baseURL.JoinPath("default")
+
+	// Prepare request body
+	reqBody := map[string][]string{
+		"hostIds": {c.ClusterName},
+	}
+	jsonData, err := json.Marshal(reqBody)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	req, err := http.NewRequest(http.MethodPut, baseURL.String(), bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to call config groups api for url %s: %w", baseURL.String(), err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("config groups api returned non-200 status: %d", resp.StatusCode)
+	}
+
+	var apiResponse struct {
+		Status  bool        `json:"status"`
+		Message string      `json:"message"`
+		Setting interface{} `json:"setting"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
+		return fmt.Errorf("failed to unmarshal config groups api response: %w", err)
+	}
+
+	if !apiResponse.Status {
+		return fmt.Errorf("config groups api returned error: %s", apiResponse.Message)
+	}
+
+	c.logger.Info("successfully applied config class to cluster",
+		zap.String("group_name", "default"),
+		zap.String("cluster_id", c.ClusterName))
+
+	return nil
 }

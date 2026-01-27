@@ -225,7 +225,7 @@ func (k *KubeAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 func (c *KubeAgentMonitor) ListenForKubeOtelConfigChanges(ctx context.Context) error {
 	err := c.callRestartStatusAPI(ctx)
 	if err != nil {
-		c.logger.Info("error restarting agent on config change",
+		c.logger.Error("error restarting agent on config change",
 			zap.Error(err))
 	}
 	return nil
