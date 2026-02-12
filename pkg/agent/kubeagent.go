@@ -51,6 +51,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
@@ -115,6 +116,24 @@ func NewKubeAgent(cfg KubeConfig, opts ...KubeOptions) *KubeAgent {
 	agent.KubeConfig = cfg
 	for _, apply := range opts {
 		apply(&agent)
+	}
+
+	var err error = nil
+	// Enable feature gates
+	registry := featuregate.GlobalRegistry()
+
+	// PostgreSQL
+	err = registry.Set("receiver.postgresql.connectionPool", true)
+	if err != nil {
+		fmt.Println("Error in setting receiver.postgresql.connectionPool feature gate:", err)
+	}
+	err = registry.Set("postgresqlreceiver.preciselagmetrics", true)
+	if err != nil {
+		fmt.Println("Error in setting postgresqlreceiver.preciselagmetrics feature gate:", err)
+	}
+	err = registry.Set("receiver.postgresql.separateSchemaAttr", true)
+	if err != nil {
+		fmt.Println("Error in setting receiver.postgresql.separateSchemaAttr feature gate:", err)
 	}
 
 	if agent.logger == nil {
