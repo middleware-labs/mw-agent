@@ -614,8 +614,7 @@ func (c *HostAgent) callRestartStatusAPI() error {
 			return err
 		}
 
-		c.logger.Info("restart agent due to config change")
-		return err
+		return ErrRestartAgent
 	}
 
 	return err
