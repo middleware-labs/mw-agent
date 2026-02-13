@@ -50,6 +50,7 @@ import (
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 // GetFactories get otel factories for HostAgent
@@ -59,6 +60,7 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 		Receivers:  make(map[component.Type]receiver.Factory),
 		Exporters:  make(map[component.Type]exporter.Factory),
 		Processors: make(map[component.Type]processor.Factory),
+		Telemetry:  otelconftelemetry.NewFactory(),
 	}
 
 	factories.Extensions = make(map[component.Type]extension.Factory)

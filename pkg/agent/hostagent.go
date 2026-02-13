@@ -837,6 +837,10 @@ func (c *HostAgent) ReportServices(
 	errCh chan<- error,
 	stopCh <-chan struct{},
 ) error {
+	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
+		c.logger.Info("service discovery reporting is not supported on this platform; skipping")
+		return nil
+	}
 
 	if !c.AgentFeatures.ServiceReporting {
 		c.logger.Info("service discovery reporting is disabled; skipping")
