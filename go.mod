@@ -42,6 +42,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/reso
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders => github.com/middleware-labs/opentelemetry-collector-contrib/internal/metadataproviders v0.0.0-20260122034336-b0dc5b7db4de
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.0.0-20260122034336-b0dc5b7db4de
+
 replace go.opentelemetry.io/collector => go.opentelemetry.io/collector v0.139.0
 
 require (
@@ -100,6 +102,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.139.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.139.0
 	go.opentelemetry.io/collector v0.139.0 // indirect
 	go.opentelemetry.io/collector/component v1.45.0
 	go.opentelemetry.io/collector/confmap v1.45.0
@@ -126,6 +129,7 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.45.0
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.45.0
 	go.opentelemetry.io/collector/connector v0.139.0
+	go.opentelemetry.io/collector/featuregate v1.45.0
 	go.opentelemetry.io/collector/otelcol v0.139.0
 	go.opentelemetry.io/collector/service v0.139.0
 )
@@ -375,6 +379,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.139.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.139.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.139.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/scraper/zookeeperscraper v0.139.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/openshift/api v3.9.0+incompatible // indirect
@@ -471,7 +476,6 @@ require (
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.139.0 // indirect
 	go.opentelemetry.io/collector/extension/extensiontest v0.139.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.139.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.45.0 // indirect
 	go.opentelemetry.io/collector/filter v0.139.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.139.0 // indirect
 	go.opentelemetry.io/collector/internal/memorylimiter v0.139.0 // indirect
