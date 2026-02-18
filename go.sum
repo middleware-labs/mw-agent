@@ -694,6 +694,8 @@ github.com/middleware-labs/opentelemetry-collector-contrib/receiver/rabbitmqrece
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/rabbitmqreceiver v0.0.0-20260122034336-b0dc5b7db4de/go.mod h1:jq7jQltbU20JOSV3jPd3s1eNRCvJ44mYLcrmtThKjdw=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/sqlserverreceiver v0.0.0-20260122034336-b0dc5b7db4de h1:hQgNLIu0OFzGhEWH7afDF1sLgExkpp7Jm7+RN98vCc8=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/sqlserverreceiver v0.0.0-20260122034336-b0dc5b7db4de/go.mod h1:ZnoQNt1oRAWLngoYWLbFUdrr1m8UcXZxEDg/W6+JrOY=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.0.0-20260122034336-b0dc5b7db4de h1:8gicUMOJY2VWFWmKwD2MIvjSzxGGL5RvG8GB/KnG9YU=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.0.0-20260122034336-b0dc5b7db4de/go.mod h1:smI22wzSrlamKgdunnA8IowrP9GyDp4YEw0Jo3R7VpU=
 github.com/middleware-labs/synthetics-agent v1.0.59 h1:aiXnPEg/vPcTYa1g2/aLLAvNT8YN623m8/6C5TNKxIc=
 github.com/middleware-labs/synthetics-agent v1.0.59/go.mod h1:leFEdEaCFzG3EGpO5QRvEMKqgGs0+m/vsiv4a31zuag=
 github.com/miekg/dns v1.1.26/go.mod h1:bPDLeHnStXmXAq1m/Ch/hvfNHr14JKNPMBo3VZKjuso=
@@ -893,6 +895,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventl
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.139.0/go.mod h1:C2wYuBBlYaWuFQP+elufZGZrlj7GyeCdzroEZYlV5os=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.139.0 h1:d3gfDFoyCGpLrOba4WezCr4mN0tFQuchP2lG0c5Iwp0=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.139.0/go.mod h1:rzONCE55PRW+ogXOMavHrWi/H6uBzNAGGJzL1fRLs+I=
+github.com/open-telemetry/opentelemetry-collector-contrib/scraper/zookeeperscraper v0.139.0 h1:B03I4XsEdP2IWiLVYedvlI4VL+58vLW189EFE6O7iT8=
+github.com/open-telemetry/opentelemetry-collector-contrib/scraper/zookeeperscraper v0.139.0/go.mod h1:8u1Bc1lNOccAHMZl/PG30GCTW9dyJfgXhM1FkXTxb7c=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.1.1 h1:y0fUlFfIZhPF1W537XOLg0/fcx6zcHCJwooC2xJA040=
