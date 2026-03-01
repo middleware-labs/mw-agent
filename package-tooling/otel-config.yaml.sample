@@ -1,4 +1,6 @@
 exporters:
+  debug:
+    verbosity: detailed
   otlp/2:
     endpoint: ${env:MW_TARGET}
     headers:
@@ -89,6 +91,11 @@ processors:
     override: false
     timeout: 5s
 receivers:
+  awsecscontainermetrics:
+    collection_interval: 30s
+    run_as: daemonset
+    cluster: ${env:ECS_CLUSTER_NAME}
+    docker_socket_path: /var/run/docker.sock
   docker_stats:
     collection_interval: 5s
     endpoint: unix:///var/run/docker.sock
@@ -174,44 +181,56 @@ receivers:
         endpoint: "[::]:9320"
 service:
   pipelines:
-    logs:
-      exporters:
-      - otlp/2
+    # logs:
+    #   exporters:
+    #   - otlp/2
+    #   processors:
+    #   - resource
+    #   - resourcedetection
+    #   - resource/hostid
+    #   - attributes/logs
+    #   - batch
+    #   receivers:
+    #   - otlp
+    #   - fluentforward
+    #   - filelog
+    # metrics:
+    #   exporters:
+    #   - otlp/2
+    #   processors:
+    #   - resource
+    #   - resourcedetection
+    #   - resource/hostid
+    #   - batch
+    #   receivers:
+    #   - hostmetrics
+    #   - docker_stats
+    #   - otlp
+    # traces:
+    #   exporters:
+    #   - otlp/2
+    #   processors:
+    #   - resource/traces
+    #   - resourcedetection
+    #   - resource/hostid
+    #   - attributes/traces
+    #   - batch
+    #   receivers:
+    #   - otlp
+    metrics/ecs:
+      receivers:
+      - awsecscontainermetrics
       processors:
       - resource
-      - resourcedetection
-      - resource/hostid
-      - attributes/logs
-      - batch
-      receivers:
-      - otlp
-      - fluentforward
-      - filelog
-    metrics:
-      exporters:
-      - otlp/2
-      processors:
-      - resource
-      - resourcedetection
-      - resource/hostid
-      - batch
-      receivers:
-      - hostmetrics
-      - docker_stats
-      - otlp
-    traces:
-      exporters:
-      - otlp/2
-      processors:
-      - resource/traces
       - resourcedetection
       - resource/hostid
       - attributes/traces
       - batch
-      receivers:
-      - otlp
+      exporters:
+      - otlp/2
+      - debug
   telemetry:
     metrics:
       address: 127.0.0.1:${env:MW_AGENT_INTERNAL_METRICS_PORT}
     logs:
-      level: fatal
+      level: debug
