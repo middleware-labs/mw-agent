@@ -230,7 +230,5 @@ service:
       - otlp/2
       - debug
   telemetry:
-    metrics:
-      address: 127.0.0.1:${env:MW_AGENT_INTERNAL_METRICS_PORT}
     logs:
       level: debug
