@@ -102,7 +102,6 @@ receivers:
     timeout: 20s
   filelog:
     include:
-    - /var/log/**/*.log*
     - /var/lib/docker/containers/**/*.log*
     include_file_name_resolved: true
     include_file_path: true
@@ -181,19 +180,19 @@ receivers:
         endpoint: "[::]:9320"
 service:
   pipelines:
-    # logs:
-    #   exporters:
-    #   - otlp/2
-    #   processors:
-    #   - resource
-    #   - resourcedetection
-    #   - resource/hostid
-    #   - attributes/logs
-    #   - batch
-    #   receivers:
-    #   - otlp
-    #   - fluentforward
-    #   - filelog
+    logs:
+      exporters:
+      - otlp/2
+      processors:
+      - resource
+      - resourcedetection
+      - resource/hostid
+      - attributes/logs
+      - batch
+      receivers:
+      - otlp
+      - fluentforward
+      - filelog
     # metrics:
     #   exporters:
     #   - otlp/2
@@ -228,7 +227,6 @@ service:
       - batch
       exporters:
       - otlp/2
-      - debug
   telemetry:
     logs:
       level: debug
