@@ -26,7 +26,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postg
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kafkametricsreceiver v0.0.0-20260122034336-b0dc5b7db4de
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.0.0-20260301150206-44b94045f888
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.0.0-20260303172836-a32f3e3aa426
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/apachereceiver v0.0.0-20260122034336-b0dc5b7db4de
 
