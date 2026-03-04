@@ -96,6 +96,7 @@ receivers:
     run_as: daemonset
     cluster: ${env:ECS_CLUSTER_NAME}
     docker_socket_path: /var/run/docker.sock
+    cgroups_mount_path: /host/sys/fs/cgroup
   docker_stats:
     collection_interval: 5s
     endpoint: unix:///var/run/docker.sock
