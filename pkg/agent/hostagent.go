@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/middleware-labs/java-injector/pkg/discovery"
+	"github.com/middleware-labs/java-injector/pkg/otelinject"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
@@ -896,7 +896,7 @@ func (c *HostAgent) ReportAgentStatusAPI() error {
 	}()
 	hostname := getHostname()
 	apikey := c.APIKey
-	err := discovery.ReportStatus(hostname, apikey, c.APIURLForConfigCheck, c.Version, c.InfraPlatform.String())
+	err := otelinject.ReportStatus(hostname, apikey, c.APIURLForConfigCheck, c.Version, c.InfraPlatform.String())
 	if err != nil {
 		zap.Error(err)
 		return fmt.Errorf("%w: %v", ErrReportApiFailure, err)
