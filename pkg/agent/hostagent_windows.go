@@ -16,6 +16,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
@@ -98,6 +100,15 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 		mongodbatlasreceiver.NewFactory(),
 		datadogreceiver.NewFactory(),
 		zookeeperreceiver.NewFactory(),
+	}
+
+	// if the host agent is running on ECS EC2, add
+	// relevant factories
+	if c.InfraPlatform == InfraPlatformECSEC2 || c.InfraPlatform == InfraPlatformECSFargate {
+		receiverfactories = append(receiverfactories,
+			awsecscontainermetricsreceiver.NewFactory())
+		receiverfactories = append(receiverfactories,
+			awscontainerinsightreceiver.NewFactory())
 	}
 
 	for _, f := range receiverfactories {

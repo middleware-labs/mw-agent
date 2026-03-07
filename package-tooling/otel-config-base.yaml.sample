@@ -122,10 +122,40 @@ receivers:
     cluster: ${env:ECS_CLUSTER_NAME}
     docker_socket_path: /var/run/docker.sock
     cgroups_mount_path: /host/sys/fs/cgroup
+  awscontainerinsightreceiver:
+    collection_interval: 10s
+    container_orchestrator: ecs
   docker_stats:
     collection_interval: 5s
     endpoint: unix:///var/run/docker.sock
     timeout: 20s
+    metrics:
+      container.cpu.usage.system:
+        enabled: true
+      container.cpu.usage.percpu:
+        enabled: true
+      container.cpu.limit:
+        enabled: true
+      container.memory.usage.max:
+        enabled: true
+      container.memory.cache:
+        enabled: true
+      container.memory.rss:
+        enabled: true
+      container.memory.pgfault:
+        enabled: true
+      container.memory.fails:
+        enabled: true
+      container.network.io.usage.rx_errors:
+        enabled: true
+      container.network.io.usage.tx_errors:
+        enabled: true
+      container.network.io.usage.rx_packets:
+        enabled: true
+      container.network.io.usage.tx_packets:
+        enabled: true
+      container.restarts:
+        enabled: true
   filelog:
     include:
     - /var/lib/docker/containers/**/*.log*
@@ -245,6 +275,8 @@ service:
     metrics/ecs:
       receivers:
       - awsecscontainermetrics
+      - docker_stats
+      - awscontainerinsightreceiver
       processors:
       - resource
       - resourcedetection
