@@ -668,11 +668,13 @@ func main() {
 						Action: func(c *cli.Context) error {
 							fmt.Println("Instrumenting node-js services")
 							nodeinj, err := otelinject.NewNodeSystemdInjector()
-							nodeinj.Instrument()
-							pp.Println(nodeinj.Status)
 							if err != nil {
-								pp.Println("Oh no!!! ", err.Error())
+								return fmt.Errorf("failed to create node injector: %w", err)
 							}
+							if err := nodeinj.Instrument(); err != nil {
+								return fmt.Errorf("failed to instrument node services: %w", err)
+							}
+							fmt.Println(nodeinj.Status)
 							return nil
 						},
 					},
@@ -728,11 +730,13 @@ func main() {
 						Action: func(c *cli.Context) error {
 							fmt.Println("Instrumenting java services")
 							javainj, err := otelinject.NewJavaSystemdInjector()
-							javainj.Instrument()
-							pp.Println(javainj.Status)
 							if err != nil {
-								pp.Println("Oh no!!! ", err.Error())
+								return fmt.Errorf("failed to create java injector: %w", err)
 							}
+							if err := javainj.Instrument(); err != nil {
+								return fmt.Errorf("failed to instrument java services: %w", err)
+							}
+							fmt.Println(javainj.Status)
 							return nil
 						},
 					},
@@ -742,11 +746,29 @@ func main() {
 						Action: func(c *cli.Context) error {
 							fmt.Println("Instrumenting python services")
 							pythonInj, err := otelinject.NewPythonSystemdInjector()
-							pythonInj.Instrument()
-							pp.Println(pythonInj.Status)
 							if err != nil {
-								pp.Println("Oh no!!! ", err.Error())
+								return fmt.Errorf("failed to create python injector: %w", err)
 							}
+							if err := pythonInj.Instrument(); err != nil {
+								return fmt.Errorf("failed to instrument python services: %w", err)
+							}
+							fmt.Println(pythonInj.Status)
+							return nil
+						},
+					},
+					{
+						Name:  "node",
+						Usage: "Instrument node systemd service",
+						Action: func(c *cli.Context) error {
+							fmt.Println("Instrumenting node services")
+							nodeInj, err := otelinject.NewNodeSystemdInjector()
+							if err != nil {
+								return fmt.Errorf("failed to create node injector: %w", err)
+							}
+							if err := nodeInj.Instrument(); err != nil {
+								return fmt.Errorf("failed to instrument node services: %w", err)
+							}
+							fmt.Println(nodeInj.Status)
 							return nil
 						},
 					},
@@ -755,30 +777,6 @@ func main() {
 			{
 				Name:  "uninstrument",
 				Usage: "uninstruments services",
-				// Flags: []cli.Flag{
-				// 	&cli.StringFlag{
-				// 		Name:  "systemd",
-				// 		Usage: "Uninstrument a specific systemd unit by name (e.g. book-service-java.service)",
-				// 	},
-				// },
-				// Action: func(c *cli.Context) error {
-				// 	pp.Println("Uninstrumenting")
-				// 	if c.IsSet("systemd") {
-				// 		pp.Println("Uninstrumenting systemd unit")
-				// 		unitName := c.String("systemd")
-				// 		if unitName == "" {
-				// 			return fmt.Errorf("--systemd flag requires a unit name")
-				// 		}
-				// 		fmt.Printf("Instrumenting systemd unit: %s\n", unitName)
-				// 		// TODO: call your systemd-specific instrumentation logic here
-				// 		err := otelinject.UninstrumentUnit(unitName)
-				// 		if err != nil {
-				// 			return fmt.Errorf("failed to create systemd injector for %s: %w", unitName, err)
-				// 		}
-				// 		return nil
-				// 	}
-				// 	return nil
-				// },
 				Subcommands: []*cli.Command{
 					{
 						Name:  "systemd",
@@ -801,13 +799,15 @@ func main() {
 						Name:  "node", // Child command
 						Usage: "uninstrument Node.js systemd services",
 						Action: func(c *cli.Context) error {
-							fmt.Println("Instrumenting node-js services")
+							fmt.Println("Uninstrumenting node-js services")
 							nodeinj, err := otelinject.NewNodeSystemdInjector()
-							nodeinj.Uninstrument()
-							pp.Println(nodeinj.Status)
 							if err != nil {
-								pp.Println("Oh no!!! ", err.Error())
+								return fmt.Errorf("failed to create node injector: %w", err)
 							}
+							if err := nodeinj.Uninstrument(); err != nil {
+								return fmt.Errorf("failed to uninstrument node services: %w", err)
+							}
+							fmt.Println(nodeinj.Status)
 							return nil
 						},
 					},
@@ -817,11 +817,13 @@ func main() {
 						Action: func(c *cli.Context) error {
 							fmt.Println("Uninstrumenting java services")
 							javainj, err := otelinject.NewJavaSystemdInjector()
-							javainj.Uninstrument()
-							pp.Println(javainj.Status)
 							if err != nil {
-								pp.Println("Oh no!!! ", err.Error())
+								return fmt.Errorf("failed to create java injector: %w", err)
 							}
+							if err := javainj.Uninstrument(); err != nil {
+								return fmt.Errorf("failed to uninstrument java services: %w", err)
+							}
+							fmt.Println(javainj.Status)
 							return nil
 						},
 					},
@@ -831,11 +833,13 @@ func main() {
 						Action: func(c *cli.Context) error {
 							fmt.Println("Uninstrumenting python services")
 							pythoninj, err := otelinject.NewPythonSystemdInjector()
-							pythoninj.Uninstrument()
-							pp.Println(pythoninj.Status)
 							if err != nil {
-								pp.Println("Oh no!!! ", err.Error())
+								return fmt.Errorf("failed to create python injector: %w", err)
 							}
+							if err := pythoninj.Uninstrument(); err != nil {
+								return fmt.Errorf("failed to uninstrument python services: %w", err)
+							}
+							fmt.Println(pythoninj.Status)
 							return nil
 						},
 					},
