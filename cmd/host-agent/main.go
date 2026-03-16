@@ -648,10 +648,10 @@ func main() {
 				Action: func(c *cli.Context) error {
 					if c.Bool("systemd") {
 						units, err := otelinject.ListUnits()
+						pp.Println(units)
 						if err != nil {
 							return fmt.Errorf("failed to list systemd units: %w", err)
 						}
-						pp.Println(units)
 						return nil
 					}
 
@@ -689,7 +689,6 @@ func main() {
 							},
 						},
 						Action: func(c *cli.Context) error {
-							pp.Println("In action")
 
 							// 1. Get the unit name from the positional arguments, not a flag
 							unitName := c.Args().First()
@@ -714,7 +713,6 @@ func main() {
 							}
 
 							fmt.Printf("Instrumenting systemd unit: %s (language: %s)\n", unitName, language)
-							pp.Println("------------------Instrumenting:::>>> ", unitName, " ", language)
 
 							err := otelinject.InstrumentUnit(unitName, language)
 							if err != nil {
@@ -782,7 +780,6 @@ func main() {
 						Name:  "systemd",
 						Usage: "uninstruments systemd unit",
 						Action: func(c *cli.Context) error {
-							pp.Println("In uninstrument sub action.")
 							unitName := c.Args().First()
 							if unitName == "" {
 								return fmt.Errorf("you must provide a systemd unit name to uninstrumment")
