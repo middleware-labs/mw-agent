@@ -21,6 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
@@ -39,6 +40,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/debugexporter"
@@ -86,6 +89,7 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 		prometheusreceiver.NewFactory(),
 		postgresqlreceiver.NewFactory(),
 		windowseventlogreceiver.NewFactory(),
+		windowsservicereceiver.NewFactory(),
 		windowsperfcountersreceiver.NewFactory(),
 		mongodbreceiver.NewFactory(),
 		mysqlreceiver.NewFactory(),
@@ -98,6 +102,7 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 		mongodbatlasreceiver.NewFactory(),
 		datadogreceiver.NewFactory(),
 		zookeeperreceiver.NewFactory(),
+		activedirectorydsreceiver.NewFactory(),
 	}
 
 	for _, f := range receiverfactories {
