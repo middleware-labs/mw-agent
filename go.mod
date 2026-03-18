@@ -123,7 +123,7 @@ require (
 
 require (
 	github.com/k0kubun/pp v3.0.1+incompatible
-	github.com/middleware-labs/java-injector v1.1.998
+	github.com/middleware-labs/java-injector v1.1.0
 	github.com/middleware-labs/synthetics-agent v1.0.59
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.139.0
