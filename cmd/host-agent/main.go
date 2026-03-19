@@ -10,8 +10,8 @@ import (
 	"runtime"
 	"strconv"
 	"sync"
+	"text/tabwriter"
 
-	"github.com/k0kubun/pp"
 	"github.com/middleware-labs/java-injector/pkg/otelinject"
 	"github.com/middleware-labs/mw-agent/pkg/agent"
 	"github.com/middleware-labs/synthetics-agent/pkg/worker"
@@ -638,208 +638,196 @@ func main() {
 				},
 			},
 			{
-				Name: "list",
+				Name:  "list",
+				Usage: "List instrumented services",
 				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name:  "systemd",
-						Usage: "List all systemd units",
+					&cli.StringFlag{
+						Name:     "type",
+						Usage:    "Deployment type to list (systemd)",
+						Required: true,
+					},
+					&cli.StringFlag{
+						Name:  "language",
+						Usage: "Filter by language (java, python, node). Lists all languages if omitted.",
 					},
 				},
 				Action: func(c *cli.Context) error {
-					if c.Bool("systemd") {
-						units, err := otelinject.ListUnits()
-						pp.Println(units)
-						if err != nil {
-							return fmt.Errorf("failed to list systemd units: %w", err)
-						}
-						return nil
+					if c.String("type") != "systemd" {
+						return fmt.Errorf("unsupported type %q: only systemd is supported", c.String("type"))
+					}
+					services, err := otelinject.ListServices()
+					if err != nil {
+						return fmt.Errorf("failed to list systemd services: %w", err)
 					}
 
-					return fmt.Errorf("please specify a flag (e.g. --systemd)")
+					langFilter := c.String("language")
+					w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+					fmt.Fprintln(w, "UNIT\tNAME\tLANGUAGE\tPID\tOWNER\tSTATUS\tAGENT TYPE\tINSTRUMENTED")
+					fmt.Fprintln(w, "----\t----\t--------\t---\t-----\t------\t----------\t------------")
+					for _, s := range services {
+						if langFilter != "" && s.Language != langFilter {
+							continue
+						}
+						instrumented := "no"
+						if s.Instrumented {
+							instrumented = "yes"
+						}
+						agentType := s.AgentType
+						if agentType == "" {
+							agentType = "-"
+						}
+						fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\t%s\t%s\t%s\n",
+							s.SystemdUnit, s.Name, s.Language, s.PID, s.Owner, s.Status, agentType, instrumented,
+						)
+					}
+					return w.Flush()
 				},
 			},
 			{
 				Name:  "instrument",
-				Usage: "instruments services",
-				Subcommands: []*cli.Command{
-					{
-						Name:  "node", // Child command
-						Usage: "Instrument Node.js systemd services",
-						Action: func(c *cli.Context) error {
-							fmt.Println("Instrumenting node-js services")
-							nodeinj, err := otelinject.NewNodeSystemdInjector()
-							if err != nil {
-								return fmt.Errorf("failed to create node injector: %w", err)
-							}
-							if err := nodeinj.Instrument(); err != nil {
-								return fmt.Errorf("failed to instrument node services: %w", err)
-							}
-							fmt.Println(nodeinj.Status)
-							return nil
-						},
+				Usage: "Instrument services",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "type",
+						Usage:    "Deployment type (systemd)",
+						Required: true,
 					},
-					{
-						Name:  "systemd",
-						Usage: "Instrument a specific systemd unit",
-						Flags: []cli.Flag{
-							&cli.StringFlag{
-								Name:     "language",
-								Usage:    "Language of the service (python, java, node)",
-								Required: true,
-							},
-						},
-						Action: func(c *cli.Context) error {
-
-							// 1. Get the unit name from the positional arguments, not a flag
-							unitName := c.Args().First()
-							if unitName == "" {
-								return fmt.Errorf("you must provide a systemd unit name as an argument")
-							}
-
-							// 2. Since your flag is marked Required: true, urfave/cli will
-							// error out before this point if it's missing, but we still grab it.
-							lang := c.String("language")
-
-							var language otelinject.Language
-							switch lang {
-							case "python":
-								language = otelinject.LanguagePython
-							case "java":
-								language = otelinject.LanguageJava
-							case "node":
-								language = otelinject.LanguageNode
-							default:
-								return fmt.Errorf("unsupported language %q: must be one of python, java, node", lang)
-							}
-
-							fmt.Printf("Instrumenting systemd unit: %s (language: %s)\n", unitName, language)
-
-							err := otelinject.InstrumentUnit(unitName, language)
-							if err != nil {
-								return fmt.Errorf("failed to instrument systemd unit %s: %w", unitName, err)
-							}
-
-							return nil
-						},
+					&cli.StringFlag{
+						Name:     "language",
+						Usage:    "Language of the service (java, python, node)",
+						Required: true,
 					},
-					{
-						Name:  "java", // Child command
-						Usage: "Instrument Java systemd services",
-						Action: func(c *cli.Context) error {
-							fmt.Println("Instrumenting java services")
-							javainj, err := otelinject.NewJavaSystemdInjector()
-							if err != nil {
-								return fmt.Errorf("failed to create java injector: %w", err)
-							}
-							if err := javainj.Instrument(); err != nil {
-								return fmt.Errorf("failed to instrument java services: %w", err)
-							}
-							fmt.Println(javainj.Status)
-							return nil
-						},
-					},
-					{
-						Name:  "python", // Child command
-						Usage: "Instrument python systemd services",
-						Action: func(c *cli.Context) error {
-							fmt.Println("Instrumenting python services")
-							pythonInj, err := otelinject.NewPythonSystemdInjector()
-							if err != nil {
-								return fmt.Errorf("failed to create python injector: %w", err)
-							}
-							if err := pythonInj.Instrument(); err != nil {
-								return fmt.Errorf("failed to instrument python services: %w", err)
-							}
-							fmt.Println(pythonInj.Status)
-							return nil
-						},
-					},
-					{
-						Name:  "node",
-						Usage: "Instrument node systemd service",
-						Action: func(c *cli.Context) error {
-							fmt.Println("Instrumenting node services")
-							nodeInj, err := otelinject.NewNodeSystemdInjector()
-							if err != nil {
-								return fmt.Errorf("failed to create node injector: %w", err)
-							}
-							if err := nodeInj.Instrument(); err != nil {
-								return fmt.Errorf("failed to instrument node services: %w", err)
-							}
-							fmt.Println(nodeInj.Status)
-							return nil
-						},
-					},
+				},
+				Action: func(c *cli.Context) error {
+					if c.String("type") != "systemd" {
+						return fmt.Errorf("unsupported type %q: only systemd is supported", c.String("type"))
+					}
+
+					lang := c.String("language")
+					unitName := c.Args().First()
+
+					if unitName != "" {
+						var language otelinject.Language
+						switch lang {
+						case "python":
+							language = otelinject.LanguagePython
+						case "java":
+							language = otelinject.LanguageJava
+						case "node":
+							language = otelinject.LanguageNode
+						default:
+							return fmt.Errorf("unsupported language %q: must be one of java, python, node", lang)
+						}
+						fmt.Printf("Instrumenting systemd unit %s (language: %s)\n", unitName, lang)
+						if err := otelinject.InstrumentUnit(unitName, language); err != nil {
+							return fmt.Errorf("failed to instrument %s: %w", unitName, err)
+						}
+						return nil
+					}
+
+					switch lang {
+					case "java":
+						inj, err := otelinject.NewJavaSystemdInjector()
+						if err != nil {
+							return fmt.Errorf("failed to create java injector: %w", err)
+						}
+						if err := inj.Instrument(); err != nil {
+							return fmt.Errorf("failed to instrument java services: %w", err)
+						}
+						fmt.Println(inj.Status)
+					case "python":
+						inj, err := otelinject.NewPythonSystemdInjector()
+						if err != nil {
+							return fmt.Errorf("failed to create python injector: %w", err)
+						}
+						if err := inj.Instrument(); err != nil {
+							return fmt.Errorf("failed to instrument python services: %w", err)
+						}
+						fmt.Println(inj.Status)
+					case "node":
+						inj, err := otelinject.NewNodeSystemdInjector()
+						if err != nil {
+							return fmt.Errorf("failed to create node injector: %w", err)
+						}
+						if err := inj.Instrument(); err != nil {
+							return fmt.Errorf("failed to instrument node services: %w", err)
+						}
+						fmt.Println(inj.Status)
+					default:
+						return fmt.Errorf("unsupported language %q: must be one of java, python, node", lang)
+					}
+					return nil
 				},
 			},
 			{
 				Name:  "uninstrument",
-				Usage: "uninstruments services",
-				Subcommands: []*cli.Command{
-					{
-						Name:  "systemd",
-						Usage: "uninstruments systemd unit",
-						Action: func(c *cli.Context) error {
-							unitName := c.Args().First()
-							if unitName == "" {
-								return fmt.Errorf("you must provide a systemd unit name to uninstrumment")
-							}
+				Usage: "Uninstrument services",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "type",
+						Usage:    "Deployment type (systemd)",
+						Required: true,
+					},
+					&cli.StringFlag{
+						Name:  "language",
+						Usage: "Language of the service (java, python, node). Required when no unit name is given.",
+					},
+				},
+				Action: func(c *cli.Context) error {
+					if c.String("type") != "systemd" {
+						return fmt.Errorf("unsupported type %q: only systemd is supported", c.String("type"))
+					}
 
-							err := otelinject.UninstrumentUnit(unitName)
-							if err != nil {
-								return fmt.Errorf("failed to uninstrument systemd unit %s: %v", unitName, err)
-							}
-							return nil
-						},
-					},
-					{
-						Name:  "node", // Child command
-						Usage: "uninstrument Node.js systemd services",
-						Action: func(c *cli.Context) error {
-							fmt.Println("Uninstrumenting node-js services")
-							nodeinj, err := otelinject.NewNodeSystemdInjector()
-							if err != nil {
-								return fmt.Errorf("failed to create node injector: %w", err)
-							}
-							if err := nodeinj.Uninstrument(); err != nil {
-								return fmt.Errorf("failed to uninstrument node services: %w", err)
-							}
-							fmt.Println(nodeinj.Status)
-							return nil
-						},
-					},
-					{
-						Name:  "java", // Child command
-						Usage: "uninstrument Java systemd services",
-						Action: func(c *cli.Context) error {
-							fmt.Println("Uninstrumenting java services")
-							javainj, err := otelinject.NewJavaSystemdInjector()
-							if err != nil {
-								return fmt.Errorf("failed to create java injector: %w", err)
-							}
-							if err := javainj.Uninstrument(); err != nil {
-								return fmt.Errorf("failed to uninstrument java services: %w", err)
-							}
-							fmt.Println(javainj.Status)
-							return nil
-						},
-					},
-					{
-						Name:  "python", // Child command
-						Usage: "uninstrument python systemd services",
-						Action: func(c *cli.Context) error {
-							fmt.Println("Uninstrumenting python services")
-							pythoninj, err := otelinject.NewPythonSystemdInjector()
-							if err != nil {
-								return fmt.Errorf("failed to create python injector: %w", err)
-							}
-							if err := pythoninj.Uninstrument(); err != nil {
-								return fmt.Errorf("failed to uninstrument python services: %w", err)
-							}
-							fmt.Println(pythoninj.Status)
-							return nil
-						},
-					},
+					unitName := c.Args().First()
+					lang := c.String("language")
+
+					if unitName != "" && lang != "" {
+						return fmt.Errorf("provide either a unit name or --language, not both")
+					}
+
+					if unitName != "" {
+						if err := otelinject.UninstrumentUnit(unitName); err != nil {
+							return fmt.Errorf("failed to uninstrument %s: %w", unitName, err)
+						}
+						return nil
+					}
+
+					if lang == "" {
+						return fmt.Errorf("provide a unit name or --language")
+					}
+
+					switch lang {
+					case "java":
+						inj, err := otelinject.NewJavaSystemdInjector()
+						if err != nil {
+							return fmt.Errorf("failed to create java injector: %w", err)
+						}
+						if err := inj.Uninstrument(); err != nil {
+							return fmt.Errorf("failed to uninstrument java services: %w", err)
+						}
+						fmt.Println(inj.Status)
+					case "python":
+						inj, err := otelinject.NewPythonSystemdInjector()
+						if err != nil {
+							return fmt.Errorf("failed to create python injector: %w", err)
+						}
+						if err := inj.Uninstrument(); err != nil {
+							return fmt.Errorf("failed to uninstrument python services: %w", err)
+						}
+						fmt.Println(inj.Status)
+					case "node":
+						inj, err := otelinject.NewNodeSystemdInjector()
+						if err != nil {
+							return fmt.Errorf("failed to create node injector: %w", err)
+						}
+						if err := inj.Uninstrument(); err != nil {
+							return fmt.Errorf("failed to uninstrument node services: %w", err)
+						}
+						fmt.Println(inj.Status)
+					default:
+						return fmt.Errorf("unsupported language %q: must be one of java, python, node", lang)
+					}
+					return nil
 				},
 			},
 		},
