@@ -728,6 +728,9 @@ func main() {
 					unitName := c.Args().First()
 
 					if unitName != "" {
+						if _, err := newSystemdInjector(lang); err != nil {
+							return err
+						}
 						fmt.Printf("Instrumenting systemd unit %s (language: %s)\n", unitName, lang)
 						if err := otelinject.InstrumentUnit(unitName, otelinject.Language(lang)); err != nil {
 							return fmt.Errorf("failed to instrument %s: %w", unitName, err)
