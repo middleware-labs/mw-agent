@@ -386,29 +386,8 @@ func detectInfraPlatform() agent.InfraPlatform {
 	return agent.InfraPlatformInstance
 }
 
-// newSystemdInjector returns the OtelInjector for the given language string.
-// Adding a new language is a one-liner here.
-func newSystemdInjector(lang string) (otelinject.OtelInjector, error) {
-	constructors := map[string]func() (otelinject.OtelInjector, error){
-		"java": func() (otelinject.OtelInjector, error) {
-			return otelinject.NewJavaSystemdInjector()
-		},
-		"python": func() (otelinject.OtelInjector, error) {
-			return otelinject.NewPythonSystemdInjector()
-		},
-		"node": func() (otelinject.OtelInjector, error) {
-			return otelinject.NewNodeSystemdInjector()
-		},
-	}
-	fn, ok := constructors[lang]
-	if !ok {
-		return nil, fmt.Errorf("unsupported language %q: must be one of java, python, node", lang)
-	}
-	return fn()
-}
-
 // resolveLanguage maps a language string to its typed otelinject.Language constant,
-// returning an error for unsupported values. This avoids raw string casts at call sites.
+// returning an error for unsupported values. Single source of truth for language validation.
 func resolveLanguage(lang string) (otelinject.Language, error) {
 	languages := map[string]otelinject.Language{
 		"java":   otelinject.LanguageJava,
@@ -420,6 +399,27 @@ func resolveLanguage(lang string) (otelinject.Language, error) {
 		return "", fmt.Errorf("unsupported language %q: must be one of java, python, node", lang)
 	}
 	return l, nil
+}
+
+// newSystemdInjector returns the OtelInjector for the given language string.
+// Delegates language validation to resolveLanguage — adding a new language
+// requires updating resolveLanguage and this constructor map.
+func newSystemdInjector(lang string) (otelinject.OtelInjector, error) {
+	if _, err := resolveLanguage(lang); err != nil {
+		return nil, err
+	}
+	constructors := map[string]func() (otelinject.OtelInjector, error){
+		"java": func() (otelinject.OtelInjector, error) {
+			return otelinject.NewJavaSystemdInjector()
+		},
+		"python": func() (otelinject.OtelInjector, error) {
+			return otelinject.NewPythonSystemdInjector()
+		},
+		"node": func() (otelinject.OtelInjector, error) {
+			return otelinject.NewNodeSystemdInjector()
+		},
+	}
+	return constructors[lang]()
 }
 
 func main() {
@@ -788,6 +788,9 @@ func main() {
 					unitName := c.Args().First()
 					lang := c.String("language")
 
+					// Uninstrumenting a specific unit is language-agnostic — the drop-in
+					// is removed regardless of runtime. --language is only needed for bulk
+					// operations. Reject both together to keep the interface unambiguous.
 					if unitName != "" && lang != "" {
 						return fmt.Errorf("provide either a unit name or --language, not both")
 					}
