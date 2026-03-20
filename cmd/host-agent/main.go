@@ -309,7 +309,7 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 		altsrc.NewBoolFlag(&cli.BoolFlag{
 			Name:        "agent-features.service-reporting",
 			Usage:       "Enable or disable service discovery reporting.",
-			EnvVars:     []string{"MW_REPORT_SERVICES"},
+			EnvVars:     []string{"MW_AGENT_FEATURES_REPORT_SERVICES", "MW_REPORT_SERVICES"},
 			Destination: &cfg.AgentFeatures.ServiceReporting,
 			DefaultText: "true",
 			Value:       true,
