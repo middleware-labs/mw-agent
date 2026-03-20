@@ -407,6 +407,21 @@ func newSystemdInjector(lang string) (otelinject.OtelInjector, error) {
 	return fn()
 }
 
+// resolveLanguage maps a language string to its typed otelinject.Language constant,
+// returning an error for unsupported values. This avoids raw string casts at call sites.
+func resolveLanguage(lang string) (otelinject.Language, error) {
+	languages := map[string]otelinject.Language{
+		"java":   otelinject.LanguageJava,
+		"python": otelinject.LanguagePython,
+		"node":   otelinject.LanguageNode,
+	}
+	l, ok := languages[lang]
+	if !ok {
+		return "", fmt.Errorf("unsupported language %q: must be one of java, python, node", lang)
+	}
+	return l, nil
+}
+
 func main() {
 	zapEncoderCfg := zapcore.EncoderConfig{
 		MessageKey: "message",
@@ -728,11 +743,12 @@ func main() {
 					unitName := c.Args().First()
 
 					if unitName != "" {
-						if _, err := newSystemdInjector(lang); err != nil {
+						language, err := resolveLanguage(lang)
+						if err != nil {
 							return err
 						}
 						fmt.Printf("Instrumenting systemd unit %s (language: %s)\n", unitName, lang)
-						if err := otelinject.InstrumentUnit(unitName, otelinject.Language(lang)); err != nil {
+						if err := otelinject.InstrumentUnit(unitName, language); err != nil {
 							return fmt.Errorf("failed to instrument %s: %w", unitName, err)
 						}
 						fmt.Printf("Successfully instrumented %s\n", unitName)
