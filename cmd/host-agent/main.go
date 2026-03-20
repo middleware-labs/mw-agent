@@ -655,7 +655,7 @@ func main() {
 					if c.String("type") != "systemd" {
 						return fmt.Errorf("unsupported type %q: only systemd is supported", c.String("type"))
 					}
-					services, err := otelinject.ListServices()
+					services, err := otelinject.ListSystemdServices()
 					if err != nil {
 						return fmt.Errorf("failed to list systemd services: %w", err)
 					}
