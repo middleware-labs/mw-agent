@@ -10,7 +10,9 @@ import (
 	"runtime"
 	"strconv"
 	"sync"
+	"text/tabwriter"
 
+	"github.com/middleware-labs/java-injector/pkg/otelinject"
 	"github.com/middleware-labs/mw-agent/pkg/agent"
 	"github.com/middleware-labs/synthetics-agent/pkg/worker"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -307,7 +309,7 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 		altsrc.NewBoolFlag(&cli.BoolFlag{
 			Name:        "agent-features.service-reporting",
 			Usage:       "Enable or disable service discovery reporting.",
-			EnvVars:     []string{"MW_REPORT_SERVICES"},
+			EnvVars:     []string{"MW_AGENT_FEATURES_REPORT_SERVICES"},
 			Destination: &cfg.AgentFeatures.ServiceReporting,
 			DefaultText: "true",
 			Value:       true,
@@ -382,6 +384,42 @@ func detectInfraPlatform() agent.InfraPlatform {
 	}
 
 	return agent.InfraPlatformInstance
+}
+
+// resolveLanguage maps a language string to its typed otelinject.Language constant,
+// returning an error for unsupported values. Single source of truth for language validation.
+func resolveLanguage(lang string) (otelinject.Language, error) {
+	languages := map[string]otelinject.Language{
+		"java":   otelinject.LanguageJava,
+		"python": otelinject.LanguagePython,
+		"node":   otelinject.LanguageNode,
+	}
+	l, ok := languages[lang]
+	if !ok {
+		return "", fmt.Errorf("unsupported language %q: must be one of java, python, node", lang)
+	}
+	return l, nil
+}
+
+// newSystemdInjector returns the OtelInjector for the given language string.
+// Delegates language validation to resolveLanguage — adding a new language
+// requires updating resolveLanguage and this constructor map.
+func newSystemdInjector(lang string) (otelinject.OtelInjector, error) {
+	if _, err := resolveLanguage(lang); err != nil {
+		return nil, err
+	}
+	constructors := map[string]func() (otelinject.OtelInjector, error){
+		"java": func() (otelinject.OtelInjector, error) {
+			return otelinject.NewJavaSystemdInjector()
+		},
+		"python": func() (otelinject.OtelInjector, error) {
+			return otelinject.NewPythonSystemdInjector()
+		},
+		"node": func() (otelinject.OtelInjector, error) {
+			return otelinject.NewNodeSystemdInjector()
+		},
+	}
+	return constructors[lang]()
 }
 
 func main() {
@@ -632,6 +670,151 @@ func main() {
 				Usage: "Returns the current agent version",
 				Action: func(c *cli.Context) error {
 					fmt.Println("Middleware Agent Version", agentVersion)
+					return nil
+				},
+			},
+			{
+				Name:  "list",
+				Usage: "List instrumented services",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "type",
+						Usage:    "Deployment type to list (systemd)",
+						Required: true,
+					},
+					&cli.StringFlag{
+						Name:  "language",
+						Usage: "Filter by language (java, python, node). Lists all languages if omitted.",
+					},
+				},
+				Action: func(c *cli.Context) error {
+					if c.String("type") != "systemd" {
+						return fmt.Errorf("unsupported type %q: only systemd is supported", c.String("type"))
+					}
+					services, err := otelinject.ListSystemdServices()
+					if err != nil {
+						return fmt.Errorf("failed to list systemd services: %w", err)
+					}
+
+					langFilter := c.String("language")
+					w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+					fmt.Fprintln(w, "UNIT\tNAME\tLANGUAGE\tPID\tOWNER\tSTATUS\tAGENT TYPE\tINSTRUMENTED")
+					fmt.Fprintln(w, "----\t----\t--------\t---\t-----\t------\t----------\t------------")
+					for _, s := range services {
+						if langFilter != "" && s.Language != langFilter {
+							continue
+						}
+						instrumented := "no"
+						if s.Instrumented {
+							instrumented = "yes"
+						}
+						agentType := s.AgentType
+						if agentType == "" {
+							agentType = "-"
+						}
+						fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\t%s\t%s\t%s\n",
+							s.SystemdUnit, s.Name, s.Language, s.PID, s.Owner, s.Status, agentType, instrumented,
+						)
+					}
+					return w.Flush()
+				},
+			},
+			{
+				Name:  "instrument",
+				Usage: "Instrument services",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "type",
+						Usage:    "Deployment type (systemd)",
+						Required: true,
+					},
+					&cli.StringFlag{
+						Name:     "language",
+						Usage:    "Language of the service (java, python, node)",
+						Required: true,
+					},
+				},
+				Action: func(c *cli.Context) error {
+					if c.String("type") != "systemd" {
+						return fmt.Errorf("unsupported type %q: only systemd is supported", c.String("type"))
+					}
+
+					lang := c.String("language")
+					unitName := c.Args().First()
+
+					if unitName != "" {
+						language, err := resolveLanguage(lang)
+						if err != nil {
+							return err
+						}
+						fmt.Printf("Instrumenting systemd unit %s (language: %s)\n", unitName, lang)
+						if err := otelinject.InstrumentUnit(unitName, language); err != nil {
+							return fmt.Errorf("failed to instrument %s: %w", unitName, err)
+						}
+						fmt.Printf("Successfully instrumented %s\n", unitName)
+						return nil
+					}
+
+					inj, err := newSystemdInjector(lang)
+					if err != nil {
+						return err
+					}
+					if err := inj.Instrument(); err != nil {
+						return fmt.Errorf("failed to instrument %s services: %w", lang, err)
+					}
+					fmt.Printf("Successfully instrumented all %s services\n", lang)
+					return nil
+				},
+			},
+			{
+				Name:  "uninstrument",
+				Usage: "Uninstrument services",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "type",
+						Usage:    "Deployment type (systemd)",
+						Required: true,
+					},
+					&cli.StringFlag{
+						Name:  "language",
+						Usage: "Language of the service (java, python, node). Required when no unit name is given.",
+					},
+				},
+				Action: func(c *cli.Context) error {
+					if c.String("type") != "systemd" {
+						return fmt.Errorf("unsupported type %q: only systemd is supported", c.String("type"))
+					}
+
+					unitName := c.Args().First()
+					lang := c.String("language")
+
+					// Uninstrumenting a specific unit is language-agnostic — the drop-in
+					// is removed regardless of runtime. --language is only needed for bulk
+					// operations. Reject both together to keep the interface unambiguous.
+					if unitName != "" && lang != "" {
+						return fmt.Errorf("provide either a unit name or --language, not both")
+					}
+
+					if unitName != "" {
+						if err := otelinject.UninstrumentUnit(unitName); err != nil {
+							return fmt.Errorf("failed to uninstrument %s: %w", unitName, err)
+						}
+						fmt.Printf("Successfully uninstrumented %s\n", unitName)
+						return nil
+					}
+
+					if lang == "" {
+						return fmt.Errorf("provide a unit name or --language")
+					}
+
+					inj, err := newSystemdInjector(lang)
+					if err != nil {
+						return err
+					}
+					if err := inj.Uninstrument(); err != nil {
+						return fmt.Errorf("failed to uninstrument %s services: %w", lang, err)
+					}
+					fmt.Printf("Successfully uninstrumented all %s services\n", lang)
 					return nil
 				},
 			},
