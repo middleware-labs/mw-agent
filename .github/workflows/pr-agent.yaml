@@ -1,0 +1,41 @@
+# .github/workflows/pr-agent.yml
+# Free AI Code Review using PR-Agent + Gemini API
+
+name: PR Agent (Gemini)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  issue_comment:
+
+jobs:
+  pr_agent_job:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: PR Agent - Review
+        uses: Codium-ai/pr-agent@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # === Gemini Configuration ===
+          GOOGLE_AI_STUDIO.GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CONFIG.MODEL: "gemini/gemini-3.1-pro-preview"
+          CONFIG.FALLBACK_MODELS: '["gemini/gemini-3-flash-preview"]'
+          # === What to run automatically ===
+          # Options: review, describe, improve
+          GITHUB_ACTION_CONFIG.AUTO_REVIEW: "true"
+          GITHUB_ACTION_CONFIG.AUTO_DESCRIBE: "true"
+          GITHUB_ACTION_CONFIG.AUTO_IMPROVE: "false"
+          # github_action_config.pr_actions: '["opened", "reopened", "ready_for_review", "review_requested"]'
+          # === Optional customization ===
+          # PR_REVIEWER.EXTRA_INSTRUCTIONS: "Focus on security and performance"
+          # PR_REVIEWER.NUM_CODE_SUGGESTIONS: "3"
