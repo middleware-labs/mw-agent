@@ -1,0 +1,37 @@
+FROM golang:1.24.2 AS build
+RUN apt-get update && apt-get install -y ca-certificates openssl git openssh-client
+
+RUN update-ca-certificates
+ARG AGENT_VERSION
+ENV AGENT_VERSION=$AGENT_VERSION
+ARG GITHUB_TOKEN
+ENV GITHUB_TOKEN=$GITHUB_TOKEN
+ENV GOPATH=/
+
+RUN git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
+COPY go.mod go.sum ./
+COPY local-deps/ local-deps/
+RUN --mount=type=cache,target=/pkg/mod \
+    GOPRIVATE=github.com/middleware-labs go mod download
+
+COPY cmd/ cmd/
+COPY pkg/ pkg/
+RUN --mount=type=cache,target=/pkg/mod \
+    GOPRIVATE=github.com/middleware-labs go mod tidy
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/pkg/mod \
+    CGO_ENABLED=0 go build -gcflags "all=-N -l" -ldflags "-X main.agentVersion=${AGENT_VERSION}" -o /tmp/mw-agent cmd/host-agent/main.go
+
+FROM golang:1.24.2 AS devel
+RUN go install github.com/go-delve/delve/cmd/dlv@latest
+RUN mkdir -p /var/log
+RUN mkdir -p /opt/mw-agent/bin
+WORKDIR /opt/mw-agent
+COPY --from=build /etc/ssl/certs /etc/ssl/certs
+COPY --from=build /tmp/mw-agent /opt/mw-agent/bin/mw-agent
+COPY --from=build /go/local-deps /go/local-deps
+COPY package-tooling/otel-config.yaml.sample /etc/mw-agent/otel-config.yaml
+COPY package-tooling/otel-config-base.yaml.sample /etc/mw-agent/otel-config-base.yaml
+EXPOSE 2345
+CMD ["dlv", "exec", "/opt/mw-agent/bin/mw-agent", "--headless", "--listen=:2345", "--accept-multiclient", "--log", "--log-output=debugger,dap", "--", "start"]
