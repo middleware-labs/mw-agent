@@ -1,4 +1,6 @@
 exporters:
+  debug:
+    verbosity: detailed
   otlp/2:
     endpoint: ${env:MW_TARGET}
     headers:
@@ -81,21 +83,51 @@ processors:
     - action: delete
       key: host.name
   resourcedetection:
-    detectors:
-    - env
-    - ec2
-    - system
-    - docker
-    override: false
-    timeout: 5s
+    detectors: [ecs, system]
+    timeout: 2s
+    system:
+      resource_attributes:
+        host.arch:
+          enabled: true
+        host.cpu.cache.l2.size:
+          enabled: true
+        host.cpu.family:
+          enabled: true
+        host.cpu.model.id:
+          enabled: true
+        host.cpu.model.name:
+          enabled: true
+        host.cpu.stepping:
+          enabled: true
+        host.cpu.vendor.id:
+          enabled: true
+        host.id:
+          enabled: true
+        host.ip:
+          enabled: true
+        host.mac:
+          enabled: true
+        host.name:
+          enabled: true
+        os.description:
+          enabled: true
+        os.type:
+          enabled: true
+        os.version:
+          enabled: true
 receivers:
+  awsecscontainermetrics:
+    collection_interval: 30s
+    run_as: daemonset
+    cluster: ${env:ECS_CLUSTER_NAME}
+    docker_socket_path: /var/run/docker.sock
+    cgroups_mount_path: /host/sys/fs/cgroup
   docker_stats:
     collection_interval: 5s
     endpoint: unix:///var/run/docker.sock
     timeout: 20s
   filelog:
     include:
-    - /var/log/**/*.log*
     - /var/lib/docker/containers/**/*.log*
     include_file_name_resolved: true
     include_file_path: true
@@ -187,31 +219,40 @@ service:
       - otlp
       - fluentforward
       - filelog
-    metrics:
-      exporters:
-      - otlp/2
+    # metrics:
+    #   exporters:
+    #   - otlp/2
+    #   processors:
+    #   - resource
+    #   - resourcedetection
+    #   - resource/hostid
+    #   - batch
+    #   receivers:
+    #   - hostmetrics
+    #   - docker_stats
+    #   - otlp
+    # traces:
+    #   exporters:
+    #   - otlp/2
+    #   processors:
+    #   - resource/traces
+    #   - resourcedetection
+    #   - resource/hostid
+    #   - attributes/traces
+    #   - batch
+    #   receivers:
+    #   - otlp
+    metrics/ecs:
+      receivers:
+      - awsecscontainermetrics
       processors:
       - resource
       - resourcedetection
       - resource/hostid
-      - batch
-      receivers:
-      - hostmetrics
-      - docker_stats
-      - otlp
-    traces:
-      exporters:
-      - otlp/2
-      processors:
-      - resource/traces
-      - resourcedetection
-      - resource/hostid
       - attributes/traces
       - batch
-      receivers:
-      - otlp
+      exporters:
+      - otlp/2
   telemetry:
-    metrics:
-      address: 127.0.0.1:${env:MW_AGENT_INTERNAL_METRICS_PORT}
     logs:
-      level: fatal
+      level: debug

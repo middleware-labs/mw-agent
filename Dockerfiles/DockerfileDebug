@@ -31,7 +31,7 @@ WORKDIR /opt/mw-agent
 COPY --from=build /etc/ssl/certs /etc/ssl/certs
 COPY --from=build /tmp/mw-agent /opt/mw-agent/bin/mw-agent
 COPY --from=build /go/local-deps /go/local-deps
-COPY package-tooling/otel-config.yaml.sample /etc/mw-agent/otel-config.yaml
-COPY package-tooling/otel-config-base.yaml.sample /etc/mw-agent/otel-config-base.yaml
+COPY package-tooling/ecs/otel-config.yaml.sample /etc/mw-agent/otel-config.yaml
+COPY package-tooling/ecs/otel-config-insights.yaml.sample /etc/mw-agent/otel-config-insights.yaml
 EXPOSE 2345
 CMD ["dlv", "exec", "/opt/mw-agent/bin/mw-agent", "--headless", "--listen=:2345", "--accept-multiclient", "--log", "--log-output=debugger,dap", "--", "start"]
