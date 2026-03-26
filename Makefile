@@ -75,3 +75,28 @@ vet:
 
 lint:
 	golangci-lint run
+
+# --- ECS Debug Targets ---
+ECS_CLUSTER ?= app-cluster
+ECS_SERVICE ?= mw-agent-daemon-service
+ECS_REGION  ?= us-east-1
+
+ecs-debug-build:
+	bash package-tooling/ecs/ecs-build.sh
+
+ecs-debug-deploy:
+	aws ecs update-service \
+		--cluster $(ECS_CLUSTER) \
+		--service $(ECS_SERVICE) \
+		--force-new-deployment \
+		--region $(ECS_REGION)
+
+ecs-debug-update-host:
+	bash package-tooling/ecs/update-debug-host.sh
+
+ecs-debug: ecs-debug-build ecs-debug-deploy
+	@echo "Waiting 60s for new ECS task to reach RUNNING..."
+	@sleep 60
+	@$(MAKE) ecs-debug-update-host
+	@echo ""
+	@echo "Ready — press F5 in Cursor / VS Code to attach the debugger."
