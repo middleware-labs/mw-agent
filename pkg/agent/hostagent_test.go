@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"runtime"
 	"testing"
 	"time"
 
@@ -256,6 +257,7 @@ func TestHostAgentGetFactories(t *testing.T) {
 	}
 
 	zapCore := zapcore.NewNopCore()
+
 	agent, err := NewHostAgent(HostConfig{
 		BaseConfig: baseConfig,
 	}, zapCore,
@@ -325,6 +327,21 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assertContainsComponent(t, factories.Processors, "logdedup")
 	assertContainsComponent(t, factories.Processors, "probabilistic_sampler")
 	assertContainsComponent(t, factories.Processors, "redaction")
+
+	// Check for windows specific receivers
+	if runtime.GOOS == "windows" {
+		agentWin, err := NewHostAgent(HostConfig{
+			BaseConfig: baseConfig,
+		}, zapCore,
+			WithHostAgentInfraPlatform(InfraPlatformInstance))
+		assert.NoError(t, err)
+		assert.NotNil(t, agentWin, "agentWin should not be nil")
+		factoriesWin, err := agentWin.getFactories()
+		assert.NoError(t, err)
+		assert.NotNil(t, factoriesWin.Receivers)
+		assertContainsComponent(t, factoriesWin.Receivers, "activedirectorydsreceiver")
+		assertContainsComponent(t, factoriesWin.Receivers, "windowsservicereceiver")
+	}
 }
 
 func TestHostAgentHasValidTags(t *testing.T) {
