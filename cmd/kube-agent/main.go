@@ -174,6 +174,22 @@ func getFlags(cfg *agent.KubeConfig) []cli.Flag {
 			Value:       filepath.Join("/app", "otel-config-nodocker.yaml"),
 			DefaultText: filepath.Join("/app", "otel-config-nodocker.yaml"),
 		},
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "daemonset-name",
+			EnvVars:     []string{"MW_DAEMONSET_NAME"},
+			Usage:       "Name of the DaemonSet running the kube agent.",
+			Destination: &cfg.DaemonsetName,
+			Value:       "mw-kube-agent",
+			DefaultText: "mw-kube-agent",
+		}),
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "deployment-name",
+			EnvVars:     []string{"MW_DEPLOYMENT_NAME"},
+			Usage:       "Name of the Deployment running the kube agent.",
+			Destination: &cfg.DeploymentName,
+			Value:       "mw-kube-agent",
+			DefaultText: "mw-kube-agent",
+		}),
 	}
 }
 
@@ -307,8 +323,8 @@ func main() {
 					kubeAgentMonitor := agent.NewKubeAgentMonitor(cfg,
 						agent.WithKubeAgentMonitorClusterName(os.Getenv("MW_KUBE_CLUSTER_NAME")),
 						agent.WithKubeAgentMonitorAgentNamespace(mwNamespace),
-						agent.WithKubeAgentMonitorDaemonset("mw-kube-agent"),
-						agent.WithKubeAgentMonitorDeployment("mw-kube-agent"),
+						agent.WithKubeAgentMonitorDaemonset(cfg.DaemonsetName),
+						agent.WithKubeAgentMonitorDeployment(cfg.DeploymentName),
 						agent.WithKubeAgentMonitorDaemonsetConfigMap("mw-daemonset-otel-config"),
 						agent.WithKubeAgentMonitorDeploymentConfigMap("mw-deployment-otel-config"),
 						agent.WithKubeAgentMonitorVersion(agentVersion),

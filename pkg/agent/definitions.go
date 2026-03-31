@@ -95,6 +95,8 @@ type OpsAI struct {
 type BaseConfig struct {
 	APIKey                    string
 	Target                    string
+	DaemonsetName             string
+	DeploymentName            string
 	EnableSyntheticMonitoring bool
 	ConfigCheckInterval       string
 	FetchAccountOtelConfig    bool
