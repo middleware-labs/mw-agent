@@ -1,53 +1,52 @@
 # Stage 1: Build Stage
-FROM golang:1.24.2 AS build
+# Use BUILDPLATFORM so Go compiles natively on the runner's arch (x86_64),
+# then cross-compile for TARGETARCH via GOOS/GOARCH — no QEMU needed.
+FROM --platform=$BUILDPLATFORM golang:1.24.2 AS build
+
+ARG TARGETARCH
+ARG TARGETOS=linux
+ARG GITHUB_TOKEN
+
 WORKDIR /app
 
-# Install dependencies and update CA certificates in a single layer
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates openssl && \
     update-ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy only necessary files to the build stage
+# Set up private repo access before downloading modules
+RUN git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
 COPY go.mod go.sum ./
-RUN go mod tidy
+ENV GOPRIVATE=github.com/middleware-labs
+RUN go mod download
 
 COPY . .
 
-# Set up environment variables for build
-ENV CGO_ENABLED=0
-ARG GITHUB_TOKEN
-ENV GITHUB_TOKEN=$GITHUB_TOKEN
-RUN git config --global url."https://${GITHUB_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
-RUN GOPRIVATE=github.com/middleware-labs go mod tidy
-
-# Build the Go binary
+# Cross-compile for the target platform natively
 ARG AGENT_VERSION
-ENV AGENT_VERSION=$AGENT_VERSION
 ARG APP_BINARY
-ENV APP_BINARY=$APP_BINARY
-# Dynamically select the main.go file based on APP_BINARY by removing 'mw-' prefix
 RUN AGENT_FOLDER="$(echo $APP_BINARY | sed 's/^mw-//')" && \
     SRC="cmd/${AGENT_FOLDER}/main.go" && \
     if [ ! -f "$SRC" ]; then echo "Source file $SRC does not exist!" && exit 1; fi && \
-    CGO_ENABLED=0 go build -ldflags "-s -w -X main.agentVersion=${AGENT_VERSION}" -o /tmp/mw-agent "$SRC"
+    CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
+      -ldflags "-s -w -X main.agentVersion=${AGENT_VERSION}" \
+      -o /tmp/mw-agent "$SRC"
 
 # Stage 2: Production Stage
 FROM ubuntu:24.04 AS prod
-RUN apt-get update && apt-get install -y systemd
+RUN apt-get update && apt-get install -y --no-install-recommends systemd ca-certificates curl && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Install kubectl
+ARG TARGETARCH
 ARG APP_BINARY
-RUN apt-get install -y curl
 RUN if [ "$APP_BINARY" = "mw-opsai" ]; then \
-    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/${TARGETARCH}/kubectl" && \
     install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl && \
     rm kubectl; \
 fi
-
-RUN rm -fr /var/lib/apt/lists/*
 
 # Copy necessary files from the build stage
 COPY --from=build /etc/ssl/certs /etc/ssl/certs
