@@ -1,0 +1,258 @@
+exporters:
+  debug:
+    verbosity: detailed
+  otlp/2:
+    endpoint: ${env:MW_TARGET}
+    headers:
+      authorization: ${env:MW_API_KEY}
+    sending_queue:
+      enabled: true
+      num_consumers: 100
+      queue_size: 10000
+processors:
+  attributes/logs:
+    actions:
+    - action: upsert
+      from_attribute: name
+      key: source
+    - action: upsert
+      from_attribute: operator_type
+      key: source
+    - action: upsert
+      from_attribute: log.file.name
+      key: source
+    - action: upsert
+      from_attribute: fluent.tag
+      key: source
+    - action: upsert
+      from_attribute: service.name
+      key: source
+    - action: upsert
+      from_attribute: project.name
+      key: source
+    - action: upsert
+      from_attribute: serviceName
+      key: source
+    - action: upsert
+      from_attribute: projectName
+      key: source
+    - action: upsert
+      from_attribute: pod_name
+      key: source
+    - action: upsert
+      from_attribute: container_name
+      key: source
+    - action: upsert
+      from_attribute: namespace
+      key: source
+  attributes/traces:
+    actions:
+    - action: insert
+      from_attribute: db.system
+      key: mw.service.name.derived
+    - action: insert
+      from_attribute: messaging.system
+      key: mw.service.name.derived
+    - action: insert
+      from_attribute: rpc.system
+      key: mw.service.name.derived
+    - action: insert
+      from_attribute: http.scheme
+      key: mw.service.name.derived
+    - action: insert
+      from_attribute: faas.trigger
+      key: mw.service.name.derived
+  batch: null
+  resource:
+    attributes:
+    - action: upsert
+      key: mw.account_key
+      value: ${env:MW_API_KEY}
+    - action: delete
+      key: host.name
+  resource/hostid:
+    attributes:
+    - action: upsert
+      from_attribute: host.name
+      key: host.id
+  resource/traces:
+    attributes:
+    - action: upsert
+      key: mw.account_key
+      value: ${env:MW_API_KEY}
+    - action: delete
+      key: host.name
+  resourcedetection:
+    detectors: [ecs, system]
+    timeout: 2s
+    system:
+      resource_attributes:
+        host.arch:
+          enabled: true
+        host.cpu.cache.l2.size:
+          enabled: true
+        host.cpu.family:
+          enabled: true
+        host.cpu.model.id:
+          enabled: true
+        host.cpu.model.name:
+          enabled: true
+        host.cpu.stepping:
+          enabled: true
+        host.cpu.vendor.id:
+          enabled: true
+        host.id:
+          enabled: true
+        host.ip:
+          enabled: true
+        host.mac:
+          enabled: true
+        host.name:
+          enabled: true
+        os.description:
+          enabled: true
+        os.type:
+          enabled: true
+        os.version:
+          enabled: true
+receivers:
+  awsecscontainermetrics:
+    collection_interval: 30s
+    run_as: daemonset
+    cluster: ${env:ECS_CLUSTER_NAME}
+    docker_socket_path: /var/run/docker.sock
+    cgroups_mount_path: /host/sys/fs/cgroup
+  docker_stats:
+    collection_interval: 5s
+    endpoint: unix:///var/run/docker.sock
+    timeout: 20s
+  filelog:
+    include:
+    - /var/lib/docker/containers/**/*.log*
+    include_file_name_resolved: true
+    include_file_path: true
+    include_file_path_resolved: true
+    operators:
+    - field: attributes.regex_identified
+      id: adding_regex_to_attributes
+      if: body matches "ts=.+ caller=.+ level=.+ msg=.+ name=systemd duration_seconds=.+
+        err=.+"
+      output: systemd_err
+      type: add
+      value: ts=.+ caller=.+ level=.+ msg=.+ name=systemd duration_seconds=.+ err=.+
+    - id: systemd_err
+      if: body matches "ts=.+ caller=.+ level=.+ msg=.+ name=systemd duration_seconds=.+
+        err=.+"
+      output: extract_metadata_from_filepath
+      parse_from: body
+      regex: ts=(?P<systemd_err_ts>.+) caller=(?P<systemd_err_caller>.+) level=(?P<level>.+)
+        msg=(?P<systemd_err_msg>.+) name=(?P<name>.+) duration_seconds=(?P<systemd_err_duration_seconds>.+)
+        err="(?P<regex_resolved_body>.+)"
+      type: regex_parser
+    - id: extract_metadata_from_filepath
+      output: backup_unresolved_body
+      parse_from: attributes["log.file.path"]
+      regex: ^/var/lib/docker/containers/(?P<docker_container_id>[^_]+)/.*log$
+      type: regex_parser
+    - from: body
+      id: backup_unresolved_body
+      if: attributes.regex_resolved_body != nil
+      output: systemd_err_move
+      to: attributes.regex_unresolved_body
+      type: copy
+    - from: attributes.regex_resolved_body
+      id: systemd_err_move
+      if: attributes.regex_resolved_body != nil
+      to: body
+      type: move
+  fluentforward:
+    endpoint: 127.0.0.1:8006
+  hostmetrics:
+    collection_interval: 5s
+    scrapers:
+      cpu:
+        metrics:
+          system.cpu.utilization:
+            enabled: true
+      disk:
+        metrics:
+          system.disk.io.speed:
+            enabled: true
+      filesystem:
+        include_virtual_filesystems: true
+        metrics:
+          system.filesystem.utilization:
+            enabled: true
+      load:
+        cpu_average: true
+      memory:
+        metrics:
+          system.memory.utilization:
+            enabled: true
+      network:
+        metrics:
+          system.network.io.bandwidth:
+            enabled: true
+      paging: {}
+      process:
+        avoid_selected_errors: true
+        mute_process_name_error: true
+      processes: {}
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "[::]:9319"
+      http:
+        endpoint: "[::]:9320"
+service:
+  pipelines:
+    logs:
+      exporters:
+      - otlp/2
+      processors:
+      - resource
+      - resourcedetection
+      - resource/hostid
+      - attributes/logs
+      - batch
+      receivers:
+      - otlp
+      - fluentforward
+      - filelog
+    # metrics:
+    #   exporters:
+    #   - otlp/2
+    #   processors:
+    #   - resource
+    #   - resourcedetection
+    #   - resource/hostid
+    #   - batch
+    #   receivers:
+    #   - hostmetrics
+    #   - docker_stats
+    #   - otlp
+    # traces:
+    #   exporters:
+    #   - otlp/2
+    #   processors:
+    #   - resource/traces
+    #   - resourcedetection
+    #   - resource/hostid
+    #   - attributes/traces
+    #   - batch
+    #   receivers:
+    #   - otlp
+    metrics/ecs:
+      receivers:
+      - awsecscontainermetrics
+      processors:
+      - resource
+      - resourcedetection
+      - resource/hostid
+      - attributes/traces
+      - batch
+      exporters:
+      - otlp/2
+  telemetry:
+    logs:
+      level: debug

@@ -3,3 +3,4 @@
 otelstruct.go
 build
 otel-config.yaml
+local-deps 

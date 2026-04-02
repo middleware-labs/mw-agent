@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Connect to server",
+            "type": "go",
+            "request": "attach",
+            "mode": "remote",
+            "port": 2345,
+            "host": "xx.xx.xx.xx",
+            "stopOnEntry": true,
+            "substitutePath": [
+                {
+                    "from": "${workspaceFolder}",
+                    "to": "/go"
+                }
+            ]
+        }
+    ]
+}

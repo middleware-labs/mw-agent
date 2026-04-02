@@ -246,6 +246,43 @@ func assertContainsComponent(t *testing.T, factoryMap interface{}, componentName
 	}
 }
 
+func assertNotContainsComponent(t *testing.T, factoryMap interface{}, componentName string) {
+	t.Helper()
+
+	switch m := factoryMap.(type) {
+	case map[component.Type]receiver.Factory:
+		for ct := range m {
+			if ct.String() == componentName {
+				t.Errorf("Expected receiver '%s' to NOT be present, but it was found", componentName)
+				return
+			}
+		}
+	case map[component.Type]processor.Factory:
+		for ct := range m {
+			if ct.String() == componentName {
+				t.Errorf("Expected processor '%s' to NOT be present, but it was found", componentName)
+				return
+			}
+		}
+	case map[component.Type]exporter.Factory:
+		for ct := range m {
+			if ct.String() == componentName {
+				t.Errorf("Expected exporter '%s' to NOT be present, but it was found", componentName)
+				return
+			}
+		}
+	case map[component.Type]extension.Factory:
+		for ct := range m {
+			if ct.String() == componentName {
+				t.Errorf("Expected extension '%s' to NOT be present, but it was found", componentName)
+				return
+			}
+		}
+	default:
+		t.Errorf("Unsupported factory map type")
+	}
+}
+
 func TestHostAgentGetFactories(t *testing.T) {
 	baseConfig := BaseConfig{
 		ConfigCheckInterval: "1m",
@@ -255,76 +292,109 @@ func TestHostAgentGetFactories(t *testing.T) {
 		},
 	}
 
-	zapCore := zapcore.NewNopCore()
-	agent, err := NewHostAgent(HostConfig{
-		BaseConfig: baseConfig,
-	}, zapCore,
-		WithHostAgentInfraPlatform(InfraPlatformECSEC2))
+	testCases := []struct {
+		name            string
+		infraPlatform   InfraPlatform
+		expectECS       bool
+		expectedRecvLen int
+	}{
+		{
+			name:            "ECS EC2 includes ECS receivers",
+			infraPlatform:   InfraPlatformECSEC2,
+			expectECS:       true,
+			expectedRecvLen: 25,
+		},
+		{
+			name:            "ECS Fargate includes ECS receivers",
+			infraPlatform:   InfraPlatformECSFargate,
+			expectECS:       true,
+			expectedRecvLen: 25,
+		},
+		{
+			name:            "bare metal instance excludes ECS receivers",
+			infraPlatform:   InfraPlatformInstance,
+			expectECS:       false,
+			expectedRecvLen: 23,
+		},
+	}
 
-	assert.NoError(t, err)
-	assert.NotNil(t, agent, "agent should not be nil")
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			zapCore := zapcore.NewNopCore()
+			agent, err := NewHostAgent(HostConfig{
+				BaseConfig: baseConfig,
+			}, zapCore,
+				WithHostAgentInfraPlatform(tc.infraPlatform))
 
-	factories, err := agent.getFactories()
-	assert.NoError(t, err)
+			assert.NoError(t, err)
+			assert.NotNil(t, agent, "agent should not be nil")
 
-	// Assert that the returned factories are not nil
-	assert.NotNil(t, factories.Extensions)
-	assert.NotNil(t, factories.Receivers)
-	assert.NotNil(t, factories.Exporters)
-	assert.NotNil(t, factories.Processors)
+			factories, err := agent.getFactories()
+			assert.NoError(t, err)
 
-	// check that the returned factories contain the expected factories
-	assert.Len(t, factories.Extensions, 1)
-	assertContainsComponent(t, factories.Extensions, "health_check")
-	// check if factories contains expected receivers
-	assert.Len(t, factories.Receivers, 24)
-	assertContainsComponent(t, factories.Receivers, "otlp")
-	assertContainsComponent(t, factories.Receivers, "fluentforward")
-	assertContainsComponent(t, factories.Receivers, "filelog")
-	assertContainsComponent(t, factories.Receivers, "docker_stats")
-	assertContainsComponent(t, factories.Receivers, "hostmetrics")
-	assertContainsComponent(t, factories.Receivers, "prometheus")
-	assertContainsComponent(t, factories.Receivers, "postgresql")
-	assertContainsComponent(t, factories.Receivers, "mongodb")
-	assertContainsComponent(t, factories.Receivers, "mysql")
-	assertContainsComponent(t, factories.Receivers, "redis")
-	assertContainsComponent(t, factories.Receivers, "elasticsearch")
-	assertContainsComponent(t, factories.Receivers, "awsecscontainermetrics")
-	assertContainsComponent(t, factories.Receivers, "jmx")
-	assertContainsComponent(t, factories.Receivers, "kafkametrics")
-	assertContainsComponent(t, factories.Receivers, "apache")
-	assertContainsComponent(t, factories.Receivers, "oracledb")
-	assertContainsComponent(t, factories.Receivers, "statsd")
-	assertContainsComponent(t, factories.Receivers, "journald")
-	assertContainsComponent(t, factories.Receivers, "rabbitmq")
-	assertContainsComponent(t, factories.Receivers, "sqlserver")
-	assertContainsComponent(t, factories.Receivers, "nginx")
-	assertContainsComponent(t, factories.Receivers, "mongodbatlas")
-	assertContainsComponent(t, factories.Receivers, "zookeeper")
+			assert.NotNil(t, factories.Extensions)
+			assert.NotNil(t, factories.Receivers)
+			assert.NotNil(t, factories.Exporters)
+			assert.NotNil(t, factories.Processors)
 
-	// check if factories contain expected exporters
-	assert.Len(t, factories.Exporters, 5)
-	assertContainsComponent(t, factories.Exporters, "debug")
-	assertContainsComponent(t, factories.Exporters, "otlp")
-	assertContainsComponent(t, factories.Exporters, "otlphttp")
-	assertContainsComponent(t, factories.Exporters, "kafka")
-	assertContainsComponent(t, factories.Exporters, "file")
+			assert.Len(t, factories.Extensions, 1)
+			assertContainsComponent(t, factories.Extensions, "health_check")
 
-	// check if factories contain expected processors
-	assert.Len(t, factories.Processors, 14)
-	assertContainsComponent(t, factories.Processors, "batch")
-	assertContainsComponent(t, factories.Processors, "filter")
-	assertContainsComponent(t, factories.Processors, "memory_limiter")
-	assertContainsComponent(t, factories.Processors, "resource")
-	assertContainsComponent(t, factories.Processors, "resourcedetection")
-	assertContainsComponent(t, factories.Processors, "attributes")
-	assertContainsComponent(t, factories.Processors, "transform")
-	assertContainsComponent(t, factories.Processors, "cumulativetodelta")
-	assertContainsComponent(t, factories.Processors, "deltatorate")
-	assertContainsComponent(t, factories.Processors, "groupbyattrs")
-	assertContainsComponent(t, factories.Processors, "logdedup")
-	assertContainsComponent(t, factories.Processors, "probabilistic_sampler")
-	assertContainsComponent(t, factories.Processors, "redaction")
+			assert.Len(t, factories.Receivers, tc.expectedRecvLen)
+			assertContainsComponent(t, factories.Receivers, "otlp")
+			assertContainsComponent(t, factories.Receivers, "fluentforward")
+			assertContainsComponent(t, factories.Receivers, "filelog")
+			assertContainsComponent(t, factories.Receivers, "docker_stats")
+			assertContainsComponent(t, factories.Receivers, "hostmetrics")
+			assertContainsComponent(t, factories.Receivers, "prometheus")
+			assertContainsComponent(t, factories.Receivers, "postgresql")
+			assertContainsComponent(t, factories.Receivers, "mongodb")
+			assertContainsComponent(t, factories.Receivers, "mysql")
+			assertContainsComponent(t, factories.Receivers, "redis")
+			assertContainsComponent(t, factories.Receivers, "elasticsearch")
+			assertContainsComponent(t, factories.Receivers, "jmx")
+			assertContainsComponent(t, factories.Receivers, "kafkametrics")
+			assertContainsComponent(t, factories.Receivers, "apache")
+			assertContainsComponent(t, factories.Receivers, "oracledb")
+			assertContainsComponent(t, factories.Receivers, "statsd")
+			assertContainsComponent(t, factories.Receivers, "journald")
+			assertContainsComponent(t, factories.Receivers, "rabbitmq")
+			assertContainsComponent(t, factories.Receivers, "sqlserver")
+			assertContainsComponent(t, factories.Receivers, "nginx")
+			assertContainsComponent(t, factories.Receivers, "mongodbatlas")
+			assertContainsComponent(t, factories.Receivers, "zookeeper")
+
+			if tc.expectECS {
+				assertContainsComponent(t, factories.Receivers, "awsecscontainermetrics")
+				assertContainsComponent(t, factories.Receivers, "awscontainerinsightreceiver")
+			} else {
+				assertNotContainsComponent(t, factories.Receivers, "awsecscontainermetrics")
+				assertNotContainsComponent(t, factories.Receivers, "awscontainerinsightreceiver")
+			}
+
+			assert.Len(t, factories.Exporters, 5)
+			assertContainsComponent(t, factories.Exporters, "debug")
+			assertContainsComponent(t, factories.Exporters, "otlp")
+			assertContainsComponent(t, factories.Exporters, "otlphttp")
+			assertContainsComponent(t, factories.Exporters, "kafka")
+			assertContainsComponent(t, factories.Exporters, "file")
+
+			assert.Len(t, factories.Processors, 14)
+			assertContainsComponent(t, factories.Processors, "batch")
+			assertContainsComponent(t, factories.Processors, "filter")
+			assertContainsComponent(t, factories.Processors, "memory_limiter")
+			assertContainsComponent(t, factories.Processors, "resource")
+			assertContainsComponent(t, factories.Processors, "resourcedetection")
+			assertContainsComponent(t, factories.Processors, "attributes")
+			assertContainsComponent(t, factories.Processors, "transform")
+			assertContainsComponent(t, factories.Processors, "cumulativetodelta")
+			assertContainsComponent(t, factories.Processors, "deltatorate")
+			assertContainsComponent(t, factories.Processors, "groupbyattrs")
+			assertContainsComponent(t, factories.Processors, "logdedup")
+			assertContainsComponent(t, factories.Processors, "probabilistic_sampler")
+			assertContainsComponent(t, factories.Processors, "redaction")
+		})
+	}
 }
 
 func TestHostAgentHasValidTags(t *testing.T) {
