@@ -78,6 +78,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.139.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.139.0
@@ -104,6 +105,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.139.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.139.0
 	go.opentelemetry.io/collector v0.139.0 // indirect
 	go.opentelemetry.io/collector/component v1.45.0
