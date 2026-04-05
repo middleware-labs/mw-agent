@@ -321,7 +321,7 @@ func (c *HostAgent) updateConfigWithRestrictions(config map[string]interface{}) 
 	return config, nil
 }
 
-func (c *HostAgent) updateConfig(config map[string]interface{}, cnf integrationConfiguration) (map[string]interface{}, error) {
+func (c *HostAgent) updateConfig(config map[string]interface{}, cnf integrationConfiguration, integrationType IntegrationType) (map[string]interface{}, error) {
 
 	if c.isIPPortFormat(cnf.Endpoint) {
 		return config, nil
@@ -340,28 +340,46 @@ func (c *HostAgent) updateConfig(config map[string]interface{}, cnf integrationC
 		return map[string]interface{}{}, err
 	}
 
-	// Add the temporary map to the existing "receiver" key
-	receiverData, ok := config["receivers"].(map[string]interface{})
+	// Unmarshal the YAML data into the IntegrationConfig struct to easily access the integration configuration
+	var integrationConfig IntegrationConfig
+	err = yaml.Unmarshal(updatedYamlData, &integrationConfig)
+	if err != nil {
+		return map[string]interface{}{}, err
+	}
+
+	var integration Integration
+	receiverConfig, ok := config["receivers"].(map[string]interface{})
 	if !ok {
 		return map[string]interface{}{}, ErrKeyNotFound
 	}
-
-	for key, value := range tempMap {
-		mapValue, mapValueOk := value.(map[interface{}]interface{})
-		if mapValueOk {
-			oldValue, oldValueOk := receiverData[key]
-			if oldValueOk {
-				oldMapValue, oldMapValueOk := oldValue.(map[string]interface{})
-				if oldMapValueOk {
-					for k, v := range mapValue {
-						strKey, keyOk := k.(string)
-						if keyOk {
-							oldMapValue[strKey] = v
-						} else {
-							c.logger.Info("invalid key type", zap.Any("key type", k))
+	switch integrationType {
+	case PostgreSQL:
+		if integrationConfig.Postgresql != nil {
+			integration = integrationConfig.Postgresql
+			err := integration.UpdateReceiverConfig(receiverConfig)
+			if err != nil {
+				return map[string]interface{}{}, fmt.Errorf("failed to update receiver config for postgresql : %w", err)
+			}
+		}
+	default:
+		// Add the temporary map to the existing "receiver" key
+		for key, value := range tempMap {
+			mapValue, mapValueOk := value.(map[interface{}]interface{})
+			if mapValueOk {
+				oldValue, oldValueOk := receiverConfig[key]
+				if oldValueOk {
+					oldMapValue, oldMapValueOk := oldValue.(map[string]interface{})
+					if oldMapValueOk {
+						for k, v := range mapValue {
+							strKey, keyOk := k.(string)
+							if keyOk {
+								oldMapValue[strKey] = v
+							} else {
+								c.logger.Info("invalid key type", zap.Any("key type", k))
+							}
 						}
+						receiverConfig[key] = oldMapValue
 					}
-					receiverData[key] = oldMapValue
 				}
 			}
 		}
@@ -457,7 +475,7 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 
 	for integrationType, integrationConfig := range integrationConfigs {
 		if c.checkIntConfigValidity(integrationType, integrationConfig) {
-			apiYAMLConfig, err = c.updateConfig(apiYAMLConfig, integrationConfig)
+			apiYAMLConfig, err = c.updateConfig(apiYAMLConfig, integrationConfig, integrationType)
 			if err != nil {
 				return err
 			}
@@ -707,6 +725,7 @@ func (c *HostAgent) ListenForConfigChanges(errCh chan<- error,
 	// First fetch the config
 	_, err := c.getOtelConfig()
 	if err != nil {
+		c.logger.Error("failed to get otel config while listening for config changes", zap.Error(err))
 		errCh <- err
 	} else {
 		errCh <- nil
