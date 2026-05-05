@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -25,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.uber.org/zap"
+	"go.uber.org/zap/exp/zapslog"
 	"go.uber.org/zap/zapcore"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -886,6 +888,17 @@ func (c *HostAgent) ReportServices(
 	}
 }
 
+// zapToSlog adapts a zap.Logger into a *slog.Logger so library packages that
+// accept the stdlib logger (e.g. mw-injector) can emit through the agent's
+// existing zap pipeline. Returns nil for a nil input (callers treat nil as
+// "no logging").
+func zapToSlog(z *zap.Logger) *slog.Logger {
+	if z == nil {
+		return nil
+	}
+	return slog.New(zapslog.NewHandler(z.Core()))
+}
+
 func (c *HostAgent) ReportAgentStatusAPI() error {
 	defer func() {
 		if r := recover(); r != nil {
@@ -896,7 +909,7 @@ func (c *HostAgent) ReportAgentStatusAPI() error {
 	}()
 	hostname := getHostname()
 	apikey := c.APIKey
-	err := otelinject.ReportStatus(hostname, apikey, c.APIURLForConfigCheck, c.Version, c.InfraPlatform.String())
+	err := otelinject.ReportStatusWithLogger(hostname, apikey, c.APIURLForConfigCheck, c.Version, c.InfraPlatform.String(), zapToSlog(c.logger))
 	if err != nil {
 		zap.Error(err)
 		return fmt.Errorf("%w: %v", ErrReportApiFailure, err)
