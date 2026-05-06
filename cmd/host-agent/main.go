@@ -408,10 +408,12 @@ func resolveLanguage(lang string) (otelinject.Language, error) {
 		"python": otelinject.LanguagePython,
 		"node":   otelinject.LanguageNode,
 		"nodejs": otelinject.LanguageNode,
+		"go":     otelinject.LanguageGo,
+		"golang": otelinject.LanguageGo,
 	}
 	l, ok := languages[lang]
 	if !ok {
-		return "", fmt.Errorf("unsupported language %q: must be one of java, python, node/nodejs", lang)
+		return "", fmt.Errorf("unsupported language %q: must be one of java, python, node/nodejs, go/golang", lang)
 	}
 	return l, nil
 }
@@ -441,11 +443,15 @@ func newSystemdInjector(lang string, logger *slog.Logger) (otelinject.OtelInject
 
 // instrumentSystemd handles --type systemd instrumentation.
 func instrumentSystemd(lang, unitName string, logger *zap.Logger) error {
+	language, err := resolveLanguage(lang)
+	if err != nil {
+		return err
+	}
+	if language == otelinject.LanguageGo {
+		return fmt.Errorf("Go does not support systemd instrumentation (statically linked); use --type obi instead")
+	}
+
 	if unitName != "" {
-		language, err := resolveLanguage(lang)
-		if err != nil {
-			return err
-		}
 		fmt.Printf("Instrumenting systemd unit %s (language: %s)\n", unitName, lang)
 		if err := otelinject.InstrumentUnit(unitName, language); err != nil {
 			return fmt.Errorf("failed to instrument %s: %w", unitName, err)
@@ -507,6 +513,14 @@ func uninstrumentSystemd(lang, unitName string, logger *zap.Logger) error {
 		return fmt.Errorf("provide a unit name or --language")
 	}
 
+	language, err := resolveLanguage(lang)
+	if err != nil {
+		return err
+	}
+	if language == otelinject.LanguageGo {
+		return fmt.Errorf("Go does not support systemd instrumentation (statically linked); use --type obi instead")
+	}
+
 	inj, err := newSystemdInjector(lang, zapToSlog(logger))
 	if err != nil {
 		return err
@@ -535,6 +549,7 @@ func uninstrumentOBI(identifier string, logger *zap.Logger) error {
 
 var languageAliases = map[string]string{
 	"nodejs": "node",
+	"golang": "go",
 }
 
 func listServices(language string, showAll, quiet bool, logger *zap.Logger) error {
@@ -921,7 +936,7 @@ func main() {
 					},
 					&cli.StringFlag{
 						Name:     "language",
-						Usage:    "Language of the service (java, python, node)",
+						Usage:    "Language of the service (java, python, node, go)",
 						Required: true,
 					},
 				},
@@ -951,7 +966,7 @@ func main() {
 					},
 					&cli.StringFlag{
 						Name:  "language",
-						Usage: "Language of the service (java, python, node). Required for bulk operations.",
+						Usage: "Language of the service (java, python, node, go). Required for bulk operations.",
 					},
 				},
 				Action: func(c *cli.Context) error {
