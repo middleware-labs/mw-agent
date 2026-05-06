@@ -410,10 +410,13 @@ func resolveLanguage(lang string) (otelinject.Language, error) {
 		"nodejs": otelinject.LanguageNode,
 		"go":     otelinject.LanguageGo,
 		"golang": otelinject.LanguageGo,
+		"rust":   otelinject.LanguageRust,
+		"php":    otelinject.LanguagePHP,
+		"ruby":   otelinject.LanguageRuby,
 	}
 	l, ok := languages[lang]
 	if !ok {
-		return "", fmt.Errorf("unsupported language %q: must be one of java, python, node/nodejs, go/golang", lang)
+		return "", fmt.Errorf("unsupported language %q: must be one of java, python, node/nodejs, go/golang, rust, php, ruby", lang)
 	}
 	return l, nil
 }
@@ -438,17 +441,28 @@ func newSystemdInjector(lang string, logger *slog.Logger) (otelinject.OtelInject
 			return otelinject.NewNodeSystemdInjectorWithLogger(logger)
 		},
 	}
-	return constructors[lang]()
+	ctor, ok := constructors[lang]
+	if !ok {
+		return nil, fmt.Errorf("language %q does not support systemd instrumentation; use --type obi instead (only java, python, node support systemd)", lang)
+	}
+	return ctor()
 }
 
 // instrumentSystemd handles --type systemd instrumentation.
+// systemdLanguages is the set of languages that support systemd drop-in instrumentation.
+var systemdLanguages = map[otelinject.Language]bool{
+	otelinject.LanguageJava:   true,
+	otelinject.LanguagePython: true,
+	otelinject.LanguageNode:   true,
+}
+
 func instrumentSystemd(lang, unitName string, logger *zap.Logger) error {
 	language, err := resolveLanguage(lang)
 	if err != nil {
 		return err
 	}
-	if language == otelinject.LanguageGo {
-		return fmt.Errorf("Go does not support systemd instrumentation (statically linked); use --type obi instead")
+	if !systemdLanguages[language] {
+		return fmt.Errorf("language %q does not support systemd instrumentation; use --type obi instead (only java, python, node support systemd)", lang)
 	}
 
 	if unitName != "" {
@@ -517,8 +531,8 @@ func uninstrumentSystemd(lang, unitName string, logger *zap.Logger) error {
 	if err != nil {
 		return err
 	}
-	if language == otelinject.LanguageGo {
-		return fmt.Errorf("Go does not support systemd instrumentation (statically linked); use --type obi instead")
+	if !systemdLanguages[language] {
+		return fmt.Errorf("language %q does not support systemd instrumentation; use --type obi instead (only java, python, node support systemd)", lang)
 	}
 
 	inj, err := newSystemdInjector(lang, zapToSlog(logger))
