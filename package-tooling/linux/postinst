@@ -116,6 +116,9 @@ handle_variable() {
         MW_AGENT_FEATURES_LOG_COLLECTION)
             update_config "agent-features.log-collection" "$value" "${CONFIG_FILE}"
             ;;
+        MW_AGENT_FEATURES_REPORT_SERVICES)
+            update_config "agent-features.service-reporting" "$value" "${CONFIG_FILE}"
+            ;;
         MW_AGENT_SELF_PROFILING)
             update_config "mw-agent-self-profiling" "$value" "${CONFIG_FILE}"
             ;;
@@ -269,6 +272,10 @@ else
 
         if [ -n "${MW_AGENT_FEATURES_LOG_COLLECTION}" ]; then
             handle_variable "MW_AGENT_FEATURES_LOG_COLLECTION" "${MW_AGENT_FEATURES_LOG_COLLECTION}"
+        fi
+
+        if [ -n "${MW_AGENT_FEATURES_REPORT_SERVICES}" ]; then
+            handle_variable "MW_AGENT_FEATURES_REPORT_SERVICES" "${MW_AGENT_FEATURES_REPORT_SERVICES}"
         fi
 
         if [ -n "${MW_API_URL_FOR_SYNTHETIC_MONITORING}" ]; then
