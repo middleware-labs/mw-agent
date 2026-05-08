@@ -3,3 +3,5 @@
 otelstruct.go
 build
 otel-config.yaml
+.vscode
+.cursor

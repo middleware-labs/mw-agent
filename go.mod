@@ -46,8 +46,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zooke
 
 replace go.opentelemetry.io/collector => go.opentelemetry.io/collector v0.139.0
 
-// replace github.com/middleware-labs/java-injector v1.1.1 => ../mw-injector
-
 require (
 	github.com/prometheus/common v0.67.2
 	github.com/stretchr/testify v1.11.1
@@ -122,7 +120,7 @@ require (
 )
 
 require (
-	github.com/middleware-labs/java-injector v1.1.3
+	github.com/middleware-labs/java-injector v1.2.0
 	github.com/middleware-labs/synthetics-agent v1.0.62
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.139.0
@@ -134,6 +132,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.45.0
 	go.opentelemetry.io/collector/otelcol v0.139.0
 	go.opentelemetry.io/collector/service v0.139.0
+	go.uber.org/zap/exp v0.3.0
 )
 
 require (
@@ -527,7 +526,6 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/goleak v1.3.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap/exp v0.3.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.45.0 // indirect
