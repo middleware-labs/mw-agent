@@ -656,6 +656,8 @@ github.com/middleware-labs/innoParser v0.0.0-20240729092319-ddbdd8e42266 h1:X/xV
 github.com/middleware-labs/innoParser v0.0.0-20240729092319-ddbdd8e42266/go.mod h1:K2Iq9MJAEQyQO+ZXQHraf1zxZgS+bRgv/D6p+ClJWRM=
 github.com/middleware-labs/java-injector v1.2.0 h1:F41EWrOA5KD/1kGcUBDrH05fRfqaA4Zm3GMeh61zvJ4=
 github.com/middleware-labs/java-injector v1.2.0/go.mod h1:V26ifM8TKLRy5qgY++z6AQGr5U2FEnd0e9dXcHsMpp0=
+github.com/middleware-labs/java-injector v1.2.1 h1:KUHZN61IFIuP31Q8Fxh8xlsqyseyNOSVzqg7BbpmFhk=
+github.com/middleware-labs/java-injector v1.2.1/go.mod h1:V26ifM8TKLRy5qgY++z6AQGr5U2FEnd0e9dXcHsMpp0=
 github.com/middleware-labs/opentelemetry-collector-contrib/internal/docker v0.0.0-20260122034336-b0dc5b7db4de h1:k/6jwD32bI+b4bo+XSSOQQlgTyHUN+xl6xG9t/xB9JI=
 github.com/middleware-labs/opentelemetry-collector-contrib/internal/docker v0.0.0-20260122034336-b0dc5b7db4de/go.mod h1:im+Uz25kuqz7p/JaozQqkTeBJkCJMJdCPOEV89LTL9Y=
 github.com/middleware-labs/opentelemetry-collector-contrib/internal/filter v0.0.0-20260122034336-b0dc5b7db4de h1:/cfHWPgdLlZt3XmHQ8XYGV0qBbeFc8kyS4CEFHjcnpU=
