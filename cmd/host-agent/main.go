@@ -427,21 +427,22 @@ func resolveLanguage(lang string) (otelinject.Language, error) {
 // slog logger is passed to the discovery pipeline for structured timing
 // logs; pass nil for the silent path.
 func newSystemdInjector(lang string, logger *slog.Logger) (otelinject.OtelInjector, error) {
-	if _, err := resolveLanguage(lang); err != nil {
+	canonical, err := resolveLanguage(lang)
+	if err != nil {
 		return nil, err
 	}
-	constructors := map[string]func() (otelinject.OtelInjector, error){
-		"java": func() (otelinject.OtelInjector, error) {
+	constructors := map[otelinject.Language]func() (otelinject.OtelInjector, error){
+		otelinject.LanguageJava: func() (otelinject.OtelInjector, error) {
 			return otelinject.NewJavaSystemdInjectorWithLogger(logger)
 		},
-		"python": func() (otelinject.OtelInjector, error) {
+		otelinject.LanguagePython: func() (otelinject.OtelInjector, error) {
 			return otelinject.NewPythonSystemdInjectorWithLogger(logger)
 		},
-		"node": func() (otelinject.OtelInjector, error) {
+		otelinject.LanguageNode: func() (otelinject.OtelInjector, error) {
 			return otelinject.NewNodeSystemdInjectorWithLogger(logger)
 		},
 	}
-	ctor, ok := constructors[lang]
+	ctor, ok := constructors[canonical]
 	if !ok {
 		return nil, fmt.Errorf("language %q does not support systemd instrumentation; use --type obi instead (only java, python, node support systemd)", lang)
 	}
@@ -561,14 +562,13 @@ func uninstrumentOBI(identifier string, logger *zap.Logger) error {
 	return nil
 }
 
-var languageAliases = map[string]string{
-	"nodejs": "node",
-	"golang": "go",
-}
-
 func listServices(language string, showAll, quiet bool, logger *zap.Logger) error {
-	if mapped, ok := languageAliases[strings.ToLower(language)]; ok {
-		language = mapped
+	if language != "" {
+		canonical, err := resolveLanguage(language)
+		if err != nil {
+			return err
+		}
+		language = string(canonical)
 	}
 	entries, err := otelinject.DiscoverServices(otelinject.DiscoverServicesOpts{
 		Language: language,
