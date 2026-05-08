@@ -45,3 +45,4 @@ agent-internal-metrics-port: 8888
 #agent-features:
 #  metric-collection: true
 #  log-collection: true
+#  service-reporting: true
