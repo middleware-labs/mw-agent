@@ -724,8 +724,8 @@ github.com/microsoft/go-mssqldb v1.9.6 h1:1MNQg5UiSsokiPz3++K2KPx4moKrwIqly1wv+R
 github.com/microsoft/go-mssqldb v1.9.6/go.mod h1:yYMPDufyoF2vVuVCUGtZARr06DKFIhMrluTcgWlXpr4=
 github.com/middleware-labs/innoParser v0.0.0-20240729092319-ddbdd8e42266 h1:X/xVGWjivIA2OK+7BbKL7WH6ZrryGTqxmRUwrKoDQ6E=
 github.com/middleware-labs/innoParser v0.0.0-20240729092319-ddbdd8e42266/go.mod h1:K2Iq9MJAEQyQO+ZXQHraf1zxZgS+bRgv/D6p+ClJWRM=
-github.com/middleware-labs/java-injector v1.2.1 h1:KUHZN61IFIuP31Q8Fxh8xlsqyseyNOSVzqg7BbpmFhk=
-github.com/middleware-labs/java-injector v1.2.1/go.mod h1:V26ifM8TKLRy5qgY++z6AQGr5U2FEnd0e9dXcHsMpp0=
+github.com/middleware-labs/mw-injector v1.2.3 h1:XOK0pj6WemZhGLvg1scc4HIlvkUtBVgVQcXVRqMXZUQ=
+github.com/middleware-labs/mw-injector v1.2.3/go.mod h1:/GBMrvr6uRbOWS9gtjm+5k6HZEfgFL6fZ9+Z3UdDhyM=
 github.com/middleware-labs/opentelemetry-collector-contrib/internal/docker v0.0.0-20260705161949-1d113a1a09da h1:uxNxbSlMr6ujxG0n0ePs5sPlmiH4eyUX99NHDkhs4BA=
 github.com/middleware-labs/opentelemetry-collector-contrib/internal/docker v0.0.0-20260705161949-1d113a1a09da/go.mod h1:Z1jfBF4hQkGUtUAS13TW3mtVT7Lk742sHaLqwrljDn0=
 github.com/middleware-labs/opentelemetry-collector-contrib/internal/filter v0.0.0-20260705161949-1d113a1a09da h1:IxwSoOfqh1zKSX1bRpgeuKxh0PrrJVs1mhTIVXmjNqo=

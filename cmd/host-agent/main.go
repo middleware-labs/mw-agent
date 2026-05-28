@@ -14,7 +14,7 @@ import (
 	"sync"
 	"text/tabwriter"
 
-	"github.com/middleware-labs/java-injector/pkg/otelinject"
+	"github.com/middleware-labs/mw-injector/pkg/otelinject"
 	"github.com/middleware-labs/mw-agent/pkg/agent"
 	"github.com/middleware-labs/synthetics-agent/pkg/worker"
 	"gopkg.in/natefinch/lumberjack.v2"
