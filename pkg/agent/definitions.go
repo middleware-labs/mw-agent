@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/grafana/pyroscope-go"
-	"github.com/k0kubun/pp"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.uber.org/zap"
 )
@@ -315,7 +314,6 @@ func getHostname() string {
 
 // GetHostnameForPlatform returns hostname based on the infra platform
 func GetHostnameForPlatform(infraPlatform InfraPlatform) string {
-	pp.Println("HOSTNAME::::::>>>>>>", getHostname())
 	return getHostname()
 }
 
