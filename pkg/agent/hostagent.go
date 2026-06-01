@@ -797,6 +797,7 @@ func (c *HostAgent) StartCollector() error {
 	}
 
 	c.collector = collector
+	c.logger.Info("starting telemetry collection")
 
 	c.collectorWG.Add(1)
 	go func() {
