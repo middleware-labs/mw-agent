@@ -1,6 +1,10 @@
 [Unit]
 Description=Middleware Agent Service
+Documentation=https://docs.middleware.io
 After=network.target
+
+# Prevent both services from running simultaneously
+Conflicts=mw-agent-opamp.service
 
 [Service]
 EnvironmentFile=/etc/mw-agent/mw-agent.env

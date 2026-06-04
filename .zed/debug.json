@@ -1,0 +1,20 @@
+// Project-local debug tasks
+//
+// For more documentation on how to configure debug tasks,
+// see: https://zed.dev/docs/debugger
+[
+  {
+    "label": "host-agent start",
+    "adapter": "Delve",
+    "mode": "exec",
+    "request": "launch",
+    "program": "${ZED_WORKTREE_ROOT}/build/mw-host-agent",
+    "args": ["start", "--otel-config-file", "otel-config.yaml"],
+    "stop_on_entry": false,
+    "env": {
+      "MW_API_URL_FOR_CONFIG_CHECK": "https://kbuin.beta.env.middleware.io",
+      "MW_API_KEY": "xtzrzvturlisziuvpdffwdsjavkwzpyplwrz",
+      "MW_TARGET": "https://kbuin.beta.env.middleware.io:443"
+    }
+  }
+]

@@ -64,6 +64,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.139.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.139.0
@@ -108,6 +109,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.45.0
 	go.opentelemetry.io/collector/exporter v1.45.0
 	go.opentelemetry.io/collector/exporter/debugexporter v0.139.0
+	go.opentelemetry.io/collector/exporter/nopexporter v0.139.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.139.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.139.0
 	go.opentelemetry.io/collector/extension v1.45.0
@@ -115,6 +117,7 @@ require (
 	go.opentelemetry.io/collector/processor/batchprocessor v0.139.0
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.139.0
 	go.opentelemetry.io/collector/receiver v1.45.0
+	go.opentelemetry.io/collector/receiver/nopreceiver v0.139.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.139.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
@@ -333,6 +336,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mdlayher/socket v0.4.1 // indirect
 	github.com/mdlayher/vsock v1.2.1 // indirect
+	github.com/michel-laterman/proxy-connect-dialer-go v0.1.0 // indirect
 	github.com/microsoft/go-mssqldb v1.9.3 // indirect
 	github.com/middleware-labs/innoParser v0.0.0-20240729092319-ddbdd8e42266 // indirect
 	github.com/miekg/dns v1.1.68 // indirect
@@ -349,7 +353,9 @@ require (
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
+	github.com/open-telemetry/opamp-go v0.22.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.139.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.139.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.139.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.139.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.139.0 // indirect
@@ -375,6 +381,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.139.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.139.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.139.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status v0.139.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.139.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.139.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.139.0 // indirect

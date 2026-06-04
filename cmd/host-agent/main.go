@@ -78,7 +78,6 @@ func (p *program) Start(s service.Service) error {
 	} else {
 		p.errCh <- nil
 	}
-
 	return nil
 }
 
@@ -122,6 +121,7 @@ func (p *program) run() {
 			}
 			p.logger.Info("restarting collector", zap.Error(err))
 		}
+
 		// start collection only if it's not running
 		if err := p.hostAgent.StartCollector(); err != nil {
 			p.logger.Error("failed to start collector",
@@ -309,6 +309,30 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			Destination: &cfg.EnableDataDogReceiver,
 			DefaultText: "false",
 			Value:       false,
+		}),
+		// altsrc.NewStringFlag(&cli.StringFlag{
+		// 	Name:        "opamp-server-url",
+		// 	EnvVars:     []string{"MW_OPAMP_SERVER_URL"},
+		// 	Usage:       "URL of the OpAMP server.",
+		// 	Destination: &cfg.OpAMPServerURL,
+		// 	DefaultText: "ws://localhost:8080/v1/opamp", // Example default, adjust as needed
+		// 	Value:       "ws://localhost:8080/v1/opamp",
+		// }),
+
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "remote-agent-enabled",
+			Usage:       "Flag to enable or disable remote agent management functionality.",
+			EnvVars:     []string{"MW_REMOTE_AGENT_ENABLED"},
+			Destination: &cfg.RemoteAgentEnabled,
+			DefaultText: "false",
+			Value:       false,
+		}),
+
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "agent-id",
+			EnvVars:     []string{"MW_AGENT_ID"},
+			Usage:       "Unique identifier for this agent instance.",
+			Destination: &cfg.AgentID,
 		}),
 
 		altsrc.NewStringFlag(&cli.StringFlag{
@@ -770,6 +794,8 @@ func main() {
 
 					// Get hostname based on infrastructure platform
 					hostname = agent.GetHostnameForPlatform(infraPlatform)
+
+					//logger.Info("This is new host agent version 1.18.0")
 
 					logger.Info("starting host agent",
 						zap.String("agent location", execPath),

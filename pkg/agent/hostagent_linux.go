@@ -4,6 +4,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
 
@@ -45,6 +47,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/debugexporter"
+	"go.opentelemetry.io/collector/exporter/nopexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/extension"
@@ -53,6 +56,7 @@ import (
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/nopreceiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
@@ -71,6 +75,7 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 	factories.Extensions = make(map[component.Type]extension.Factory)
 	exts := []extension.Factory{
 		healthcheckextension.NewFactory(),
+		opampextension.NewFactory(),
 		// frontend.NewAuthFactory(),
 	}
 
@@ -79,6 +84,7 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 	}
 
 	receiverfactories := []receiver.Factory{
+		nopreceiver.NewFactory(),
 		kafkametricsreceiver.NewFactory(),
 		otlpreceiver.NewFactory(),
 		fluentforwardreceiver.NewFactory(),
@@ -116,6 +122,7 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 	}
 
 	exps := []exporter.Factory{
+		nopexporter.NewFactory(),
 		debugexporter.NewFactory(),
 		otlpexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),

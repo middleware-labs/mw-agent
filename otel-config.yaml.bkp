@@ -1,0 +1,431 @@
+exporters:
+  otlp_grpc/2:
+    endpoint: "${env:MW_TARGET}"
+    headers:
+      authorization: "${env:MW_API_KEY}"
+    sending_queue:
+      enabled: true
+      num_consumers: 100
+      queue_size: 10000
+    timeout: 15s
+  debug:
+    verbosity: detailed
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+processors:
+  attributes/logs:
+    actions:
+    - action: upsert
+      from_attribute: name
+      key: source
+    - action: upsert
+      from_attribute: operator_type
+      key: source
+    - action: upsert
+      from_attribute: log.file.name
+      key: source
+    - action: upsert
+      from_attribute: fluent.tag
+      key: source
+    - action: upsert
+      from_attribute: service.name
+      key: source
+    - action: upsert
+      from_attribute: project.name
+      key: source
+    - action: upsert
+      from_attribute: serviceName
+      key: source
+    - action: upsert
+      from_attribute: projectName
+      key: source
+    - action: upsert
+      from_attribute: pod_name
+      key: source
+    - action: upsert
+      from_attribute: container_name
+      key: source
+    - action: upsert
+      from_attribute: namespace
+      key: source
+  attributes/traces:
+    actions:
+    - action: insert
+      from_attribute: db.system
+      key: mw.service.name.derived
+    - action: insert
+      from_attribute: messaging.system
+      key: mw.service.name.derived
+    - action: insert
+      from_attribute: rpc.system
+      key: mw.service.name.derived
+    - action: insert
+      from_attribute: http.scheme
+      key: mw.service.name.derived
+    - action: insert
+      from_attribute: faas.trigger
+      key: mw.service.name.derived
+  batch: 
+  cumulativetodelta/ratecalculation:
+    include:
+      match_type: strict
+      metrics:
+      - system.network.io.rate
+      - system.disk.io.rate
+      - system.disk.operations.rate
+      - system.network.packets.rate
+      - system.network.errors.rate
+      - system.network.dropped.rate
+  deltatorate/ratecalculation:
+    metrics:
+    - system.network.io.rate
+    - system.disk.io.rate
+    - system.disk.operations.rate
+    - system.network.packets.rate
+    - system.network.errors.rate
+    - system.network.dropped.rate
+  metrics_transform/system:
+    transforms:
+    - action: insert
+      experimental_match_labels:
+        os.type: linux
+      include: system.memory.utilization
+      match_type: strict
+      new_name: system.memory.utilization.consumed
+      operations:
+      - action: aggregate_label_values
+        aggregated_values:
+        - used
+        - cached
+        aggregation_type: sum
+        label: state
+        new_value: consumed
+    - action: insert
+      experimental_match_labels:
+        os.type: darwin
+      include: system.memory.utilization
+      match_type: strict
+      new_name: system.memory.utilization.consumed
+      operations:
+      - action: aggregate_label_values
+        aggregated_values:
+        - used
+        - inactive
+        aggregation_type: sum
+        label: state
+        new_value: consumed
+    - action: update
+      include: system.memory.utilization.consumed
+      match_type: strict
+      operations:
+      - action: delete_label_value
+        label: state
+        label_value: free
+      - action: delete_label_value
+        label: state
+        label_value: buffered
+      - action: delete_label_value
+        label: state
+        label_value: slab_reclaimable
+      - action: delete_label_value
+        label: state
+        label_value: slab_unreclaimable
+  redaction/db_traces:
+    allow_all_keys: true
+    db_sanitizer:
+      sql:
+        attributes:
+        - db.statement
+        - db.query.statement
+        enabled: true
+  resource:
+    attributes:
+    - action: delete
+      key: mw.dummy_resource
+    - action: upsert
+      key: mw.agent.version
+      value: 1.21.0
+  resource/cassandra:
+    attributes:
+    - action: upsert
+      key: is.cassandra
+      value: true
+  resource/hostid:
+    attributes:
+    - action: upsert
+      from_attribute: host.name
+      key: host.id
+  resource/logs:
+    attributes:
+    - action: delete
+      key: mw.dummy_resource
+    - action: upsert
+      key: mw.agent.version
+      value: 1.21.0
+  resource/traces:
+    attributes:
+    - action: delete
+      key: mw.dummy_resource
+  resource_detection:
+    detectors:
+    - system
+    - env
+    - docker
+    - ec2
+    override: false
+    system:
+      hostname_sources:
+      - os
+      resource_attributes:
+        host.arch:
+          enabled: true
+        host.cpu.cache.l2.size:
+          enabled: true
+        host.cpu.family:
+          enabled: true
+        host.cpu.model.id:
+          enabled: true
+        host.cpu.model.name:
+          enabled: true
+        host.cpu.stepping:
+          enabled: true
+        host.cpu.vendor.id:
+          enabled: true
+        host.ip:
+          enabled: true
+        host.mac:
+          enabled: true
+        os.description:
+          enabled: true
+    timeout: 5s
+  transform/add_labels:
+    log_statements:
+    - context: log
+      statements: []
+  transform/copyservicefromlogattributes:
+    error_mode: ignore
+    log_statements:
+    - context: log
+      statements:
+      - set(resource.attributes["service.name"], attributes["service.name"]) where
+        attributes["service.name"] != nil and resource.attributes["service.name"]
+        == nil
+  transform/deleteostype:
+    metric_statements:
+    - context: datapoint
+      statements:
+      - delete_key(attributes, "os.type")
+  transform/ostype:
+    metric_statements:
+    - context: datapoint
+      statements:
+      - set(attributes["os.type"], resource.attributes["os.type"])
+  transform/ratecalculation/copymetric:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - copy_metric(name="system.network.io.rate") where name == "system.network.io"
+      - copy_metric(name="system.disk.io.rate") where name == "system.disk.io"
+      - copy_metric(name="system.disk.operations.rate") where name == "system.disk.operations"
+      - copy_metric(name="system.network.packets.rate") where name == "system.network.packets"
+      - copy_metric(name="system.network.errors.rate") where name == "system.network.errors"
+      - copy_metric(name="system.network.dropped.rate") where name == "system.network.dropped"
+  transform/ratecalculation/sumtogauge:
+    error_mode: ignore
+    metric_statements:
+    - context: metric
+      statements:
+      - convert_sum_to_gauge() where name == "system.network.io"
+      - convert_sum_to_gauge() where name == "system.disk.io"
+      - convert_sum_to_gauge() where name == "system.disk.operations"
+      - convert_sum_to_gauge() where name == "system.network.packets"
+      - convert_sum_to_gauge() where name == "system.network.errors"
+      - convert_sum_to_gauge() where name == "system.network.dropped"
+receivers:
+  docker_stats:
+    api_version: '1.25'
+    autodetect_api_version: true
+    collection_interval: 15s
+    endpoint: unix:///var/run/docker.sock
+    timeout: 20s
+  file_log:
+    exclude:
+    - "/**/*.gz"
+    include:
+    - "$MW_LOG_PATHS"
+    - "/var/log/**/*.log*"
+    - "/var/lib/docker/containers/**/*.log*"
+    include_file_name_resolved: true
+    include_file_path: true
+    include_file_path_resolved: true
+    max_log_size: 1MiB
+    operators:
+    - id: extract_metadata_from_filepath
+      parse_from: attributes["log.file.path"]
+      regex: "^/var/lib/docker/containers/(?P<docker_container_id>[^_]+)/.*log$"
+      to: body
+      type: regex_parser
+    poll_interval: 1s
+  fluent_forward:
+    endpoint: "[::]:${env:MW_AGENT_FLUENT_PORT}"
+  host_metrics:
+    collection_interval: 15s
+    scrapers:
+      cpu:
+        metrics:
+          system.cpu.frequency:
+            enabled: true
+          system.cpu.logical.count:
+            enabled: true
+          system.cpu.utilization:
+            enabled: true
+      disk:
+        metrics:
+      filesystem:
+        exclude_fs_types:
+          fs_types:
+          - autofs
+          - binfmt_misc
+          - bpf
+          - cgroup2
+          - configfs
+          - debugfs
+          - devpts
+          - devtmpfs
+          - fusectl
+          - hugetlbfs
+          - iso9660
+          - mqueue
+          - nsfs
+          - overlay
+          - proc
+          - procfs
+          - pstore
+          - rpc_pipefs
+          - securityfs
+          - selinuxfs
+          - squashfs
+          - sysfs
+          - tracefs
+          match_type: strict
+        exclude_mount_points:
+          match_type: regexp
+          mount_points:
+          - "/dev/*"
+          - "/proc/*"
+          - "/sys/*"
+          - "/run/containerd/runc/"
+          - "/run/credentials/*"
+          - "/run/k3s/containerd/*"
+          - "/var/lib/containers/storage/*"
+          - "/var/lib/docker/*"
+          - "/var/lib/kubelet/*"
+          - "/snap/*"
+        include_virtual_filesystems: true
+        metrics:
+          system.filesystem.utilization:
+            enabled: true
+      load:
+        cpu_average: true
+      memory:
+        metrics:
+          system.memory.utilization:
+            enabled: true
+      network:
+      paging: {}
+      process:
+        metrics:
+          process.cpu.utilization:
+            enabled: true
+        mute_process_cgroup_error: true
+        mute_process_exe_error: true
+        mute_process_io_error: true
+        mute_process_name_error: true
+        mute_process_user_error: true
+        resource_attributes:
+      processes: {}
+      system: {}
+  jmx/cassandra:
+    collection_interval: 10s
+    endpoint: service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi
+    jar_path: "/home/naman47/mw/integration-demo-projects/cassandra/mw-jmx-metrics.jar"
+    target_system: cassandra
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "[::]:${env:MW_AGENT_GRPC_PORT}"
+      http:
+        endpoint: "[::]:${env:MW_AGENT_HTTP_PORT}"
+service:
+  extensions:
+  - health_check
+  pipelines:
+    logs:
+      exporters:
+      - otlp_grpc/2
+      processors:
+      - resource_detection
+      - resource/hostid
+      - resource/logs
+      - attributes/logs
+      - transform/add_labels
+      - transform/copyservicefromlogattributes
+      - batch
+      receivers:
+      - otlp
+      - fluent_forward
+      - file_log
+    metrics:
+      exporters:
+      - otlp_grpc/2
+      - debug
+      processors:
+      - resource_detection
+      - resource/hostid
+      - resource
+      - transform/ostype
+      - metrics_transform/system
+      - transform/deleteostype
+      - transform/ratecalculation/copymetric
+      - cumulativetodelta/ratecalculation
+      - deltatorate/ratecalculation
+      - transform/ratecalculation/sumtogauge
+      - batch
+      receivers:
+      - host_metrics
+      - docker_stats
+      - otlp
+    metrics/cassandra:
+      exporters:
+      - otlp_grpc/2
+      processors:
+      - resource_detection
+      - resource
+      - resource/cassandra
+      - batch
+      receivers:
+      - jmx/cassandra
+    traces:
+      exporters:
+      - otlp_grpc/2
+      processors:
+      - resource_detection
+      - resource/hostid
+      - resource/traces
+      - attributes/traces
+      - redaction/db_traces
+      - batch
+      receivers:
+      - otlp
+  telemetry:
+    logs:
+      level: debug
+    metrics:
+      readers:
+      - pull:
+          exporter:
+            prometheus:
+              host: 127.0.0.1
+              port: "${env:MW_AGENT_INTERNAL_METRICS_PORT}"
