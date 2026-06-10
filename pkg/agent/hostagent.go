@@ -50,6 +50,7 @@ type HostAgent struct {
 	httpGetFunc         func(url string) (resp *http.Response, err error)
 	Version             string
 	applyConfigOnce     sync.Once
+	Receivers           map[string]interface{}
 }
 
 // HostOptions takes in various options for HostAgent

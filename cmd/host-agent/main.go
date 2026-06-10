@@ -12,10 +12,12 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"encoding/json"
 	"text/tabwriter"
 
-	"github.com/middleware-labs/mw-injector/pkg/otelinject"
 	"github.com/middleware-labs/mw-agent/pkg/agent"
+	"github.com/middleware-labs/mw-agent/pkg/healthcheck"
+	"github.com/middleware-labs/mw-injector/pkg/otelinject"
 	"github.com/middleware-labs/synthetics-agent/pkg/worker"
 	"gopkg.in/natefinch/lumberjack.v2"
 
@@ -59,6 +61,10 @@ func (p *program) Start(s service.Service) error {
 
 	p.logger.Info("starting service", zap.Stringer("name", s))
 
+	if err := healthcheck.WriteState(p.hostAgent.OtelConfigFile); err != nil {
+		p.logger.Warn("failed to write agent state file", zap.Error(err))
+	}
+
 	p.programWG.Add(1)
 	go p.run()
 	p.programWG.Add(1)
@@ -84,6 +90,10 @@ func (p *program) Start(s service.Service) error {
 func (p *program) Stop(s service.Service) error {
 	// Stop should not block. Return with a few seconds.
 	p.logger.Info("stopping service", zap.Stringer("name", s))
+
+	if err := healthcheck.RemoveState(); err != nil {
+		p.logger.Warn("failed to remove agent state file", zap.Error(err))
+	}
 
 	// stop collection
 	close(p.stopCh)
@@ -737,6 +747,9 @@ func main() {
 	var cfg agent.HostConfig
 	flags := getFlags(execPath, &cfg)
 
+	const AGENT_HEALTHCHECK_URL = "http://localhost:13133"
+	agentHealthChecker := healthcheck.NewAgentHealthChecker(AGENT_HEALTHCHECK_URL)
+
 	app := &cli.App{
 		Name:  "mw-agent",
 		Usage: "Middleware host agent",
@@ -747,6 +760,7 @@ func main() {
 				Flags:  flags,
 				Before: altsrc.InitInputSourceWithContext(flags, altsrc.NewYamlSourceFromFlagFunc("config-file")),
 				Action: func(c *cli.Context) error {
+
 					loggingLevel, err := zap.ParseAtomicLevel(cfg.LoggingLevel)
 					if err != nil {
 						logger.Error("error getting executable path", zap.Error(err))
@@ -1093,6 +1107,167 @@ func main() {
 					default:
 						return fmt.Errorf("unsupported type %q: must be systemd or obi", deployType)
 					}
+				},
+			},
+			{
+				Name:  "receivers",
+				Usage: "Manage configured receivers (requires running agent)",
+				Subcommands: []*cli.Command{
+					{
+						Name:  "list",
+						Usage: "List receivers loaded in the running agent",
+						Flags: []cli.Flag{
+							&cli.BoolFlag{
+								Name:    "quiet",
+								Aliases: []string{"q"},
+								Usage:   "Only display receiver names",
+							},
+						},
+						Action: func(c *cli.Context) error {
+							err := agentHealthChecker.CheckHealth(c.Context)
+							if err != nil {
+								return fmt.Errorf("Collector HealthCheck failing: %v", err)
+							}
+
+							state, err := healthcheck.ReadState()
+							if err != nil {
+								return err
+							}
+
+							receivers, err := healthcheck.LoadReceivers(state.OtelConfigFile)
+							if err != nil {
+								return err
+							}
+
+							if c.Bool("quiet") {
+								for name := range receivers {
+									fmt.Println(name)
+								}
+								return nil
+							}
+
+							w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+							fmt.Fprintln(w, "RECEIVER\tHEALTH CHECK\tDETAILS")
+							for name, rawCfg := range receivers {
+								hc, err := healthcheck.NewHealthChecker(name, rawCfg)
+								if err != nil {
+									fmt.Fprintf(w, "%s\t-\t%s\n", name, err)
+									continue
+								}
+								if err := hc.CheckHealth(c.Context); err != nil {
+									fmt.Fprintf(w, "%s\tUNHEALTHY\t%s\n", name, err)
+								} else {
+									fmt.Fprintf(w, "%s\tHEALTHY\t\n", name)
+								}
+							}
+							return w.Flush()
+						},
+					},
+					{
+						Name:      "status",
+						Usage:     "Check health of a configured receiver",
+						ArgsUsage: "<receiver-name>",
+						Action: func(c *cli.Context) error {
+							err := agentHealthChecker.CheckHealth(c.Context)
+							if err != nil {
+								return fmt.Errorf("Collector HealthCheck failing: %v", err)
+							}
+
+							name := c.Args().First()
+							if name == "" {
+								return fmt.Errorf("receiver name is required")
+							}
+
+							state, err := healthcheck.ReadState()
+							if err != nil {
+								return err
+							}
+
+							receivers, err := healthcheck.LoadReceivers(state.OtelConfigFile)
+							if err != nil {
+								return err
+							}
+
+							matched := map[string]any{}
+							if rawCfg, ok := receivers[name]; ok {
+								matched[name] = rawCfg
+							} else {
+								for rName, rCfg := range receivers {
+									if strings.HasPrefix(rName, name) {
+										matched[rName] = rCfg
+									}
+								}
+							}
+							if len(matched) == 0 {
+								return fmt.Errorf("receiver %s not found in config", name)
+							}
+
+							var hasErr bool
+							for rName, rawCfg := range matched {
+								hc, err := healthcheck.NewHealthChecker(rName, rawCfg)
+								if err != nil {
+									fmt.Printf("-          %s  %s\n", rName, err)
+									continue
+								}
+								if err := hc.CheckHealth(c.Context); err != nil {
+									fmt.Printf("UNHEALTHY  %s  %s\n", rName, err)
+									hasErr = true
+								} else {
+									fmt.Printf("HEALTHY    %s\n", rName)
+								}
+							}
+							if hasErr {
+								return fmt.Errorf("one or more receivers unhealthy")
+							}
+							return nil
+						},
+					},
+					{
+						Name:      "config",
+						Usage:     "Show config of a configured receiver",
+						ArgsUsage: "<receiver-name>",
+						Action: func(c *cli.Context) error {
+							name := c.Args().First()
+							if name == "" {
+								return fmt.Errorf("receiver name is required")
+							}
+
+							state, err := healthcheck.ReadState()
+							if err != nil {
+								return err
+							}
+
+							receivers, err := healthcheck.LoadReceivers(state.OtelConfigFile)
+							if err != nil {
+								return err
+							}
+
+							matched := map[string]any{}
+							if rawCfg, ok := receivers[name]; ok {
+								matched[name] = rawCfg
+							} else {
+								for rName, rCfg := range receivers {
+									if strings.HasPrefix(rName, name) {
+										matched[rName] = rCfg
+									}
+								}
+							}
+							if len(matched) == 0 {
+								return fmt.Errorf("receiver %s not found in config", name)
+							}
+
+							for rName, rawCfg := range matched {
+								fmt.Printf("--- %s ---\n", rName)
+								out, err := json.MarshalIndent(rawCfg, "", "  ")
+								if err != nil {
+									fmt.Printf("  (could not serialize: %v)\n", err)
+									continue
+								}
+								fmt.Println(string(out))
+							}
+							return nil
+						},
+					},
 				},
 			},
 		},

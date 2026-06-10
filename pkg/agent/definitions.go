@@ -95,14 +95,11 @@ type OpsAI struct {
 type BaseConfig struct {
 	APIKey                    string
 	Target                    string
-<<<<<<< HEAD
 	DaemonsetName             string
 	DeploymentName            string
-=======
 	OpAMPServerURL            string
 	RemoteAgentEnabled        bool
 	AgentID                   string
->>>>>>> origin/opamp-support
 	EnableSyntheticMonitoring bool
 	ConfigCheckInterval       string
 	FetchAccountOtelConfig    bool
