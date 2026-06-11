@@ -25,6 +25,15 @@ func NewHealthChecker(receiverName string, rawCfg any) (HealthChecker, error) {
 			return nil, err
 		}
 		return &cfg, nil
+	case strings.HasPrefix(receiverName, "mongodb"):
+		var cfg MongodbReceiver
+		if err := mapstructure.Decode(rawCfg, &cfg); err != nil {
+			return nil, fmt.Errorf("mongodb: failed to decode config: %w", err)
+		}
+		if err := cfg.Validate(); err != nil {
+			return nil, err
+		}
+		return &cfg, nil
 	default:
 		return nil, fmt.Errorf("healthcheck not implemented for receiver: %s", receiverName)
 	}
