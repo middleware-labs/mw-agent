@@ -25,6 +25,15 @@ func NewHealthChecker(receiverName string, rawCfg any) (HealthChecker, error) {
 			return nil, err
 		}
 		return &cfg, nil
+	case strings.HasPrefix(receiverName, "mysql"):
+		var cfg MysqlReceiver
+		if err := mapstructure.Decode(rawCfg, &cfg); err != nil {
+			return nil, fmt.Errorf("mysql: failed to decode config: %w", err)
+		}
+		if err := cfg.Validate(); err != nil {
+			return nil, err
+		}
+		return &cfg, nil
 	case strings.HasPrefix(receiverName, "mongodb"):
 		var cfg MongodbReceiver
 		if err := mapstructure.Decode(rawCfg, &cfg); err != nil {
