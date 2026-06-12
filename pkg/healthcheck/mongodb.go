@@ -92,20 +92,10 @@ func (r *MongodbReceiver) connect(ctx context.Context) (*mongo.Client, error) {
 }
 
 func (r *MongodbReceiver) CheckHealth(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	client, err := r.connect(ctx)
+	checks, err := r.CheckHealthDetailed(ctx)
 	if err != nil {
-		return fmt.Errorf("mongodb: failed to connect: %w", err)
+		return err
 	}
-	defer client.Disconnect(ctx)
-
-	if err := client.Ping(ctx, readpref.Primary()); err != nil {
-		return fmt.Errorf("mongodb: ping failed: %w", err)
-	}
-
-	checks := r.checkPermissions(ctx, client)
 
 	var missing []string
 	for _, c := range checks {
@@ -120,9 +110,27 @@ func (r *MongodbReceiver) CheckHealth(ctx context.Context) error {
 	return nil
 }
 
+func (r *MongodbReceiver) CheckHealthDetailed(ctx context.Context) ([]PermissionCheck, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	client, err := r.connect(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("mongodb: failed to connect: %w", err)
+	}
+	defer client.Disconnect(ctx)
+
+	if err := client.Ping(ctx, readpref.Primary()); err != nil {
+		return nil, fmt.Errorf("mongodb: ping failed: %w", err)
+	}
+
+	return r.checkPermissions(ctx, client), nil
+}
+
 func (r *MongodbReceiver) checkPermissions(ctx context.Context, client *mongo.Client) []PermissionCheck {
 	checks := []PermissionCheck{
-		{Name: "CONNECT", Granted: true},
+		{Name: "CONNECTED", Granted: true},
+		{Name: "AUTHENTICATED", Granted: true},
 		{Name: "clusterMonitor"},
 		{Name: "dbAdminAnyDatabase"},
 		{Name: "profiling"},
@@ -131,34 +139,34 @@ func (r *MongodbReceiver) checkPermissions(ctx context.Context, client *mongo.Cl
 	var connStatus bson.M
 	err := client.Database("admin").RunCommand(ctx, bson.D{{Key: "connectionStatus", Value: 1}}).Decode(&connStatus)
 	if err != nil {
-		for i := 1; i < len(checks); i++ {
+		for i := 2; i < len(checks); i++ {
 			checks[i].Err = err
 		}
 		return checks
 	}
 
 	roles := extractRoles(connStatus)
-	checks[1].Granted = roles["clusterMonitor"]
-	checks[2].Granted = roles["dbAdminAnyDatabase"]
-	if !checks[1].Granted {
-		checks[1].Err = fmt.Errorf("role not granted to user")
-	}
+	checks[2].Granted = roles["clusterMonitor"]
+	checks[3].Granted = roles["dbAdminAnyDatabase"]
 	if !checks[2].Granted {
 		checks[2].Err = fmt.Errorf("role not granted to user")
+	}
+	if !checks[3].Granted {
+		checks[3].Err = fmt.Errorf("role not granted to user")
 	}
 
 	var profileStatus bson.M
 	err = client.Database("admin").RunCommand(ctx, bson.D{{Key: "profile", Value: -1}}).Decode(&profileStatus)
 	if err != nil {
-		checks[3].Err = err
+		checks[4].Err = err
 		return checks
 	}
 
 	if was, ok := profileStatus["was"]; ok {
 		level, _ := was.(int32)
-		checks[3].Granted = level > 0
+		checks[4].Granted = level > 0
 		if level == 0 {
-			checks[3].Err = fmt.Errorf("profiling is disabled (level 0)")
+			checks[4].Err = fmt.Errorf("profiling is disabled (level 0)")
 		}
 	}
 

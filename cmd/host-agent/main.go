@@ -1120,21 +1120,39 @@ func main() {
 								return nil
 							}
 
-							w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-							fmt.Fprintln(w, "RECEIVER\tHEALTH CHECK\tDETAILS")
+							var pending []string
+							var skipped []string
+							type checkJob struct {
+								name string
+								hc   healthcheck.HealthChecker
+							}
+							var jobs []checkJob
+
 							for name, rawCfg := range receivers {
 								hc, err := healthcheck.NewHealthChecker(name, rawCfg)
 								if err != nil {
-									fmt.Fprintf(w, "%s\t-\t%s\n", name, err)
+									skipped = append(skipped, name)
 									continue
 								}
-								if err := hc.CheckHealth(c.Context); err != nil {
-									fmt.Fprintf(w, "%s\tUNHEALTHY\t%s\n", name, err)
-								} else {
-									fmt.Fprintf(w, "%s\tHEALTHY\t\n", name)
-								}
+								pending = append(pending, name)
+								jobs = append(jobs, checkJob{name: name, hc: hc})
 							}
-							return w.Flush()
+
+							resultCh := make(chan healthcheck.ReceiverResult, len(jobs))
+							for _, j := range jobs {
+								go func(name string, hc healthcheck.HealthChecker) {
+									if dhc, ok := hc.(healthcheck.DetailedHealthChecker); ok {
+										checks, err := dhc.CheckHealthDetailed(c.Context)
+										resultCh <- healthcheck.ReceiverResult{Name: name, Checks: checks, Err: err}
+									} else {
+										err := hc.CheckHealth(c.Context)
+										resultCh <- healthcheck.ReceiverResult{Name: name, Err: err}
+									}
+								}(j.name, j.hc)
+							}
+
+							healthcheck.RenderResultsStream(pending, skipped, resultCh)
+							return nil
 						},
 					},
 					{
@@ -1176,20 +1194,38 @@ func main() {
 								return fmt.Errorf("receiver %s not found in config", name)
 							}
 
-							var hasErr bool
+							var pending []string
+							var skipped []string
+							type checkJob struct {
+								name string
+								hc   healthcheck.HealthChecker
+							}
+							var jobs []checkJob
+
 							for rName, rawCfg := range matched {
 								hc, err := healthcheck.NewHealthChecker(rName, rawCfg)
 								if err != nil {
-									fmt.Printf("-          %s  %s\n", rName, err)
+									skipped = append(skipped, rName)
 									continue
 								}
-								if err := hc.CheckHealth(c.Context); err != nil {
-									fmt.Printf("UNHEALTHY  %s  %s\n", rName, err)
-									hasErr = true
-								} else {
-									fmt.Printf("HEALTHY    %s\n", rName)
-								}
+								pending = append(pending, rName)
+								jobs = append(jobs, checkJob{name: rName, hc: hc})
 							}
+
+							resultCh := make(chan healthcheck.ReceiverResult, len(jobs))
+							for _, j := range jobs {
+								go func(name string, hc healthcheck.HealthChecker) {
+									if dhc, ok := hc.(healthcheck.DetailedHealthChecker); ok {
+										checks, err := dhc.CheckHealthDetailed(c.Context)
+										resultCh <- healthcheck.ReceiverResult{Name: name, Checks: checks, Err: err}
+									} else {
+										err := hc.CheckHealth(c.Context)
+										resultCh <- healthcheck.ReceiverResult{Name: name, Err: err}
+									}
+								}(j.name, j.hc)
+							}
+
+							hasErr := healthcheck.RenderResultsStream(pending, skipped, resultCh)
 							if hasErr {
 								return fmt.Errorf("one or more receivers unhealthy")
 							}

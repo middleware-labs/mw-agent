@@ -10,8 +10,19 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
+type PermissionCheck struct {
+	Name    string
+	Granted bool
+	Err     error
+}
+
 type HealthChecker interface {
 	CheckHealth(ctx context.Context) error
+}
+
+type DetailedHealthChecker interface {
+	HealthChecker
+	CheckHealthDetailed(ctx context.Context) ([]PermissionCheck, error)
 }
 
 func NewHealthChecker(receiverName string, rawCfg any) (HealthChecker, error) {
