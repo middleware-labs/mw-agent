@@ -122,6 +122,7 @@ require (
 require (
 	github.com/middleware-labs/mw-injector v1.2.3
 	github.com/middleware-labs/synthetics-agent v1.0.63
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.139.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.139.0
@@ -129,6 +130,7 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.45.0
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.45.0
 	go.opentelemetry.io/collector/connector v0.139.0
+	go.opentelemetry.io/collector/extension/zpagesextension v0.139.0
 	go.opentelemetry.io/collector/featuregate v1.45.0
 	go.opentelemetry.io/collector/otelcol v0.139.0
 	go.opentelemetry.io/collector/service v0.139.0
@@ -504,6 +506,7 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.63.0 // indirect
 	go.opentelemetry.io/contrib/otelconf v0.18.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.38.0 // indirect
+	go.opentelemetry.io/contrib/zpages v0.63.0 // indirect
 	go.opentelemetry.io/otel v1.39.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.14.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.14.0 // indirect

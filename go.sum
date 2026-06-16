@@ -779,6 +779,8 @@ github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthchecke
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.139.0/go.mod h1:tlvGxKUolcEdpBCt00d2/oMCVP5PSbK2WCxpPeOrSpQ=
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.139.0 h1:p85hDDXUipKEDSm0cKfIEO+0IBXssrgD7ynhzUD3AkI=
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.139.0/go.mod h1:n/7UPWuIuKD/hIoKWQH8eB2NjYZiEHoXJO4k6XQEcOI=
+github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.139.0 h1:lyHHx27uLGfv+3AfGnw6cLqmLhkQ4UNavC2UriQRdMw=
+github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.139.0/go.mod h1:EXtGFp5LHlI8r90gZozwdWuPvUmObyxVefab5Z62X+c=
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.139.0 h1:3Hhr2s+h3nNiEkvv1G7/ETbvx+BU6z02IBB2ZbrmbNA=
 github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.139.0/go.mod h1:AECEAulTQeHJrwqor6BQDN9r+XevIF9FVvtAel6yDL8=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.139.0 h1:+SpPbwzNQFdZiPf22NUy7Y4wh+qH3SPh7QlAT22vQdQ=
