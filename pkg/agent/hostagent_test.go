@@ -274,8 +274,10 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assert.NotNil(t, factories.Processors)
 
 	// check that the returned factories contain the expected factories
-	assert.Len(t, factories.Extensions, 1)
+	assert.Len(t, factories.Extensions, 3)
 	assertContainsComponent(t, factories.Extensions, "health_check")
+	assertContainsComponent(t, factories.Extensions, "pprof")
+	assertContainsComponent(t, factories.Extensions, "zpages")
 	// check if factories contains expected receivers
 	assert.Len(t, factories.Receivers, 24)
 	assertContainsComponent(t, factories.Receivers, "otlp")

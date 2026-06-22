@@ -15,8 +15,10 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
+	"github.com/k0kubun/pp"
 	"github.com/middleware-labs/mw-injector/pkg/otelinject"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -40,16 +42,17 @@ var (
 // HostAgent implements Agent interface for Hosts (e.g Linux)
 type HostAgent struct {
 	HostConfig
-	configCheckDuration time.Duration
-	collectorFactories  otelcol.Factories
-	collectorSettings   otelcol.CollectorSettings
-	collector           *otelcol.Collector
-	collectorWG         *sync.WaitGroup
-	zapCore             zapcore.Core
-	logger              *zap.Logger
-	httpGetFunc         func(url string) (resp *http.Response, err error)
-	Version             string
-	applyConfigOnce     sync.Once
+	configCheckDuration  time.Duration
+	collectorFactories   otelcol.Factories
+	collectorSettings    otelcol.CollectorSettings
+	collector            *otelcol.Collector
+	collectorWG          *sync.WaitGroup
+	zapCore              zapcore.Core
+	logger               *zap.Logger
+	httpGetFunc          func(url string) (resp *http.Response, err error)
+	Version              string
+	applyConfigOnce      sync.Once
+	profilingInProgress  atomic.Bool
 }
 
 // HostOptions takes in various options for HostAgent
@@ -206,11 +209,18 @@ type rollout struct {
 	Daemonset  bool `json:"daemonset"`
 }
 
+type profilingRequest struct {
+	RequestID          string   `json:"request_id"`
+	Types              []string `json:"types"`
+	CPUDurationSeconds int      `json:"cpu_duration_seconds"`
+}
+
 type apiResponseForRestart struct {
-	Status  bool    `json:"status"`
-	Restart bool    `json:"restart"`
-	Rollout rollout `json:"rollout"`
-	Message string  `json:"message"`
+	Status    bool              `json:"status"`
+	Restart   bool              `json:"restart"`
+	Rollout   rollout           `json:"rollout"`
+	Message   string            `json:"message"`
+	Profiling *profilingRequest `json:"profiling,omitempty"`
 }
 
 type TrackingMetadata struct {
@@ -226,10 +236,11 @@ type TrackingPayload struct {
 }
 
 var (
-	apiPathForYAML         = "api/v1/agent/ingestion-rules"
-	apiPathForRestart      = "api/v1/agent/restart-status"
-	apiAgentTrack          = "api/v1/agent/tracking"
-	apiPathForConfigGroups = "api/v1/agent/public/setting/config-groups" // Apply config class to hosts
+	apiPathForYAML            = "api/v1/agent/ingestion-rules"
+	apiPathForRestart         = "api/v1/agent/restart-status"
+	apiAgentTrack             = "api/v1/agent/tracking"
+	apiPathForConfigGroups    = "api/v1/agent/public/setting/config-groups" // Apply config class to hosts
+	apiPathForProfilingUpload = "api/v1/agent/profiling/upload"
 )
 
 func (d IntegrationType) String() string {
@@ -627,6 +638,13 @@ func (c *HostAgent) callRestartStatusAPI() error {
 	var apiResponse apiResponseForRestart
 	if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
 		return fmt.Errorf("failed to unmarshal restart api response: %w", err)
+	}
+
+	pp.Println("[restart-status] response:", apiResponse)
+
+	if apiResponse.Profiling != nil && apiResponse.Profiling.RequestID != "" {
+		pp.Println("[restart-status] profiling request received:", apiResponse.Profiling)
+		go c.collectAndUploadProfiles(apiResponse.Profiling)
 	}
 
 	if apiResponse.Restart {
