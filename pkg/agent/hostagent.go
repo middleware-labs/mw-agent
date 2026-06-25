@@ -630,7 +630,9 @@ func (c *HostAgent) callRestartStatusAPI() error {
 	}
 
 	if apiResponse.Restart {
-		c.logger.Info("fetching updated configuration from backend")
+		c.logger.Info("fetching updated configuration from backend",
+			zap.String("host_id", hostname),
+			zap.String("infra_platform", fmt.Sprint(c.InfraPlatform)))
 		if _, err := c.getOtelConfig(); err != nil {
 			return err
 		}
@@ -795,6 +797,7 @@ func (c *HostAgent) StartCollector() error {
 	}
 
 	c.collector = collector
+	c.logger.Info("starting telemetry collection")
 
 	c.collectorWG.Add(1)
 	go func() {
@@ -815,10 +818,14 @@ func (c *HostAgent) StartCollector() error {
 
 func (c *HostAgent) StopCollector(err error) {
 	if c.collector != nil {
-		c.logger.Error("stopping telemetry collection", zap.Error(err))
+		if errors.Is(err, ErrRestartAgent) {
+			c.logger.Info("stopping telemetry collection for restart")
+		} else {
+			c.logger.Error("stopping telemetry collection", zap.Error(err))
+		}
 		c.collector.Shutdown()
 		c.collectorWG.Wait()
-		c.logger.Info("stopped telemetry collection at", zap.Time("time", time.Now()))
+		c.logger.Info("stopped telemetry collection")
 		c.collector = nil
 	}
 }

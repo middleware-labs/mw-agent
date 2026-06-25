@@ -380,14 +380,16 @@ func (p *Profiler) StartProfiling(appName string, target string, tags string) {
 	parsedURL, err := url.Parse(target)
 
 	if err != nil {
-		p.Logger.Error("PROFILER: Invalid URL - MW_TARGET")
+		p.Logger.Error("PROFILER: Invalid URL - MW_TARGET",
+			zap.String("target", target), zap.Error(err))
 		return
 	}
 
 	hostParts := strings.Split(parsedURL.Hostname(), ".")
 
 	if len(hostParts) <= 1 {
-		p.Logger.Error("PROFILER: Subdomain doesn't exist - MW_TARGET")
+		p.Logger.Error("PROFILER: Subdomain doesn't exist - MW_TARGET",
+			zap.String("hostname", parsedURL.Hostname()))
 		return
 	}
 
