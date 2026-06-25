@@ -1,4 +1,4 @@
-RELEASE_VERSION=1.11.152
+RELEASE_VERSION=1.17.6
 LD_FLAGS="-s -w -X main.agentVersion=${RELEASE_VERSION}"
 build-windows:
 	GOOS=windows CGO_ENABLED=0 go build -ldflags=${LD_FLAGS} -o build/mw-windows-agent.exe cmd/host-agent/main.go
@@ -37,7 +37,7 @@ package-linux-docker:
 	docker build .  --target build --build-arg GITHUB_TOKEN=$(GH_TOKEN) -t ghcr.io/middleware-labs/mw-agent:local -f Dockerfiles/DockerfileLinux
 
 package-kube-docker:
-	docker buildx build --platform linux/amd64 -f Dockerfiles/DockerfileKube.base --build-arg APP_BINARY=mw-kube-agent -t ghcr.io/middleware-labs/mw-kube-agent:${RELEASE_VERSION} --push .
+	docker build -f Dockerfiles/DockerfileKube.base --build-arg APP_BINARY=mw-kube-agent -t ghcr.io/middleware-labs/mw-kube-agent:${RELEASE_VERSION} .
 package-opsai-docker:
 	docker build -f Dockerfiles/DockerfileKube.base --build-arg APP_BINARY=mw-opsai -t ghcr.io/middleware-labs/mw-kube-agent-opsai:${RELEASE_VERSION} .
 package-synthetics-docker:
