@@ -38,7 +38,7 @@ func TestUpdatepgdbConfig(t *testing.T) {
 	zapCore := zapcore.NewNopCore()
 	agent, _ := NewHostAgent(HostConfig{}, zapCore)
 	// Call the updatepgdbConfig function
-	updatedConfig, err := agent.updateConfig(initialConfig, pgdbConfig)
+	updatedConfig, err := agent.updateConfig(initialConfig, pgdbConfig, PostgreSQL)
 	assert.NoError(t, err)
 
 	// Assert that the updated config contains the expected values
@@ -74,7 +74,7 @@ func TestUpdateMongodbConfig(t *testing.T) {
 	zapCore := zapcore.NewNopCore()
 	agent, _ := NewHostAgent(HostConfig{}, zapCore)
 
-	updatedConfig, err := agent.updateConfig(initialConfig, mongodbConfig)
+	updatedConfig, err := agent.updateConfig(initialConfig, mongodbConfig, MongoDB)
 	assert.NoError(t, err)
 
 	// Assert that the updated config contains the expected values
@@ -111,7 +111,7 @@ func TestUpdateMysqlConfig(t *testing.T) {
 	zapCore := zapcore.NewNopCore()
 	agent, _ := NewHostAgent(cfg, zapCore)
 	// Call the updateMysqlConfig function
-	updatedConfig, err := agent.updateConfig(initialConfig, mysqlConfig)
+	updatedConfig, err := agent.updateConfig(initialConfig, mysqlConfig, MySQL)
 	assert.NoError(t, err)
 
 	// Assert that the updated config contains the expected values
@@ -146,7 +146,7 @@ func TestUpdateRedisConfig(t *testing.T) {
 	zapCore := zapcore.NewNopCore()
 	agent, _ := NewHostAgent(cfg, zapCore)
 	// Call the updateRedisConfig function
-	updatedConfig, err := agent.updateConfig(initialConfig, redisConfig)
+	updatedConfig, err := agent.updateConfig(initialConfig, redisConfig, Redis)
 	assert.NoError(t, err)
 
 	// Assert that the updated config contains the expected values
