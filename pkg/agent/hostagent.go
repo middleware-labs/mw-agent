@@ -17,7 +17,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/middleware-labs/java-injector/pkg/otelinject"
+	"github.com/middleware-labs/mw-injector/pkg/otelinject"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
@@ -50,6 +50,7 @@ type HostAgent struct {
 	httpGetFunc         func(url string) (resp *http.Response, err error)
 	Version             string
 	applyConfigOnce     sync.Once
+	Receivers           map[string]interface{}
 }
 
 // HostOptions takes in various options for HostAgent
