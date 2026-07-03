@@ -13,7 +13,8 @@
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/hostmetricsreceiver/internal/scraper/memoryscraper/metadata.yaml",
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/hostmetricsreceiver/internal/scraper/networkscraper/metadata.yaml",
             "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/hostmetricsreceiver/internal/scraper/pagingscraper/metadata.yaml",
-            "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/hostmetricsreceiver/internal/scraper/processesscraper/metadata.yaml"
+            "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/hostmetricsreceiver/internal/scraper/processesscraper/metadata.yaml",
+            "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/processor/resourcedetectionprocessor/internal/system/metadata.yaml"
         ],
         "collection_interval": "15s"
     },
