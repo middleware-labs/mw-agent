@@ -61,6 +61,7 @@ import (
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -168,6 +169,7 @@ func (k *KubeAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 		Receivers:  make(map[component.Type]receiver.Factory),
 		Exporters:  make(map[component.Type]exporter.Factory),
 		Processors: make(map[component.Type]processor.Factory),
+		Telemetry:  otelconftelemetry.NewFactory(),
 	}
 	factories.Extensions = make(map[component.Type]extension.Factory)
 	exts := []extension.Factory{
