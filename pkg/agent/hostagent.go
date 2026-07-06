@@ -35,6 +35,10 @@ var (
 	ErrRestartAgent     = errors.New("restart agent due to config change")
 	ErrInvalidConfig    = errors.New("invalid config received from backend")
 	ErrReportApiFailure = errors.New("failed to report service discovery status to backend")
+	// ErrConfigFetchFailure covers failures to fetch or build the otel config
+	// (network, parsing, provider errors) as opposed to ErrInvalidConfig, which
+	// is a config that was successfully built but fails schema validation.
+	ErrConfigFetchFailure = errors.New("failed to fetch or build otel config")
 )
 
 // HostAgent implements Agent interface for Hosts (e.g Linux)
@@ -539,7 +543,10 @@ func (c *HostAgent) getOtelConfig() (string, error) {
 	}
 
 	if err := c.updateConfigFile(configType); err != nil {
-		return c.OtelConfigFile, err
+		if errors.Is(err, ErrInvalidConfig) {
+			return c.OtelConfigFile, err
+		}
+		return c.OtelConfigFile, fmt.Errorf("%w: %v", ErrConfigFetchFailure, err)
 	}
 
 	return c.OtelConfigFile, nil
@@ -820,7 +827,9 @@ func (c *HostAgent) StopCollector(err error) {
 		c.collectorWG.Wait()
 		c.logger.Info("stopped telemetry collection at", zap.Time("time", time.Now()))
 		c.collector = nil
+		return
 	}
+	c.logger.Error("received error while telemetry collection is not running", zap.Error(err))
 }
 
 func (c *HostAgent) fixTelemetryConfig(config map[string]interface{}) map[string]interface{} {

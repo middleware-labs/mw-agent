@@ -111,6 +111,12 @@ func (p *program) run() {
 			continue
 		}
 
+		if errors.Is(err, agent.ErrConfigFetchFailure) {
+			p.logger.Error("failed to fetch or build otel config; keeping collector in its current state",
+				zap.Error(err))
+			continue
+		}
+
 		if err != nil {
 			// stop collection only if it's running
 			p.hostAgent.StopCollector(err)
