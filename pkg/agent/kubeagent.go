@@ -13,6 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor"
@@ -140,6 +141,12 @@ func NewKubeAgent(cfg KubeConfig, opts ...KubeOptions) *KubeAgent {
 		fmt.Println("Error in setting receiver.postgresql.separateSchemaAttr feature gate:", err)
 	}
 
+	// k8sattributes: share processor instances with identical config across pipelines
+	err = registry.Set("processor.k8sattributes.ShareProcessorBetweenPipelines", true)
+	if err != nil {
+		fmt.Println("Error in setting processor.k8sattributes.ShareProcessorBetweenPipelines feature gate:", err)
+	}
+
 	if agent.logger == nil {
 		agent.logger, _ = zap.NewProduction()
 	}
@@ -174,6 +181,7 @@ func (k *KubeAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 	factories.Extensions = make(map[component.Type]extension.Factory)
 	exts := []extension.Factory{
 		healthcheckextension.NewFactory(),
+		pprofextension.NewFactory(),
 		// frontend.NewAuthFactory(),
 	}
 
