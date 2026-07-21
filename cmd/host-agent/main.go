@@ -14,7 +14,7 @@ import (
 	"sync"
 	"text/tabwriter"
 
-	"github.com/middleware-labs/java-injector/pkg/otelinject"
+	"github.com/middleware-labs/mw-injector/pkg/otelinject"
 	"github.com/middleware-labs/mw-agent/pkg/agent"
 	"github.com/middleware-labs/synthetics-agent/pkg/worker"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -640,6 +640,52 @@ func formatInstrumented(e otelinject.ServiceEntry) string {
 	return "yes"
 }
 
+func listIntegrations(showAll, quiet bool, logger *zap.Logger) error {
+	entries, err := otelinject.DiscoverIntegrations(otelinject.DiscoverIntegrationsOpts{
+		Logger: zapToSlog(logger),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to discover integrations: %w", err)
+	}
+
+	if len(entries) == 0 {
+		fmt.Println("No integrations detected.")
+		return nil
+	}
+
+	if quiet {
+		for _, e := range entries {
+			fmt.Println(e.IntegrationType)
+		}
+		return nil
+	}
+
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+
+	if showAll {
+		fmt.Fprintln(w, "INTEGRATION\tSERVICE NAME\tTYPE\tPORTS\tPID\tOWNER\tSTATUS")
+		for _, e := range entries {
+			for _, inst := range e.Instances {
+				ports := formatPorts(inst.Ports)
+				fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d\t%s\t%s\n",
+					e.IntegrationType, e.ServiceName, e.ServiceType,
+					ports, inst.PID, inst.Owner, inst.Status,
+				)
+			}
+		}
+	} else {
+		fmt.Fprintln(w, "INTEGRATION\tSERVICE NAME\tTYPE\tPORTS\tINSTANCES")
+		for _, e := range entries {
+			ports := formatPorts(e.Ports)
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d\n",
+				e.IntegrationType, e.ServiceName, e.ServiceType,
+				ports, len(e.Instances),
+			)
+		}
+	}
+	return w.Flush()
+}
+
 func main() {
 	zapEncoderCfg := zapcore.EncoderConfig{
 		MessageKey: "message",
@@ -941,6 +987,31 @@ func main() {
 						},
 						Action: func(c *cli.Context) error {
 							return listServices(c.String("language"), c.Bool("all"), c.Bool("quiet"), logger)
+						},
+					},
+				},
+			},
+			{
+				Name:  "integrations",
+				Usage: "Manage detected integrations",
+				Subcommands: []*cli.Command{
+					{
+						Name:  "list",
+						Usage: "List detected integrations (databases, message queues, web servers, etc.)",
+						Flags: []cli.Flag{
+							&cli.BoolFlag{
+								Name:    "all",
+								Aliases: []string{"a"},
+								Usage:   "Show individual instances.",
+							},
+							&cli.BoolFlag{
+								Name:    "quiet",
+								Aliases: []string{"q"},
+								Usage:   "Only display integration types.",
+							},
+						},
+						Action: func(c *cli.Context) error {
+							return listIntegrations(c.Bool("all"), c.Bool("quiet"), logger)
 						},
 					},
 				},
