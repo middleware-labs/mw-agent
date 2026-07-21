@@ -61,8 +61,8 @@ jobs:
        
     - name: Install jsign Tool For Microsoft Authenticode
       run: |
-        wget https://github.com/ebourg/jsign/releases/download/5.0/jsign_5.0_all.deb
-        sudo dpkg -i jsign_5.0_all.deb
+        wget https://github.com/ebourg/jsign/releases/download/7.4/jsign_7.4_all.deb
+        sudo dpkg -i jsign_7.4_all.deb
        
     - name: Setup KeyLocker Client Authentication Certificate
       run: | 
