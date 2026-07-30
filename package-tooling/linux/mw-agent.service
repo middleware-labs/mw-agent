@@ -3,6 +3,9 @@ Description=Middleware Agent Service
 After=network.target
 
 [Service]
+MemoryMax=1G
+MemoryHigh=750M
+
 EnvironmentFile=/etc/mw-agent/mw-agent.env
 WorkingDirectory=/opt/mw-agent
 User=root
