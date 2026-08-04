@@ -37,6 +37,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
@@ -102,6 +103,7 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 		mongodbatlasreceiver.NewFactory(),
 		datadogreceiver.NewFactory(),
 		zookeeperreceiver.NewFactory(),
+		saphanareceiver.NewFactory(),
 	}
 
 	// if the host agent is running on ECS EC2, add
