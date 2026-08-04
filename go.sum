@@ -111,6 +111,8 @@ github.com/Masterminds/semver/v3 v3.5.0/go.mod h1:4V+yj/TJE1HU9XfppCwVMZq3I84lpr
 github.com/Microsoft/go-winio v0.5.0/go.mod h1:JPGBdM1cNvN/6ISo+n8V5iA4v8pBzdOpzfwIujj1a84=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
+github.com/SAP/go-hdb v1.16.7 h1:hpGIQMXh2iAdsMqORGEDGTSulzNeMolNWQnpN9T5Zeo=
+github.com/SAP/go-hdb v1.16.7/go.mod h1:+byHKTvE4QURGZE3ZrMrqbfxCR99QsHUkT13FTPAQ1U=
 github.com/Showmax/go-fqdn v1.0.0 h1:0rG5IbmVliNT5O19Mfuvna9LL7zlHyRfsSvBPZmF9tM=
 github.com/Showmax/go-fqdn v1.0.0/go.mod h1:SfrFBzmDCtCGrnHhoDjuvFnKsWjEQX/Q9ARZvOrJAko=
 github.com/adakailabs/go-traceroute v0.0.0-20210727014431-97524352ab91 h1:9d55wDeAS8L+TIlP1lDG4YcslmHv/J8j5semIi52ZBs=
@@ -764,6 +766,8 @@ github.com/middleware-labs/opentelemetry-collector-contrib/receiver/nginxreceive
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/nginxreceiver v0.0.0-20260705161949-1d113a1a09da/go.mod h1:yajf1DR5PmUhC3xvMEbUVFuuk40UayjnUuc2A+Lt0GI=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/rabbitmqreceiver v0.0.0-20260705161949-1d113a1a09da h1:2pFryw9HUfQGDyJ94BoxKhUE0yYaer136fUvkaMJ/G8=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/rabbitmqreceiver v0.0.0-20260705161949-1d113a1a09da/go.mod h1:z0ntGxFJzZ5S7hB3iMHlgasqTfWrR8EzV+AOUNIgCjg=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/saphanareceiver v0.0.0-20260705161949-1d113a1a09da h1:0FjXd60XZwsgBfz4v1v9EDCDCex9XyRFRCeM03llOE4=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/saphanareceiver v0.0.0-20260705161949-1d113a1a09da/go.mod h1:xovxEwRsx+V5lZUCQCf0Q6OHqGvt44CZK7JI+MjAa9o=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/sqlserverreceiver v0.0.0-20260705161949-1d113a1a09da h1:4BVh1bJpaS+vGo/AhXpdt0lw7GoBPS6ycmMn76RsdqA=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/sqlserverreceiver v0.0.0-20260705161949-1d113a1a09da/go.mod h1:A0XAjwEsSJq7asqqC/O6O5B8es8sSbMIQt80oUtKXu4=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.0.0-20260705161949-1d113a1a09da h1:b3H6WCrTv+BfRaV4XnELRRvzMK0idPl+TkfZ8mgo6Ys=

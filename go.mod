@@ -44,6 +44,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zooke
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor => github.com/middleware-labs/opentelemetry-collector-contrib/processor/filterprocessor v0.0.0-20260705161949-1d113a1a09da
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/saphanareceiver v0.0.0-20260705161949-1d113a1a09da
+
 replace go.opentelemetry.io/collector => go.opentelemetry.io/collector v0.152.0
 
 require (
@@ -98,6 +100,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.152.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.152.0
@@ -180,6 +183,7 @@ require (
 	github.com/IBM/sarama v1.48.0 // indirect
 	github.com/Masterminds/semver/v3 v3.5.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
+	github.com/SAP/go-hdb v1.16.7 // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
 	github.com/adakailabs/go-traceroute v0.0.0-20210727014431-97524352ab91 // indirect
 	github.com/alecthomas/participle/v2 v2.1.4 // indirect

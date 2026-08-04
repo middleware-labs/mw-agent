@@ -36,6 +36,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
@@ -98,6 +99,7 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 		mongodbatlasreceiver.NewFactory(),
 		datadogreceiver.NewFactory(),
 		zookeeperreceiver.NewFactory(),
+		saphanareceiver.NewFactory(),
 	}
 
 	for _, f := range receiverfactories {
