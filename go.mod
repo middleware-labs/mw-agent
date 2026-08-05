@@ -12,7 +12,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostm
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker => github.com/middleware-labs/opentelemetry-collector-contrib/internal/docker v0.0.0-20260705161949-1d113a1a09da
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.0.0-20260705161949-1d113a1a09da
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.0.0-20260805084020-adbed6abfb0a
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver => github.com/middleware-labs/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.0.0-20260705161949-1d113a1a09da
 
