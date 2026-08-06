@@ -173,7 +173,10 @@ func main() {
 					logger.Info("starting opsai worker: ", zap.String("hostname", os.Getenv("MW_KUBE_CLUSTER_NAME")))
 					opsaiWorker, err := worker.New(&config)
 					if err != nil {
-						logger.Error("Failed to create worker")
+						// Do not fall through: worker.New returns a zero Worker
+						// alongside the error, and Run would spin on it.
+						logger.Error("failed to create opsai worker", zap.Error(err))
+						return err
 					}
 
 					func(ctx context.Context) {
