@@ -13,6 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor"
@@ -39,10 +40,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
@@ -59,6 +63,7 @@ import (
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -137,6 +142,12 @@ func NewKubeAgent(cfg KubeConfig, opts ...KubeOptions) *KubeAgent {
 		fmt.Println("Error in setting receiver.postgresql.separateSchemaAttr feature gate:", err)
 	}
 
+	// k8sattributes: share processor instances with identical config across pipelines
+	err = registry.Set("processor.k8sattributes.ShareProcessorBetweenPipelines", true)
+	if err != nil {
+		fmt.Println("Error in setting processor.k8sattributes.ShareProcessorBetweenPipelines feature gate:", err)
+	}
+
 	if agent.logger == nil {
 		agent.logger, _ = zap.NewProduction()
 	}
@@ -166,10 +177,12 @@ func (k *KubeAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 		Receivers:  make(map[component.Type]receiver.Factory),
 		Exporters:  make(map[component.Type]exporter.Factory),
 		Processors: make(map[component.Type]processor.Factory),
+		Telemetry:  otelconftelemetry.NewFactory(),
 	}
 	factories.Extensions = make(map[component.Type]extension.Factory)
 	exts := []extension.Factory{
 		healthcheckextension.NewFactory(),
+		pprofextension.NewFactory(),
 		// frontend.NewAuthFactory(),
 	}
 
@@ -198,7 +211,10 @@ func (k *KubeAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 		mongodbreceiver.NewFactory(),
 		postgresqlreceiver.NewFactory(),
 		elasticsearchreceiver.NewFactory(),
+		redisreceiver.NewFactory(),
 		zookeeperreceiver.NewFactory(),
+		mysqlreceiver.NewFactory(),
+		saphanareceiver.NewFactory(),
 	}
 
 	for _, f := range receiverfactories {

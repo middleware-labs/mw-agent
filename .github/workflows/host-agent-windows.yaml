@@ -34,7 +34,12 @@ jobs:
     - name: Install makensis
       run: sudo apt update && sudo apt install -y nsis nsis-pluginapi
       if: ${{ matrix.os == 'ubuntu-22.04' }}
-    
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: 1.25.6
+
     - name: Set up Git credentials for Go
       run: |
         git config --global url."https://${{ secrets.GHCR_TOKEN }}:@github.com/".insteadOf "https://github.com/"
@@ -56,8 +61,8 @@ jobs:
        
     - name: Install jsign Tool For Microsoft Authenticode
       run: |
-        wget https://github.com/ebourg/jsign/releases/download/5.0/jsign_5.0_all.deb
-        sudo dpkg -i jsign_5.0_all.deb
+        wget https://github.com/ebourg/jsign/releases/download/7.4/jsign_7.4_all.deb
+        sudo dpkg -i jsign_7.4_all.deb
        
     - name: Setup KeyLocker Client Authentication Certificate
       run: | 

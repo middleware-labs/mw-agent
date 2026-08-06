@@ -304,11 +304,6 @@ func IsEC2Instance() bool {
 	return err == nil
 }
 
-// getEC2Hostname retrieves the internal hostname/FQDN from AWS EC2 metadata service
-func getEC2Hostname() (string, error) {
-	return getEC2Metadata("local-hostname")
-}
-
 func getHostname() string {
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -319,15 +314,6 @@ func getHostname() string {
 
 // GetHostnameForPlatform returns hostname based on the infra platform
 func GetHostnameForPlatform(infraPlatform InfraPlatform) string {
-	// Get EC2 full hostname when running on EC2, otherwise use system hostname
-	if infraPlatform == InfraPlatformEC2 {
-		hostname, err := getEC2Hostname()
-		if err != nil {
-			// Fall back to system hostname if EC2 hostname retrieval fails
-			return getHostname()
-		}
-		return hostname
-	}
 	return getHostname()
 }
 
