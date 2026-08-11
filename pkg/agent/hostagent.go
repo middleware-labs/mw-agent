@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.uber.org/zap"
 	"go.uber.org/zap/exp/zapslog"
@@ -90,24 +89,6 @@ func NewHostAgent(cfg HostConfig, zapCore zapcore.Core,
 
 	for _, apply := range opts {
 		apply(&agent)
-	}
-
-	var err error = nil
-	// Enable feature gates
-	registry := featuregate.GlobalRegistry()
-
-	// PostgreSQL
-	err = registry.Set("receiver.postgresql.connectionPool", true)
-	if err != nil {
-		return nil, err
-	}
-	err = registry.Set("postgresqlreceiver.preciselagmetrics", true)
-	if err != nil {
-		return nil, err
-	}
-	err = registry.Set("receiver.postgresql.separateSchemaAttr", true)
-	if err != nil {
-		return nil, err
 	}
 
 	agent.logger = zap.New(zapCore, zap.AddCaller())

@@ -760,10 +760,10 @@ github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mwmongodbrec
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mwmongodbreceiver v0.0.0-20260705161949-1d113a1a09da/go.mod h1:U8HyIEIxZ37dt5N6G95Sdy8uxh/4AFhN2NPZu72ujf4=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mwmysqlreceiver v0.0.0-20260705161949-1d113a1a09da h1:uT9YUE077HBXj2dXTjcUtwWQJIHpe/nti2AwtFmTLkQ=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mwmysqlreceiver v0.0.0-20260705161949-1d113a1a09da/go.mod h1:TvKsogB7ghlLE8A5FuOAOSB1LNDYcVT/U/40FAi/xjA=
-github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mwpostgresqlreceiver v0.0.0-20260705161949-1d113a1a09da h1:Ei+EQG8LU+agaccAUmLZ1wqpNONhcUdbMHv0i5P/Teo=
-github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mwpostgresqlreceiver v0.0.0-20260705161949-1d113a1a09da/go.mod h1:J/D2uTBYCcDWjEuGsJqzBSSxcXrSvS+CXFoeLlXm3Qs=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/nginxreceiver v0.0.0-20260705161949-1d113a1a09da h1:Rnksr9WUaKvWIKrTOSZK8Y51sCMfDHtAVI5oOvdrriQ=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/nginxreceiver v0.0.0-20260705161949-1d113a1a09da/go.mod h1:yajf1DR5PmUhC3xvMEbUVFuuk40UayjnUuc2A+Lt0GI=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.0.0-20260705161949-1d113a1a09da h1:zQ9WGRhzvzg/kMqI2cwOF/TF3Qp2dCwbCAC5XKCokq8=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.0.0-20260705161949-1d113a1a09da/go.mod h1:oVRmRG/Im7eypfF25MeZ02dGTRMLY3FNeqxXy7alTHo=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/rabbitmqreceiver v0.0.0-20260705161949-1d113a1a09da h1:2pFryw9HUfQGDyJ94BoxKhUE0yYaer136fUvkaMJ/G8=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/rabbitmqreceiver v0.0.0-20260705161949-1d113a1a09da/go.mod h1:z0ntGxFJzZ5S7hB3iMHlgasqTfWrR8EzV+AOUNIgCjg=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/saphanareceiver v0.0.0-20260705161949-1d113a1a09da h1:0FjXd60XZwsgBfz4v1v9EDCDCex9XyRFRCeM03llOE4=

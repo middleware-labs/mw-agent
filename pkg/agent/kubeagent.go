@@ -128,20 +128,6 @@ func NewKubeAgent(cfg KubeConfig, opts ...KubeOptions) *KubeAgent {
 	// Enable feature gates
 	registry := featuregate.GlobalRegistry()
 
-	// PostgreSQL
-	err = registry.Set("receiver.postgresql.connectionPool", true)
-	if err != nil {
-		fmt.Println("Error in setting receiver.postgresql.connectionPool feature gate:", err)
-	}
-	err = registry.Set("postgresqlreceiver.preciselagmetrics", true)
-	if err != nil {
-		fmt.Println("Error in setting postgresqlreceiver.preciselagmetrics feature gate:", err)
-	}
-	err = registry.Set("receiver.postgresql.separateSchemaAttr", true)
-	if err != nil {
-		fmt.Println("Error in setting receiver.postgresql.separateSchemaAttr feature gate:", err)
-	}
-
 	// k8sattributes: share processor instances with identical config across pipelines
 	err = registry.Set("processor.k8sattributes.ShareProcessorBetweenPipelines", true)
 	if err != nil {
