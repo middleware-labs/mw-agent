@@ -4,6 +4,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
 
@@ -72,6 +73,7 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 	factories.Extensions = make(map[component.Type]extension.Factory)
 	exts := []extension.Factory{
 		healthcheckextension.NewFactory(),
+		pprofextension.NewFactory(),
 		// frontend.NewAuthFactory(),
 	}
 
