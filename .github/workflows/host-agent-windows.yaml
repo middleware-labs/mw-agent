@@ -31,6 +31,19 @@ jobs:
         ssh-key: ${{ secrets.CHECK_AGENT_ACCESS }}
         submodules: 'recursive'
 
+    - name: Setup KeyLocker Client Authentication Certificate
+      run: |
+        echo "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}" | base64 --decode > client_auth_cert.p12
+
+    - name: Debug DigiCert API from runner
+      run: |
+        curl -sv -o response.json -w "\nHTTP_STATUS: %{http_code}\n" \
+          --cert client_auth_cert.p12:"${{ secrets.SM_CLIENT_CERT_PASSWORD }}" --cert-type P12 \
+          -H "x-api-key: ${{ secrets.SM_API_KEY }}" \
+          "https://clientauth.one.digicert.com/signingmanager/api/v1/account/keypairs/alias/${{ secrets.SM_KEYPAIR_ALIAS }}"
+        echo "---- response body ----"
+        cat response.json
+
     - name: Install makensis
       run: sudo apt update && sudo apt install -y nsis nsis-pluginapi
       if: ${{ matrix.os == 'ubuntu-22.04' }}
@@ -45,7 +58,7 @@ jobs:
         git config --global url."https://${{ secrets.GHCR_TOKEN }}:@github.com/".insteadOf "https://github.com/"
       env:
         GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
-    
+
     - name: Setting Release Number
       run: |
         if [ -n "${{ github.event.inputs.release_version }}" ]; then
@@ -58,15 +71,11 @@ jobs:
       run: |
         GOOS=windows CGO_ENABLED=0 GOPRIVATE=github.com/middleware-labs go build -ldflags "-s -w -X main.agentVersion=${{ env.RELEASE_VERSION }}" -o build/mw-windows-agent.exe cmd/host-agent/main.go
         makensis -DVERSION=${{ env.RELEASE_VERSION }} package-tooling/windows/package-windows.nsi
-       
+
     - name: Install jsign Tool For Microsoft Authenticode
       run: |
         wget https://github.com/ebourg/jsign/releases/download/7.4/jsign_7.4_all.deb
         sudo dpkg -i jsign_7.4_all.deb
-       
-    - name: Setup KeyLocker Client Authentication Certificate
-      run: | 
-        echo "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}" | base64 --decode > client_auth_cert.p12
 
     - name: Sign MW Agent Installer Package
       run: |
