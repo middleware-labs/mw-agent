@@ -31,8 +31,29 @@ jobs:
         ssh-key: ${{ secrets.CHECK_AGENT_ACCESS }}
         submodules: 'recursive'
 
-    - name: Install makensis
-      run: sudo apt update && sudo apt install -y nsis nsis-pluginapi
+    - name: Setup SM_CLIENT_CERT_FILE from base64 secret data
+      run: |
+        echo "SM_CLIENT_CERT_FILE=${RUNNER_TEMP}/sm_client_cert.p12" >> "$GITHUB_ENV"
+        echo "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}" | base64 --decode > "${RUNNER_TEMP}/sm_client_cert.p12"
+
+    - name: Debug - list DigiCert keypairs visible to these credentials
+      run: |
+        curl -fsSL https://pki-downloads.digicert.com/stm/latest/smctl -o smctl_debug
+        chmod +x smctl_debug
+        ./smctl_debug keypair ls
+      env:
+        SM_HOST: ${{ secrets.SM_HOST }}
+        SM_API_KEY: ${{ secrets.SM_API_KEY }}
+        SM_CLIENT_CERT_FILE: ${{ env.SM_CLIENT_CERT_FILE }}
+        SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
+
+    - name: Install makensis (NSIS 3.12)
+      run: |
+        curl -sL -o /tmp/nsis-bundle.tar.gz "https://github.com/electron-userland/electron-builder-binaries/releases/download/nsis%402.0.1/nsis-bundle-3.12.tar.gz"
+        tar -xzf /tmp/nsis-bundle.tar.gz -C /tmp
+        chmod +x /tmp/nsis-bundle/linux/x64/makensis
+        echo "NSISDIR=/tmp/nsis-bundle/windows" >> "$GITHUB_ENV"
+        echo "/tmp/nsis-bundle/linux/x64" >> "$GITHUB_PATH"
       if: ${{ matrix.os == 'ubuntu-22.04' }}
 
     - name: Set up Go
@@ -45,7 +66,7 @@ jobs:
         git config --global url."https://${{ secrets.GHCR_TOKEN }}:@github.com/".insteadOf "https://github.com/"
       env:
         GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
-    
+
     - name: Setting Release Number
       run: |
         if [ -n "${{ github.event.inputs.release_version }}" ]; then
@@ -58,23 +79,18 @@ jobs:
       run: |
         GOOS=windows CGO_ENABLED=0 GOPRIVATE=github.com/middleware-labs go build -ldflags "-s -w -X main.agentVersion=${{ env.RELEASE_VERSION }}" -o build/mw-windows-agent.exe cmd/host-agent/main.go
         makensis -DVERSION=${{ env.RELEASE_VERSION }} package-tooling/windows/package-windows.nsi
-       
-    - name: Install jsign Tool For Microsoft Authenticode
-      run: |
-        wget https://github.com/ebourg/jsign/releases/download/7.4/jsign_7.4_all.deb
-        sudo dpkg -i jsign_7.4_all.deb
-       
-    - name: Setup KeyLocker Client Authentication Certificate
-      run: | 
-        echo "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}" | base64 --decode > client_auth_cert.p12
 
     - name: Sign MW Agent Installer Package
-      run: |
-        jsign --storetype DIGICERTONE \
-              --alias "${{ secrets.SM_KEYPAIR_ALIAS }}" \
-              --tsaurl "${{ secrets.SM_TIMESTAMP_AUTHORITY_URL }}" \
-              --storepass "${{ secrets.SM_API_KEY }}|./client_auth_cert.p12|${{ secrets.SM_CLIENT_CERT_PASSWORD }}" \
-              package-tooling/windows/mw-windows-agent-${{ env.RELEASE_VERSION }}-setup.exe
+      uses: digicert/code-signing-software-trust-action@v1
+      with:
+        simple-signing-mode: true
+        input: package-tooling/windows/mw-windows-agent-${{ env.RELEASE_VERSION }}-setup.exe
+        keypair-alias: ${{ secrets.SM_KEYPAIR_ALIAS }}
+      env:
+        SM_HOST: ${{ secrets.SM_HOST }}
+        SM_API_KEY: ${{ secrets.SM_API_KEY }}
+        SM_CLIENT_CERT_FILE: ${{ env.SM_CLIENT_CERT_FILE }}
+        SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
