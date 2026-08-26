@@ -231,6 +231,14 @@
         "collection_interval": "10s"
     },
     {
+        "type": "nginx",
+        "prefixes": ["nginx"],
+        "files": [
+            "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/nginxreceiver/metadata.yaml"
+        ],
+        "collection_interval": "10s"
+    },
+    {
         "type": "sqlserver",
         "prefixes": ["sqlserver"],
         "files": [
