@@ -734,6 +734,8 @@ github.com/middleware-labs/opentelemetry-collector-contrib/internal/filter v0.0.
 github.com/middleware-labs/opentelemetry-collector-contrib/internal/filter v0.0.0-20260705161949-1d113a1a09da/go.mod h1:5Cmgp9aKlcsz3JClsW/aOOvHD9JYkNDlVXNDaqLfilY=
 github.com/middleware-labs/opentelemetry-collector-contrib/internal/metadataproviders v0.0.0-20260705161949-1d113a1a09da h1:huZDnguI3jZmIjYrc5kbRLIhtW03BL5oW1JTj7dzXEk=
 github.com/middleware-labs/opentelemetry-collector-contrib/internal/metadataproviders v0.0.0-20260705161949-1d113a1a09da/go.mod h1:jrlMQAaAf0dNxGoFxHIjXGrTKJzxcBiokHHIuRoZ2dw=
+github.com/middleware-labs/opentelemetry-collector-contrib/internal/sqlquery v0.0.0-20260915104805-82cf16e11ff8 h1:pgJBreg1CZYwEUWZvD7JIjgQgFVN1qvBEuJuwe8tBnE=
+github.com/middleware-labs/opentelemetry-collector-contrib/internal/sqlquery v0.0.0-20260915104805-82cf16e11ff8/go.mod h1:I6/sSfFlOTVS+ZoD+Qv8Oa3XyuPvWiH+tkmT1Dsv8qY=
 github.com/middleware-labs/opentelemetry-collector-contrib/pkg/ottl v0.0.0-20260705161949-1d113a1a09da h1:IAafXBpe4JKQ5978zRspS27U9IJ6SVLYNwOw8SU9JvI=
 github.com/middleware-labs/opentelemetry-collector-contrib/pkg/ottl v0.0.0-20260705161949-1d113a1a09da/go.mod h1:Xpl4DIE6q5WS5aEZ6dHXpFgfjzePE3NLNZ3/1eqWr2Q=
 github.com/middleware-labs/opentelemetry-collector-contrib/processor/filterprocessor v0.0.0-20260705161949-1d113a1a09da h1:85WgUWg1YcXjmljljx4a4X+158P07IkPr2rVAy9Iq9I=
@@ -760,8 +762,8 @@ github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mwmongodbrec
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mwmongodbreceiver v0.0.0-20260705161949-1d113a1a09da/go.mod h1:U8HyIEIxZ37dt5N6G95Sdy8uxh/4AFhN2NPZu72ujf4=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mwmysqlreceiver v0.0.0-20260705161949-1d113a1a09da h1:uT9YUE077HBXj2dXTjcUtwWQJIHpe/nti2AwtFmTLkQ=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mwmysqlreceiver v0.0.0-20260705161949-1d113a1a09da/go.mod h1:TvKsogB7ghlLE8A5FuOAOSB1LNDYcVT/U/40FAi/xjA=
-github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mwpostgresqlreceiver v0.0.0-20260705161949-1d113a1a09da h1:Ei+EQG8LU+agaccAUmLZ1wqpNONhcUdbMHv0i5P/Teo=
-github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mwpostgresqlreceiver v0.0.0-20260705161949-1d113a1a09da/go.mod h1:J/D2uTBYCcDWjEuGsJqzBSSxcXrSvS+CXFoeLlXm3Qs=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mwpostgresqlreceiver v0.0.0-20260915104805-82cf16e11ff8 h1:ZBr/2eoiHQ64ZlAd/AFNUqWvi/kAeCMj1WgtljHTzmY=
+github.com/middleware-labs/opentelemetry-collector-contrib/receiver/mwpostgresqlreceiver v0.0.0-20260915104805-82cf16e11ff8/go.mod h1:J/D2uTBYCcDWjEuGsJqzBSSxcXrSvS+CXFoeLlXm3Qs=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/nginxreceiver v0.0.0-20260705161949-1d113a1a09da h1:Rnksr9WUaKvWIKrTOSZK8Y51sCMfDHtAVI5oOvdrriQ=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/nginxreceiver v0.0.0-20260705161949-1d113a1a09da/go.mod h1:yajf1DR5PmUhC3xvMEbUVFuuk40UayjnUuc2A+Lt0GI=
 github.com/middleware-labs/opentelemetry-collector-contrib/receiver/rabbitmqreceiver v0.0.0-20260705161949-1d113a1a09da h1:2pFryw9HUfQGDyJ94BoxKhUE0yYaer136fUvkaMJ/G8=
@@ -879,8 +881,6 @@ github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.152.0/go.mod h1:dz/4aMWqyQH60NGMONKPKKgtcivwWsx4EZ44qBcJ2Tc=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.152.0 h1:nvoYnxCpXK5tdZHDOqBOJlU94pC53RBP8lfMAWWIHoU=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.152.0/go.mod h1:5omO/vdVwGZWED6aMjklmYvJXaCq6zGOSyNKymZB9G0=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.152.0 h1:DdT2qChpHpDBk9z8GIzJOQ+Hzbhl5luK7Zlu340SlGU=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.152.0/go.mod h1:I6/sSfFlOTVS+ZoD+Qv8Oa3XyuPvWiH+tkmT1Dsv8qY=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.152.0 h1:SNdtS/Vc4q3jAL1dIL9vIQ0fV3Ox/OLEK+fnBkbFP+k=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.152.0/go.mod h1:FznkiAnPKDSarGzeKg6LCtEopyXb5jHY802Hc8Ks6+g=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.152.0 h1:wYEiFsBy3I5HNJDJHpieSHCnk+oF2OeRT9IyyRdFEOE=
