@@ -277,7 +277,7 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assert.Len(t, factories.Extensions, 1)
 	assertContainsComponent(t, factories.Extensions, "health_check")
 	// check if factories contains expected receivers
-	assert.Len(t, factories.Receivers, 25)
+	assert.Len(t, factories.Receivers, 27)
 	assertContainsComponent(t, factories.Receivers, "otlp")
 	assertContainsComponent(t, factories.Receivers, "fluent_forward")
 	assertContainsComponent(t, factories.Receivers, "file_log")
@@ -302,6 +302,8 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assertContainsComponent(t, factories.Receivers, "mongodb_atlas")
 	assertContainsComponent(t, factories.Receivers, "zookeeper")
 	assertContainsComponent(t, factories.Receivers, "saphana")
+	assertContainsComponent(t, factories.Receivers, "tcp_check")
+	assertContainsComponent(t, factories.Receivers, "sqlquery")
 
 	// check if factories contain expected exporters
 	assert.Len(t, factories.Exporters, 5)
