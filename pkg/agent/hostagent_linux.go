@@ -38,8 +38,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
 
 	"go.opentelemetry.io/collector/component"
@@ -104,6 +106,8 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 		datadogreceiver.NewFactory(),
 		zookeeperreceiver.NewFactory(),
 		saphanareceiver.NewFactory(),
+		tcpcheckreceiver.NewFactory(),
+		sqlqueryreceiver.NewFactory(),
 	}
 
 	// if the host agent is running on ECS EC2, add

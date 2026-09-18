@@ -47,8 +47,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
@@ -215,6 +217,8 @@ func (k *KubeAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 		zookeeperreceiver.NewFactory(),
 		mysqlreceiver.NewFactory(),
 		saphanareceiver.NewFactory(),
+		tcpcheckreceiver.NewFactory(),
+		sqlqueryreceiver.NewFactory(),
 	}
 
 	for _, f := range receiverfactories {
