@@ -344,8 +344,9 @@ func (c *KubeAgent) applyConfigClassToCluster() error {
 		return err
 	}
 
-	// Build the URL: /agent/public/setting/config-groups/{groupName}
+	// Build the URL: /agent/public/setting/config-groups/group/{groupName}
 	baseURL := u.JoinPath(apiPathForConfigGroups)
+	baseURL = baseURL.JoinPath("group")
 	baseURL = baseURL.JoinPath("default")
 
 	// Prepare request body

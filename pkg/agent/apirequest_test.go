@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -41,7 +42,7 @@ func TestNewAgentAPIRequest(t *testing.T) {
 		{
 			name:            "put with body",
 			method:          http.MethodPut,
-			url:             "http://example.com/api/v1/agent/public/setting/config-groups/default",
+			url:             "http://example.com/api/v1/agent/public/setting/config-groups/group/default",
 			body:            []byte(`{"hostIds":["myhost"]}`),
 			wantBody:        `{"hostIds":["myhost"]}`,
 			wantContentType: "application/json",
@@ -77,6 +78,41 @@ func TestNewAgentAPIRequest(t *testing.T) {
 func TestNewAgentAPIRequestInvalidMethod(t *testing.T) {
 	_, err := newAgentAPIRequest("in valid", "http://example.com", "testAPIKey", nil)
 	assert.Error(t, err)
+}
+
+// TestApplyConfigClassToHostsPath pins the config groups route. bifrost#14087
+// inserted a literal "group" segment into it to work around a gin router
+// conflict, which the earlier bifrost#14086 description does not show.
+func TestApplyConfigClassToHostsPath(t *testing.T) {
+	const apiKey = "testAPIKey"
+
+	var gotHeader, gotPath, gotMethod string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotHeader = r.Header.Get(apiKeyHeader)
+		gotPath = r.URL.Path
+		gotMethod = r.Method
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":true}`))
+	}))
+	defer srv.Close()
+
+	cfg := HostConfig{
+		BaseConfig: BaseConfig{
+			APIKey:               apiKey,
+			APIURLForConfigCheck: srv.URL,
+		},
+	}
+	cfg.ConfigCheckInterval = "1s"
+
+	agent, err := NewHostAgent(cfg, zapcore.NewNopCore())
+	require.NoError(t, err)
+
+	require.NoError(t, agent.applyConfigClassToHosts())
+
+	assert.Equal(t, http.MethodPut, gotMethod)
+	assert.Equal(t, apiKey, gotHeader)
+	assert.Equal(t, "/"+apiPathForConfigGroups+"/group/default", gotPath)
+	assert.NotContains(t, gotPath, apiKey)
 }
 
 // TestUpdateConfigFileSendsAPIKeyHeader checks that the ingestion rules call
