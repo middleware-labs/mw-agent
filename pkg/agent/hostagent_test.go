@@ -171,8 +171,8 @@ func TestListenForConfigChanges(t *testing.T) {
 
 	zapCore := zapcore.NewNopCore()
 	agent, _ := NewHostAgent(cfg, zapCore)
-	agent.httpGetFunc = func(url string) (resp *http.Response, err error) {
-		return nil, fmt.Errorf("failed to call get configuration api for %s: %w", url,
+	agent.httpDoFunc = func(req *http.Request) (resp *http.Response, err error) {
+		return nil, fmt.Errorf("failed to call get configuration api for %s: %w", req.URL.String(),
 			errors.New("test error"))
 	}
 

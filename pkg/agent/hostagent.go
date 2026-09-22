@@ -51,7 +51,7 @@ type HostAgent struct {
 	collectorWG         *sync.WaitGroup
 	zapCore             zapcore.Core
 	logger              *zap.Logger
-	httpGetFunc         func(url string) (resp *http.Response, err error)
+	httpDoFunc          func(req *http.Request) (resp *http.Response, err error)
 	Version             string
 	applyConfigOnce     sync.Once
 }
@@ -86,7 +86,7 @@ func NewHostAgent(cfg HostConfig, zapCore zapcore.Core,
 	opts ...HostOptions) (*HostAgent, error) {
 	var agent HostAgent
 	agent.HostConfig = cfg
-	agent.httpGetFunc = http.Get
+	agent.httpDoFunc = http.DefaultClient.Do
 
 	for _, apply := range opts {
 		apply(&agent)
@@ -235,6 +235,32 @@ var (
 	apiAgentTrack          = "api/v1/agent/tracking"
 	apiPathForConfigGroups = "api/v1/agent/public/setting/config-groups" // Apply config class to hosts
 )
+
+// apiKeyHeader carries the account API key on the agent management APIs. It
+// used to be passed as a URL path segment, which returned a confusing 404 from
+// the router when the key was malformed. See AGE-533.
+const apiKeyHeader = "mw-api-key"
+
+// newAgentAPIRequest builds a request against the agent management APIs with
+// the API key set as a header. body may be nil for requests without one.
+func newAgentAPIRequest(method, url, apiKey string, body []byte) (*http.Request, error) {
+	var reader io.Reader
+	if body != nil {
+		reader = bytes.NewReader(body)
+	}
+
+	req, err := http.NewRequest(method, url, reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set(apiKeyHeader, apiKey)
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+
+	return req, nil
+}
 
 func (d IntegrationType) String() string {
 	switch d {
@@ -387,7 +413,7 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 		return err
 	}
 
-	baseURL := u.JoinPath(apiPathForYAML).JoinPath(c.APIKey)
+	baseURL := u.JoinPath(apiPathForYAML)
 	params := url.Values{}
 	params.Add("config", configType)
 	params.Add("platform", runtime.GOOS)
@@ -411,7 +437,12 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 	baseURL.RawQuery = params.Encode() // Escape Query Parameters
 
 	url := baseURL.String()
-	resp, err := c.httpGetFunc(url)
+	req, err := newAgentAPIRequest(http.MethodGet, url, c.APIKey, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.httpDoFunc(req)
 	if err != nil {
 		return fmt.Errorf("failed to call get configuration api for %s: %w", url, err)
 	}
@@ -601,7 +632,6 @@ func (c *HostAgent) callRestartStatusAPI() error {
 	}
 
 	baseURL := u.JoinPath(apiPathForRestart)
-	baseURL = baseURL.JoinPath(c.APIKey)
 	params := url.Values{}
 	params.Add("host_id", hostname)
 	params.Add("platform", runtime.GOOS)
@@ -620,7 +650,12 @@ func (c *HostAgent) callRestartStatusAPI() error {
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	url := baseURL.String()
-	resp, err := client.Get(url)
+	req, err := newAgentAPIRequest(http.MethodGet, url, c.APIKey, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to call restart api for url %s: %w", url, err)
 	}
@@ -655,9 +690,8 @@ func (c *HostAgent) applyConfigClassToHosts() error {
 		return err
 	}
 
-	// Build the URL: /agent/public/setting/config-groups/{groupName}/{token}
+	// Build the URL: /agent/public/setting/config-groups/{groupName}
 	baseURL := u.JoinPath(apiPathForConfigGroups)
-	baseURL = baseURL.JoinPath(c.APIKey)
 	baseURL = baseURL.JoinPath("default")
 
 	// Prepare request body
@@ -670,12 +704,10 @@ func (c *HostAgent) applyConfigClassToHosts() error {
 	}
 
 	client := &http.Client{Timeout: 10 * time.Second}
-	req, err := http.NewRequest(http.MethodPut, baseURL.String(), bytes.NewBuffer(jsonData))
+	req, err := newAgentAPIRequest(http.MethodPut, baseURL.String(), c.APIKey, jsonData)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return err
 	}
-
-	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -752,7 +784,6 @@ func (c *HostAgent) UpdateAgentTrackStatus(reason error) error {
 		return err
 	}
 	baseURL := u.JoinPath(apiAgentTrack)
-	baseURL = baseURL.JoinPath(c.APIKey)
 	payload := TrackingPayload{
 		Status: "validate",
 		Metadata: TrackingMetadata{
@@ -768,12 +799,10 @@ func (c *HostAgent) UpdateAgentTrackStatus(reason error) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal payload: %w", err)
 	}
-	req, err := http.NewRequest(http.MethodPost, baseURL.String(), bytes.NewBuffer(payloadBytes))
+	req, err := newAgentAPIRequest(http.MethodPost, baseURL.String(), c.APIKey, payloadBytes)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return err
 	}
-	// Add headers
-	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{Timeout: 10 * time.Second}
 	// Make the request
 	resp, err := client.Do(req)
