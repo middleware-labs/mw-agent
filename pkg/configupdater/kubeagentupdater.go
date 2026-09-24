@@ -1,7 +1,6 @@
 package configupdater
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -102,7 +101,6 @@ func (c *KubeAgent) callRestartStatusAPI(ctx context.Context, first bool) error 
 	}
 
 	baseURL := u.JoinPath(apiPathForRestart)
-	baseURL = baseURL.JoinPath(c.APIKey)
 	params := url.Values{}
 	params.Add("platform", "k8s")
 	params.Add("host_id", c.ClusterName)
@@ -112,7 +110,12 @@ func (c *KubeAgent) callRestartStatusAPI(ctx context.Context, first bool) error 
 	// Add Query Parameters to the URL
 	baseURL.RawQuery = params.Encode() // Escape Query Parameters
 	url := baseURL.String()
-	resp, err := http.Get(url)
+	req, err := newAgentAPIRequest(http.MethodGet, url, c.APIKey, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to call restart api for url %s: %w",
 			url, err)
@@ -203,7 +206,6 @@ func (c *KubeAgent) UpdateConfigMap(ctx context.Context, componentType Component
 	}
 
 	baseURL := u.JoinPath(apiPathForYAML)
-	baseURL = baseURL.JoinPath(c.APIKey)
 	params := url.Values{}
 	params.Add("platform", "k8s")
 	params.Add("component_type", componentType.String())
@@ -218,7 +220,12 @@ func (c *KubeAgent) UpdateConfigMap(ctx context.Context, componentType Component
 	// Add Query Parameters to the URL
 	baseURL.RawQuery = params.Encode() // Escape Query Parameters
 
-	resp, err := http.Get(baseURL.String())
+	req, err := newAgentAPIRequest(http.MethodGet, baseURL.String(), c.APIKey, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		c.logger.Error("failed to call Restart-API", zap.String("url", baseURL.String()), zap.Error(err))
 		return err
@@ -337,9 +344,9 @@ func (c *KubeAgent) applyConfigClassToCluster() error {
 		return err
 	}
 
-	// Build the URL: /agent/public/setting/config-groups/{groupName}/{token}
+	// Build the URL: /agent/public/setting/config-groups/group/{groupName}
 	baseURL := u.JoinPath(apiPathForConfigGroups)
-	baseURL = baseURL.JoinPath(c.APIKey)
+	baseURL = baseURL.JoinPath("group")
 	baseURL = baseURL.JoinPath("default")
 
 	// Prepare request body
@@ -352,12 +359,10 @@ func (c *KubeAgent) applyConfigClassToCluster() error {
 	}
 
 	client := &http.Client{Timeout: 10 * time.Second}
-	req, err := http.NewRequest(http.MethodPut, baseURL.String(), bytes.NewBuffer(jsonData))
+	req, err := newAgentAPIRequest(http.MethodPut, baseURL.String(), c.APIKey, jsonData)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return err
 	}
-
-	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
 	if err != nil {

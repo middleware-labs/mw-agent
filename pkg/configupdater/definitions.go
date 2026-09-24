@@ -1,7 +1,10 @@
 package configupdater
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"net/http"
 	"net/url"
 	"strings"
 	"sync"
@@ -72,6 +75,32 @@ var (
 	apiPathForRestart      = "api/v1/agent/restart-status"
 	apiPathForConfigGroups = "api/v1/agent/public/setting/config-groups" // Apply config class to cluster
 )
+
+// apiKeyHeader carries the account API key on the agent management APIs. It
+// used to be passed as a URL path segment, which returned a confusing 404 from
+// the router when the key was malformed. See AGE-533.
+const apiKeyHeader = "mw-api-key"
+
+// newAgentAPIRequest builds a request against the agent management APIs with
+// the API key set as a header. body may be nil for requests without one.
+func newAgentAPIRequest(method, url, apiKey string, body []byte) (*http.Request, error) {
+	var reader io.Reader
+	if body != nil {
+		reader = bytes.NewReader(body)
+	}
+
+	req, err := http.NewRequest(method, url, reader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set(apiKeyHeader, apiKey)
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+
+	return req, nil
+}
 
 type apiResponseForYAML struct {
 	Status  bool       `json:"status"`
