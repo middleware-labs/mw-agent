@@ -558,6 +558,14 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 		}
 		return fmt.Errorf("%w: %v", ErrInvalidConfig, err)
 	}
+	if c.RemoteAgentEnabled {
+		// In supervised (OpAMP) mode the supervisor owns the OTel config file.
+		// Hand the freshly generated config to the OpAMP server; it will push it
+		// down as RemoteConfig and the supervisor will restart us with it.
+		c.logger.Info("supervised mode: pushing new config to OpAMP server")
+		return c.pushConfigToOpAMPServer(apiYAMLBytes)
+	}
+
 	if err := os.WriteFile(c.OtelConfigFile, apiYAMLBytes, 0644); err != nil {
 		return fmt.Errorf("failed to write new configuration data to file %s: %w", c.OtelConfigFile, err)
 	}
@@ -677,6 +685,13 @@ func (c *HostAgent) callRestartStatusAPI() error {
 			return err
 		}
 
+		if c.RemoteAgentEnabled {
+			// The OpAMP supervisor restarts the agent when the pushed config
+			// arrives as RemoteConfig; an in-process restart here would only
+			// reload the supervisor's current effective config.
+			return nil
+		}
+
 		return ErrRestartAgent
 	}
 
@@ -746,12 +761,20 @@ func (c *HostAgent) applyConfigClassToHosts() error {
 func (c *HostAgent) ListenForConfigChanges(errCh chan<- error,
 	stopCh <-chan struct{}) error {
 
-	// First fetch the config
-	_, err := c.getOtelConfig()
-	if err != nil {
-		errCh <- err
-	} else {
+	var err error
+	if c.RemoteAgentEnabled {
+		// Supervised mode: the OpAMP supervisor already provided the OTel
+		// config file we were started with. Only poll for changes below.
+		c.logger.Info("supervised mode: skipping initial config fetch")
 		errCh <- nil
+	} else {
+		// First fetch the config
+		_, err = c.getOtelConfig()
+		if err != nil {
+			errCh <- err
+		} else {
+			errCh <- nil
+		}
 	}
 
 	ticker := time.NewTicker(c.configCheckDuration)
@@ -953,5 +976,64 @@ func (c *HostAgent) ReportAgentStatusAPI() error {
 		zap.Error(err)
 		return fmt.Errorf("%w: %v", ErrReportApiFailure, err)
 	}
+	return nil
+}
+
+// opampServerHTTPBase derives the OpAMP server's REST base URL from its
+// websocket endpoint, e.g. wss://acct.middleware.io/v1/opamp -> https://acct.middleware.io
+func opampServerHTTPBase(opampURL string) (string, error) {
+	u, err := url.Parse(opampURL)
+	if err != nil {
+		return "", fmt.Errorf("invalid opamp server url %q: %w", opampURL, err)
+	}
+	switch u.Scheme {
+	case "ws":
+		u.Scheme = "http"
+	case "wss":
+		u.Scheme = "https"
+	case "http", "https":
+	default:
+		return "", fmt.Errorf("unsupported opamp server url scheme %q", u.Scheme)
+	}
+	u.Path, u.RawQuery, u.Fragment = "", "", ""
+	return u.String(), nil
+}
+
+// pushConfigToOpAMPServer hands a backend-generated OTel config to the OpAMP
+// server (POST /api/v1/agents/{id}/config/push, authenticated with the account
+// API key). The server stores it and pushes it to the supervisor as RemoteConfig.
+func (c *HostAgent) pushConfigToOpAMPServer(config []byte) error {
+	if c.AgentID == "" {
+		return fmt.Errorf("supervised mode requires an agent id (MW_AGENT_ID)")
+	}
+	if c.OpAMPServerURL == "" {
+		return fmt.Errorf("supervised mode requires the opamp server url (MW_OPAMP_SERVER_URL)")
+	}
+	base, err := opampServerHTTPBase(c.OpAMPServerURL)
+	if err != nil {
+		return err
+	}
+	pushURL := fmt.Sprintf("%s/api/v1/agents/%s/config/push", base, c.AgentID)
+
+	req, err := http.NewRequest(http.MethodPost, pushURL, bytes.NewReader(config))
+	if err != nil {
+		return fmt.Errorf("failed to create config push request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/yaml")
+	req.Header.Set("Authorization", "Bearer "+c.APIKey)
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to push config to OpAMP server: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return fmt.Errorf("OpAMP server returned status %d: %s", resp.StatusCode, string(body))
+	}
+	c.logger.Info("config pushed to OpAMP server",
+		zap.String("url", pushURL), zap.Int("status", resp.StatusCode))
 	return nil
 }

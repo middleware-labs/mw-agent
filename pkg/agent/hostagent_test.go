@@ -274,10 +274,12 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assert.NotNil(t, factories.Processors)
 
 	// check that the returned factories contain the expected factories
-	assert.Len(t, factories.Extensions, 1)
+	assert.Len(t, factories.Extensions, 2)
 	assertContainsComponent(t, factories.Extensions, "health_check")
+	assertContainsComponent(t, factories.Extensions, "opamp")
 	// check if factories contains expected receivers
-	assert.Len(t, factories.Receivers, 27)
+	assert.Len(t, factories.Receivers, 28)
+	assertContainsComponent(t, factories.Receivers, "nop")
 	assertContainsComponent(t, factories.Receivers, "otlp")
 	assertContainsComponent(t, factories.Receivers, "fluent_forward")
 	assertContainsComponent(t, factories.Receivers, "file_log")
@@ -306,7 +308,8 @@ func TestHostAgentGetFactories(t *testing.T) {
 	assertContainsComponent(t, factories.Receivers, "sqlquery")
 
 	// check if factories contain expected exporters
-	assert.Len(t, factories.Exporters, 5)
+	assert.Len(t, factories.Exporters, 6)
+	assertContainsComponent(t, factories.Exporters, "nop")
 	assertContainsComponent(t, factories.Exporters, "debug")
 	assertContainsComponent(t, factories.Exporters, "otlp_grpc")
 	assertContainsComponent(t, factories.Exporters, "otlp_http")

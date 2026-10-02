@@ -14,8 +14,8 @@ import (
 	"sync"
 	"text/tabwriter"
 
-	"github.com/middleware-labs/mw-injector/pkg/otelinject"
 	"github.com/middleware-labs/mw-agent/pkg/agent"
+	"github.com/middleware-labs/mw-injector/pkg/otelinject"
 	"github.com/middleware-labs/synthetics-agent/pkg/worker"
 	"gopkg.in/natefinch/lumberjack.v2"
 
@@ -333,6 +333,29 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			Destination: &cfg.AgentFeatures.ServiceReporting,
 			DefaultText: "true",
 			Value:       true,
+		}),
+
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "remote-agent-enabled",
+			Usage:       "Run in OpAMP supervised mode: the OpAMP supervisor owns the OTel config and restarts; the agent does not fetch or write otel-config itself.",
+			EnvVars:     []string{"MW_REMOTE_AGENT_ENABLED"},
+			Destination: &cfg.RemoteAgentEnabled,
+			DefaultText: "false",
+			Value:       false,
+		}),
+
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "opamp-server-url",
+			EnvVars:     []string{"MW_OPAMP_SERVER_URL"},
+			Usage:       "OpAMP server websocket URL (supervised mode). Used to derive the REST endpoint for config pushes.",
+			Destination: &cfg.OpAMPServerURL,
+		}),
+
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "agent-id",
+			EnvVars:     []string{"MW_AGENT_ID"},
+			Usage:       "OpAMP instance id of this agent (set by the supervisor).",
+			Destination: &cfg.AgentID,
 		}),
 
 		&cli.StringFlag{
