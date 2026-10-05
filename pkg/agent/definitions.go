@@ -97,7 +97,6 @@ type BaseConfig struct {
 	Target                    string
 	RemoteAgentEnabled        bool
 	AgentID                   string
-	OpAMPServerURL            string
 	DaemonsetName             string
 	DeploymentName            string
 	EnableSyntheticMonitoring bool

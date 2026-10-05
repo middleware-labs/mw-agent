@@ -459,20 +459,42 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 		return fmt.Errorf("failed to read response body: %w", err)
 	}
 
+	apiYAMLBytes, err := c.BuildOtelConfig(body, configType)
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(c.OtelConfigFile, apiYAMLBytes, 0644); err != nil {
+		return fmt.Errorf("failed to write new configuration data to file %s: %w", c.OtelConfigFile, err)
+	}
+
+	return nil
+}
+
+// BuildOtelConfig turns a raw ingestion-rules API response into the final OTel
+// collector YAML the agent runs: it picks the docker/nodocker variant, merges the
+// integration credential files referenced by the response (e.g. pgdb_config.path),
+// applies the ECS, feature-restriction and host-tag overlays, and validates the
+// result against this binary's component factories. The returned YAML still
+// contains ${env:MW_*} placeholders; the MW_* environment must be set exactly
+// as `start` sets it (see prepareRuntimeEnv). `mw-agent format` exposes this to
+// the OpAMP supervisor.
+func (c *HostAgent) BuildOtelConfig(body []byte, configType string) ([]byte, error) {
 	// Unmarshal JSON response into ApiResponse struct
 	var apiResponse apiResponseForYAML
 	if err := json.Unmarshal(body, &apiResponse); err != nil {
-		return fmt.Errorf("failed to unmarshal api response: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal api response: %w", err)
 	}
+	var err error
 
 	// Verify API Response
 	if !apiResponse.Status {
-		return fmt.Errorf("failure status from api response for ingestion rules: %t", apiResponse.Status)
+		return nil, fmt.Errorf("failure status from api response for ingestion rules: %t", apiResponse.Status)
 	}
 
 	var apiYAMLConfig map[string]interface{}
 	if len(apiResponse.Config.Docker) == 0 && len(apiResponse.Config.NoDocker) == 0 {
-		return fmt.Errorf("failed to get valid response, config docker len: %d, config no docker len: %d",
+		return nil, fmt.Errorf("failed to get valid response, config docker len: %d, config no docker len: %d",
 			len(apiResponse.Config.Docker), len(apiResponse.Config.NoDocker))
 	}
 
@@ -496,7 +518,7 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 		if c.checkIntConfigValidity(integrationType, integrationConfig) {
 			apiYAMLConfig, err = c.updateConfig(apiYAMLConfig, integrationConfig)
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
 	}
@@ -506,7 +528,7 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 
 		apiYAMLConfig, err = c.updateConfigForECS(apiYAMLConfig)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 	}
@@ -514,7 +536,7 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 	if !c.AgentFeatures.LogCollection || !c.AgentFeatures.MetricCollection {
 		apiYAMLConfig, err = c.updateConfigWithRestrictions(apiYAMLConfig)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -522,64 +544,58 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 	if c.HostTags != "" {
 		apiYAMLConfig, err = c.updateConfigForHostTags(apiYAMLConfig)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	//apiYAMLConfig = c.fixTelemetryConfig(apiYAMLConfig)
 
 	apiYAMLBytes, err := yaml.Marshal(apiYAMLConfig)
 	if err != nil {
-		return fmt.Errorf("failed to marshal api data: %w", err)
+		return nil, fmt.Errorf("failed to marshal api data: %w", err)
 	}
 
 	// check if the config is valid, otherwise return an error
 	factories, err := c.getFactories()
 	if err != nil {
-		return fmt.Errorf("failed to get factories: %w", err)
+		return nil, fmt.Errorf("failed to get factories: %w", err)
 	}
 
 	cfgProviderSettings := c.getConfigProviderSettings("yaml:" + string(apiYAMLBytes))
 
 	configProvider, err := otelcol.NewConfigProvider(cfgProviderSettings)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if configProvider == nil {
-		return fmt.Errorf("config provider is nil, check YAML format and provider settings")
+		return nil, fmt.Errorf("config provider is nil, check YAML format and provider settings")
 	}
 	cfg, err := configProvider.Get(context.Background(), factories)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if err := cfg.Validate(); err != nil {
 		trackErr := c.UpdateAgentTrackStatus(err)
 		if trackErr != nil {
 			c.logger.Error("failed to update agent track status", zap.Error(trackErr))
 		}
-		return fmt.Errorf("%w: %v", ErrInvalidConfig, err)
+		return nil, fmt.Errorf("%w: %v", ErrInvalidConfig, err)
 	}
-	if c.RemoteAgentEnabled {
-		// In supervised (OpAMP) mode the supervisor owns the OTel config file.
-		// Hand the freshly generated config to the OpAMP server; it will push it
-		// down as RemoteConfig and the supervisor will restart us with it.
-		c.logger.Info("supervised mode: pushing new config to OpAMP server")
-		return c.pushConfigToOpAMPServer(apiYAMLBytes)
-	}
-
-	if err := os.WriteFile(c.OtelConfigFile, apiYAMLBytes, 0644); err != nil {
-		return fmt.Errorf("failed to write new configuration data to file %s: %w", c.OtelConfigFile, err)
-	}
-
-	return nil
+	return apiYAMLBytes, nil
 }
 
 // GetUpdatedYAMLPath gets the correct otel configuration file
-func (c *HostAgent) getOtelConfig() (string, error) {
-	configType := "docker"
+// DetectConfigType returns "docker" when the configured docker endpoint is a
+// live unix socket on this host, otherwise "nodocker".
+func (c *HostAgent) DetectConfigType() string {
 	dockerSocketPath := strings.Split(c.DockerEndpoint, "//")
 	if len(dockerSocketPath) != 2 || !isSocketFn(dockerSocketPath[1]) {
-		configType = "nodocker"
+		return "nodocker"
 	}
+	return "docker"
+}
+
+func (c *HostAgent) getOtelConfig() (string, error) {
+	configType := c.DetectConfigType()
 
 	if err := c.updateConfigFile(configType); err != nil {
 		if errors.Is(err, ErrInvalidConfig) {
@@ -685,13 +701,6 @@ func (c *HostAgent) callRestartStatusAPI() error {
 			return err
 		}
 
-		if c.RemoteAgentEnabled {
-			// The OpAMP supervisor restarts the agent when the pushed config
-			// arrives as RemoteConfig; an in-process restart here would only
-			// reload the supervisor's current effective config.
-			return nil
-		}
-
 		return ErrRestartAgent
 	}
 
@@ -719,13 +728,16 @@ func (c *HostAgent) applyConfigClassToHosts() error {
 		return fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
 	req, err := newAgentAPIRequest(http.MethodPut, baseURL.String(), c.APIKey, jsonData)
 	if err != nil {
 		return err
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	req = req.WithContext(ctx)
 
-	resp, err := client.Do(req)
+	// Shared client so tests can intercept it; the context carries the timeout.
+	resp, err := c.httpDoFunc(req)
 	if err != nil {
 		return fmt.Errorf("failed to call config groups api for url %s: %w", baseURL.String(), err)
 	}
@@ -763,18 +775,32 @@ func (c *HostAgent) ListenForConfigChanges(errCh chan<- error,
 
 	var err error
 	if c.RemoteAgentEnabled {
-		// Supervised mode: the OpAMP supervisor already provided the OTel
-		// config file we were started with. Only poll for changes below.
-		c.logger.Info("supervised mode: skipping initial config fetch")
+		// Supervised (OpAMP) mode: the supervisor owns the OTel config and the
+		// OpAMP server watches the backend restart flag for us. Polling it here
+		// too would race, because the backend clears the flag on first read.
+		// The only backend call left is the one-time config-group registration.
+		c.logger.Info("supervised mode: config fetch and restart-status polling are handled by the OpAMP server")
 		errCh <- nil
-	} else {
-		// First fetch the config
-		_, err = c.getOtelConfig()
-		if err != nil {
-			errCh <- err
-		} else {
-			errCh <- nil
+		select {
+		case <-stopCh:
+			return nil
+		case <-time.After(c.configCheckDuration):
+			c.applyConfigOnce.Do(func() {
+				if applyErr := c.applyConfigClassToHosts(); applyErr != nil {
+					c.logger.Error("failed to apply config class", zap.Error(applyErr))
+				}
+			})
 		}
+		<-stopCh
+		return nil
+	}
+
+	// First fetch the config
+	_, err = c.getOtelConfig()
+	if err != nil {
+		errCh <- err
+	} else {
+		errCh <- nil
 	}
 
 	ticker := time.NewTicker(c.configCheckDuration)
@@ -976,64 +1002,5 @@ func (c *HostAgent) ReportAgentStatusAPI() error {
 		zap.Error(err)
 		return fmt.Errorf("%w: %v", ErrReportApiFailure, err)
 	}
-	return nil
-}
-
-// opampServerHTTPBase derives the OpAMP server's REST base URL from its
-// websocket endpoint, e.g. wss://acct.middleware.io/v1/opamp -> https://acct.middleware.io
-func opampServerHTTPBase(opampURL string) (string, error) {
-	u, err := url.Parse(opampURL)
-	if err != nil {
-		return "", fmt.Errorf("invalid opamp server url %q: %w", opampURL, err)
-	}
-	switch u.Scheme {
-	case "ws":
-		u.Scheme = "http"
-	case "wss":
-		u.Scheme = "https"
-	case "http", "https":
-	default:
-		return "", fmt.Errorf("unsupported opamp server url scheme %q", u.Scheme)
-	}
-	u.Path, u.RawQuery, u.Fragment = "", "", ""
-	return u.String(), nil
-}
-
-// pushConfigToOpAMPServer hands a backend-generated OTel config to the OpAMP
-// server (POST /api/v1/agents/{id}/config/push, authenticated with the account
-// API key). The server stores it and pushes it to the supervisor as RemoteConfig.
-func (c *HostAgent) pushConfigToOpAMPServer(config []byte) error {
-	if c.AgentID == "" {
-		return fmt.Errorf("supervised mode requires an agent id (MW_AGENT_ID)")
-	}
-	if c.OpAMPServerURL == "" {
-		return fmt.Errorf("supervised mode requires the opamp server url (MW_OPAMP_SERVER_URL)")
-	}
-	base, err := opampServerHTTPBase(c.OpAMPServerURL)
-	if err != nil {
-		return err
-	}
-	pushURL := fmt.Sprintf("%s/api/v1/agents/%s/config/push", base, c.AgentID)
-
-	req, err := http.NewRequest(http.MethodPost, pushURL, bytes.NewReader(config))
-	if err != nil {
-		return fmt.Errorf("failed to create config push request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/yaml")
-	req.Header.Set("Authorization", "Bearer "+c.APIKey)
-
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to push config to OpAMP server: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
-		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		return fmt.Errorf("OpAMP server returned status %d: %s", resp.StatusCode, string(body))
-	}
-	c.logger.Info("config pushed to OpAMP server",
-		zap.String("url", pushURL), zap.Int("status", resp.StatusCode))
 	return nil
 }
