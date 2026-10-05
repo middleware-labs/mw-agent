@@ -68,6 +68,13 @@ func TestBuildOtelConfigMergesCredentialFile(t *testing.T) {
 	// A response without any config is rejected.
 	_, err = agent.BuildOtelConfig([]byte(`{"status":true,"config":{}}`), "nodocker")
 	assert.Error(t, err)
+
+	// Asking for the docker variant of a response that only carries nodocker
+	// (the backend returns just the requested file) must render the one present,
+	// not an empty config.
+	out, err = agent.BuildOtelConfig(body, "docker")
+	require.NoError(t, err)
+	assert.Contains(t, string(out), "redis")
 }
 
 // In supervised mode the agent must not fetch config or poll restart-status (the

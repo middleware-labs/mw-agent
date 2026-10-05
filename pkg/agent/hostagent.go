@@ -498,9 +498,23 @@ func (c *HostAgent) BuildOtelConfig(body []byte, configType string) ([]byte, err
 			len(apiResponse.Config.Docker), len(apiResponse.Config.NoDocker))
 	}
 
+	// The backend returns only the requested variant (?config=docker|nodocker).
+	// Use the requested one when present, otherwise whichever one the response
+	// carries, so a caller that detects the docker socket differently from the
+	// fetcher (e.g. `format` run by the supervisor) never renders an empty config.
 	apiYAMLConfig = apiResponse.Config.NoDocker
 	if configType == "docker" {
 		apiYAMLConfig = apiResponse.Config.Docker
+	}
+	if len(apiYAMLConfig) == 0 {
+		fallback := "docker"
+		apiYAMLConfig = apiResponse.Config.Docker
+		if len(apiYAMLConfig) == 0 {
+			fallback = "nodocker"
+			apiYAMLConfig = apiResponse.Config.NoDocker
+		}
+		c.logger.Warn("requested config variant missing from ingestion-rules response; using the available one",
+			zap.String("requested", configType), zap.String("using", fallback))
 	}
 
 	integrationConfigs := map[IntegrationType]integrationConfiguration{
