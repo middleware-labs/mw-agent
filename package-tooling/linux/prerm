@@ -1,5 +1,16 @@
 #!/bin/sh
 
 set -e
-systemctl stop mw-agent
-systemctl disable mw-agent
+# systemctl stop mw-agent
+# systemctl disable mw-agent
+
+# Stop both units. Disable them only on removal: on upgrade the new
+# package's postinst re-enables and restarts whichever mode is installed.
+for unit in mw-agent mw-agent-opamp; do
+    if systemctl is-active --quiet "$unit" 2>/dev/null; then
+        systemctl stop "$unit"
+    fi
+    if [ "$1" = "remove" ] && systemctl is-enabled --quiet "$unit" 2>/dev/null; then
+        systemctl disable "$unit"
+    fi
+done
