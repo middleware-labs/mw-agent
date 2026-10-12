@@ -1,0 +1,11 @@
+{
+  "status": true,
+  "config": {
+    "nodocker": {
+      "receivers": {"nop": {}, "redis": {"endpoint": "placeholder:1"}},
+      "exporters": {"nop": {}},
+      "service": {"pipelines": {"metrics": {"receivers": ["redis", "nop"], "exporters": ["nop"]}}}
+    }
+  },
+  "redis_config": {"path": "db-config_test.yaml"}
+}

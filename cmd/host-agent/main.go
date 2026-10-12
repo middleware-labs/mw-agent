@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -924,9 +925,26 @@ func main() {
 						Usage: "Which config to render: auto (detect docker socket), docker or nodocker",
 						Value: "auto",
 					},
+					&cli.StringFlag{
+						Name:  "edits",
+						Usage: "Path of an editor-edits JSON document (OpAMP mw.edits) to apply on top of the rendered rules; needs --edits-status",
+					},
+					&cli.StringFlag{
+						Name:  "base-output",
+						Usage: "Path to also write the config rendered from the rules alone (without edits) to",
+					},
+					&cli.StringFlag{
+						Name:  "edits-status",
+						Usage: "Path to write the edits result JSON to (only with --edits)",
+					},
 				),
 				Before: altsrc.InitInputSourceWithContext(flags, altsrc.NewYamlSourceFromFlagFunc("config-file")),
 				Action: func(c *cli.Context) error {
+					editsPath, statusPath := c.String("edits"), c.String("edits-status")
+					if editsPath != "" && statusPath == "" {
+						return errors.New("--edits needs --edits-status")
+					}
+
 					// Logs go to stderr so stdout can carry the YAML.
 					loggingLevel, err := zap.ParseAtomicLevel(cfg.LoggingLevel)
 					if err != nil {
@@ -966,19 +984,42 @@ func main() {
 						return fmt.Errorf("invalid --config-type %q (want auto, docker or nodocker)", configType)
 					}
 
-					rendered, err := hostAgent.BuildOtelConfig(input, configType)
+					// A nil edits document renders the base only.
+					var edits []byte
+					if editsPath != "" {
+						edits, err = os.ReadFile(editsPath)
+						if err != nil {
+							return fmt.Errorf("read edits: %w", err)
+						}
+					}
+
+					render, err := hostAgent.RenderOtelConfig(input, configType, edits)
 					if err != nil {
 						return err
 					}
+					if baseOut := c.String("base-output"); baseOut != "" {
+						if err := os.WriteFile(baseOut, render.Base, 0600); err != nil {
+							return fmt.Errorf("write base config: %w", err)
+						}
+					}
 					if out := c.String("output"); out == "-" {
-						_, err = os.Stdout.Write(rendered)
+						_, err = os.Stdout.Write(render.Final)
 					} else {
-						err = os.WriteFile(out, rendered, 0600)
+						err = os.WriteFile(out, render.Final, 0600)
 					}
 					if err != nil {
 						return fmt.Errorf("write rendered config: %w", err)
 					}
-					logger.Info("rendered otel config", zap.String("config_type", configType), zap.Int("bytes", len(rendered)))
+					if render.Status != nil {
+						status, err := json.Marshal(render.Status)
+						if err != nil {
+							return fmt.Errorf("marshal edits status: %w", err)
+						}
+						if err := os.WriteFile(statusPath, status, 0600); err != nil {
+							return fmt.Errorf("write edits status: %w", err)
+						}
+					}
+					logger.Info("rendered otel config", zap.String("config_type", configType), zap.Int("bytes", len(render.Final)))
 					return nil
 				},
 			},

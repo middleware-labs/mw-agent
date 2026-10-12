@@ -494,6 +494,16 @@ func (c *HostAgent) fetchIngestionRules(configType string) ([]byte, error) {
 // as `start` sets it (see prepareRuntimeEnv). `mw-agent format` exposes this to
 // the OpAMP supervisor.
 func (c *HostAgent) BuildOtelConfig(body []byte, configType string) ([]byte, error) {
+	apiYAMLConfig, err := c.renderRulesConfig(body, configType)
+	if err != nil {
+		return nil, err
+	}
+	return c.finishOtelConfig(apiYAMLConfig)
+}
+
+// renderRulesConfig runs the host-dependent steps that come before the editor
+// edits (see RenderOtelConfig): variant, integration credential files and ECS.
+func (c *HostAgent) renderRulesConfig(body []byte, configType string) (map[string]interface{}, error) {
 	// Unmarshal JSON response into ApiResponse struct
 	var apiResponse apiResponseForYAML
 	if err := json.Unmarshal(body, &apiResponse); err != nil {
@@ -561,6 +571,36 @@ func (c *HostAgent) BuildOtelConfig(body []byte, configType string) ([]byte, err
 
 	}
 
+	return apiYAMLConfig, nil
+}
+
+// finishOtelConfig applies the feature-restriction and host-tag overlays,
+// marshals and validates. A config that fails validation is reported with
+// UpdateAgentTrackStatus; only the base render may do that (edited copies use
+// overlayAndMarshal + validateOtelConfig directly).
+func (c *HostAgent) finishOtelConfig(apiYAMLConfig map[string]interface{}) ([]byte, error) {
+	apiYAMLBytes, err := c.overlayAndMarshal(apiYAMLConfig)
+	if err != nil {
+		return nil, err
+	}
+	invalid, err := c.validateOtelConfig(apiYAMLBytes)
+	if err != nil {
+		return nil, err
+	}
+	if invalid != nil {
+		trackErr := c.UpdateAgentTrackStatus(invalid)
+		if trackErr != nil {
+			c.logger.Error("failed to update agent track status", zap.Error(trackErr))
+		}
+		return nil, fmt.Errorf("%w: %v", ErrInvalidConfig, invalid)
+	}
+	return apiYAMLBytes, nil
+}
+
+// overlayAndMarshal applies the feature restrictions and host tags (both modify
+// apiYAMLConfig in place) and marshals the result.
+func (c *HostAgent) overlayAndMarshal(apiYAMLConfig map[string]interface{}) ([]byte, error) {
+	var err error
 	if !c.AgentFeatures.LogCollection || !c.AgentFeatures.MetricCollection {
 		apiYAMLConfig, err = c.updateConfigWithRestrictions(apiYAMLConfig)
 		if err != nil {
@@ -582,6 +622,14 @@ func (c *HostAgent) BuildOtelConfig(body []byte, configType string) ([]byte, err
 		return nil, fmt.Errorf("failed to marshal api data: %w", err)
 	}
 
+	return apiYAMLBytes, nil
+}
+
+// validateOtelConfig checks rendered YAML against this binary's component
+// factories, without side effects. err is a config that cannot be loaded (bad
+// YAML, unknown component type, invalid keys); invalid is a loaded config that
+// fails Validate().
+func (c *HostAgent) validateOtelConfig(apiYAMLBytes []byte) (invalid error, err error) {
 	// check if the config is valid, otherwise return an error
 	factories, err := c.getFactories()
 	if err != nil {
@@ -601,14 +649,7 @@ func (c *HostAgent) BuildOtelConfig(body []byte, configType string) ([]byte, err
 	if err != nil {
 		return nil, err
 	}
-	if err := cfg.Validate(); err != nil {
-		trackErr := c.UpdateAgentTrackStatus(err)
-		if trackErr != nil {
-			c.logger.Error("failed to update agent track status", zap.Error(trackErr))
-		}
-		return nil, fmt.Errorf("%w: %v", ErrInvalidConfig, err)
-	}
-	return apiYAMLBytes, nil
+	return cfg.Validate(), nil
 }
 
 // GetUpdatedYAMLPath gets the correct otel configuration file

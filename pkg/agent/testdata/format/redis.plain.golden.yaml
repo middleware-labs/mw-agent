@@ -1,0 +1,15 @@
+exporters:
+  nop: {}
+receivers:
+  nop: {}
+  redis:
+    endpoint: localhost:7379
+    password: mypassword
+service:
+  pipelines:
+    metrics:
+      exporters:
+      - nop
+      receivers:
+      - redis
+      - nop

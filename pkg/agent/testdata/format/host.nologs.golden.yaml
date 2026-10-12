@@ -1,0 +1,37 @@
+exporters:
+  otlp_grpc/2:
+    endpoint: ${env:MW_TARGET}
+    headers:
+      authorization: ${env:MW_API_KEY}
+processors:
+  batch:
+    send_batch_size: 1000
+    timeout: 10s
+  resourcedetection:
+    detectors:
+    - system
+receivers:
+  file_log:
+    include:
+    - /var/log/*.log
+    start_at: end
+  host_metrics:
+    collection_interval: 60s
+    scrapers:
+      cpu: {}
+      memory: {}
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 127.0.0.1:9319
+service:
+  pipelines:
+    metrics:
+      exporters:
+      - otlp_grpc/2
+      processors:
+      - resourcedetection
+      - batch
+      receivers:
+      - otlp
+      - host_metrics
