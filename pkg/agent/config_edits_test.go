@@ -90,7 +90,8 @@ func opResults(ops []EditOpResult) []string {
 
 // Without edits the base is exactly what BuildOtelConfig renders, and both are
 // byte-identical to the output of the code before RenderOtelConfig existed
-// (golden files generated with mw-agent cd59138). Run with -count=20.
+// (golden files generated with mw-agent cd59138; host.nologs regenerated once
+// the restrictions also deleted file_log). Run with -count=20.
 func TestRenderOtelConfigGoldenWithoutEdits(t *testing.T) {
 	variants := map[string]func(*HostConfig){
 		"plain":    nil,

@@ -345,17 +345,23 @@ func (c *HostAgent) updateConfigWithRestrictions(config map[string]interface{}) 
 		}
 	}
 
+	// For agents >= 1.21 the backend renames some receivers (filelog ->
+	// file_log, hostmetrics -> host_metrics, kubeletstats -> kubelet_stats),
+	// so delete both names.
 	if !c.HostConfig.AgentFeatures.LogCollection {
 		delete(receiversData, "filelog")
+		delete(receiversData, "file_log")
 		delete(receiversData, "windowseventlog")
 	}
 
 	if !c.HostConfig.AgentFeatures.MetricCollection {
 		delete(receiversData, "hostmetrics")
+		delete(receiversData, "host_metrics")
 		delete(receiversData, "windowsperfcounters")
 		delete(receiversData, "docker_stats")
 		delete(receiversData, "prometheus")
 		delete(receiversData, "kubeletstats")
+		delete(receiversData, "kubelet_stats")
 		delete(receiversData, "k8s_cluster")
 	}
 

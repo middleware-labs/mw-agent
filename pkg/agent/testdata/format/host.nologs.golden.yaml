@@ -11,10 +11,6 @@ processors:
     detectors:
     - system
 receivers:
-  file_log:
-    include:
-    - /var/log/*.log
-    start_at: end
   host_metrics:
     collection_interval: 60s
     scrapers:
