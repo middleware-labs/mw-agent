@@ -39,6 +39,11 @@ var (
 	// (network, parsing, provider errors) as opposed to ErrInvalidConfig, which
 	// is a config that was successfully built but fails schema validation.
 	ErrConfigFetchFailure = errors.New("failed to fetch or build otel config")
+	// ErrRestartStatusCheckFailure covers a restart-status call that failed
+	// (network error or timeout, non-200 answer, unreadable body). The backend
+	// answers 200 even for a bad token, so such a failure is always transient
+	// and must not stop collection.
+	ErrRestartStatusCheckFailure = errors.New("failed to check restart status")
 )
 
 // HostAgent implements Agent interface for Hosts (e.g Linux)
@@ -754,18 +759,21 @@ func (c *HostAgent) callRestartStatusAPI() error {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to call restart api for url %s: %w", url, err)
+		return fmt.Errorf("%w: failed to call restart api for url %s: %v",
+			ErrRestartStatusCheckFailure, url, err)
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("restart api returned non-200 status: %d", resp.StatusCode)
+		return fmt.Errorf("%w: restart api returned non-200 status: %d",
+			ErrRestartStatusCheckFailure, resp.StatusCode)
 	}
 
 	var apiResponse apiResponseForRestart
 	if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
-		return fmt.Errorf("failed to unmarshal restart api response: %w", err)
+		return fmt.Errorf("%w: failed to unmarshal restart api response: %v",
+			ErrRestartStatusCheckFailure, err)
 	}
 
 	if apiResponse.Restart {

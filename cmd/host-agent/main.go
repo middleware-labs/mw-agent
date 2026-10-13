@@ -95,9 +95,21 @@ func (p *program) Stop(s service.Service) error {
 	return nil
 }
 
+// collectorController is the part of agent.HostAgent that controlCollector
+// drives. It is an interface only so tests can pass a fake.
+type collectorController interface {
+	StartCollector() error
+	StopCollector(err error)
+}
+
 func (p *program) run() {
 	defer p.programWG.Done()
+	p.controlCollector(p.hostAgent)
+}
 
+// controlCollector starts and stops collection based on what arrives on errCh,
+// until errCh is closed.
+func (p *program) controlCollector(collector collectorController) {
 	for err := range p.errCh {
 		// if invalid config is received from the backend, then keep collector
 		// in its current state. If it is stopped, keep it stopped until we receive
@@ -119,9 +131,17 @@ func (p *program) run() {
 			continue
 		}
 
+		// The backend answers restart-status with 200 even for a bad token, so
+		// a failed check is transient: keep collecting and retry on the next tick.
+		if errors.Is(err, agent.ErrRestartStatusCheckFailure) {
+			p.logger.Warn("restart status check failed; keeping collector in its current state",
+				zap.Error(err))
+			continue
+		}
+
 		if err != nil {
 			// stop collection only if it's running
-			p.hostAgent.StopCollector(err)
+			collector.StopCollector(err)
 
 			// if err is not agent.ErrRestartAgent, then keep collector stopped.
 			// if err is agent.ErrRestartAgent, then resume collection.
@@ -131,7 +151,7 @@ func (p *program) run() {
 			p.logger.Info("restarting collector", zap.Error(err))
 		}
 		// start collection only if it's not running
-		if err := p.hostAgent.StartCollector(); err != nil {
+		if err := collector.StartCollector(); err != nil {
 			p.logger.Error("failed to start collector",
 				zap.Error(err))
 		}
