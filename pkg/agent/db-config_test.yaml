@@ -1,7 +1,7 @@
 postgresql:
   endpoint: "example.com:5432"
   database: "mydb"
-  user: "myuser"
+  username: "myuser"
   password: "mypassword"
 
 mongodb:
