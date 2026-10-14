@@ -51,7 +51,7 @@ jobs:
         token: ${{ secrets.GHCR_TOKEN }}
         submodules: 'recursive'
         path: supervisor
-        ref: beta
+        ref: master
         
     - name: Set Architecture Variables
       run: |
