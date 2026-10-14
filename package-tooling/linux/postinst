@@ -338,7 +338,8 @@ if [ "${INSTALL_MODE}" = "managed" ]; then
     echo "MW_AGENT_FEATURES_REPORT_SERVICES=${MW_AGENT_FEATURES_REPORT_SERVICES:-true}" >> "${SUPERVISOR_ENV_FILE}"
     echo "MW_REMOTE_AGENT_ENABLED=${MW_REMOTE_AGENT_ENABLED:-true}" >> "${SUPERVISOR_ENV_FILE}"
 
-    chmod 644 "${SUPERVISOR_ENV_FILE}"
+    # It holds MW_API_KEY: owner-only. systemd reads EnvironmentFile= as root.
+    chmod 600 "${SUPERVISOR_ENV_FILE}"
     chown mw-agent:mw-agent "${SUPERVISOR_ENV_FILE}"
 
     echo "Managed mode: Configuration saved to ${SUPERVISOR_ENV_FILE}"

@@ -77,8 +77,13 @@ fi
 if [ $1 -gt 0 ]; then
     echo "Upgrade in progress, skipping post-uninstallation steps."
 else
-    rm -rf /etc/%{package_name}
-    # rmdir  /etc/%{package_name}
+    # Only what the package and its scripts created; anything else an operator
+    # put in /etc/mw-agent (e.g. integration credential files) stays.
+    rm -f /etc/%{package_name}/agent-config.yaml /etc/%{package_name}/mw-agent.env /etc/%{package_name}/otel-config.yaml \
+          /etc/%{package_name}/supervisor-config.yaml /etc/%{package_name}/mw-supervisor.env /etc/%{package_name}/install-mode
+    # The supervisor's storage (state, rendered config with secrets).
+    rm -rf /etc/%{package_name}/opamp
+    rmdir /etc/%{package_name} 2>/dev/null || true
     rmdir /opt/%{package_name}/bin
     rmdir /opt/%{package_name}
 fi
