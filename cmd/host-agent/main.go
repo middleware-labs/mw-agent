@@ -52,6 +52,9 @@ type program struct {
 	errCh  chan error
 	stopCh chan struct{}
 	args   []string
+	// senders tracks the goroutines that send on errCh, so Stop closes errCh
+	// only after they have returned.
+	senders sync.WaitGroup
 }
 
 // Service interface for kardianos/service package to run
@@ -64,8 +67,10 @@ func (p *program) Start(s service.Service) error {
 	p.programWG.Add(1)
 	go p.run()
 	p.programWG.Add(1)
+	p.senders.Add(1)
 	go func() {
 		p.hostAgent.ReportServices(p.errCh, p.stopCh)
+		p.senders.Done()
 		p.programWG.Done()
 	}()
 
@@ -73,8 +78,10 @@ func (p *program) Start(s service.Service) error {
 	if p.hostAgent.FetchAccountOtelConfig {
 		// Listen to the config changes provided by Middleware API
 		p.programWG.Add(1)
+		p.senders.Add(1)
 		go func() {
 			p.hostAgent.ListenForConfigChanges(p.errCh, p.stopCh)
+			p.senders.Done()
 			p.programWG.Done()
 		}()
 	} else {
@@ -88,8 +95,11 @@ func (p *program) Stop(s service.Service) error {
 	// Stop should not block. Return with a few seconds.
 	p.logger.Info("stopping service", zap.Stringer("name", s))
 
-	// stop collection
+	// stop collection: the senders return once stopCh is closed (an in-flight
+	// config check or push is canceled), and only then is errCh closed, which
+	// ends run. Closing errCh first would panic a sender still reporting.
 	close(p.stopCh)
+	p.senders.Wait()
 	close(p.errCh)
 	p.programWG.Wait()
 	return nil

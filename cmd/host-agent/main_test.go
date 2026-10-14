@@ -3,7 +3,9 @@ package main
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/middleware-labs/mw-agent/pkg/agent"
 	"github.com/stretchr/testify/assert"
@@ -72,5 +74,45 @@ func TestControlCollector(t *testing.T) {
 
 			assert.Equal(t, tt.want, fake.calls)
 		})
+	}
+}
+
+// Stop must not close errCh while a sender may still use it: it closes stopCh,
+// waits for the senders, then closes errCh. Run with -race.
+func TestProgramStopClosesErrChAfterSenders(t *testing.T) {
+	p := &program{
+		logger:    zap.NewNop(),
+		programWG: &sync.WaitGroup{},
+		errCh:     make(chan error),
+		stopCh:    make(chan struct{}),
+	}
+	p.programWG.Add(1)
+	go func() { // the reader, like run
+		for range p.errCh {
+		}
+		p.programWG.Done()
+	}()
+	for i := 0; i < 4; i++ { // senders that keep reporting until stopped
+		p.programWG.Add(1)
+		p.senders.Add(1)
+		go func() {
+			defer p.programWG.Done()
+			defer p.senders.Done()
+			for {
+				select {
+				case <-p.stopCh:
+					return
+				case p.errCh <- nil:
+				}
+			}
+		}()
+	}
+
+	stopped := make(chan struct{})
+	go func() { _ = p.Stop(nil); close(stopped) }()
+	select {
+	case <-stopped:
+	case <-time.After(2 * time.Second):
+		t.Fatal("Stop did not return")
 	}
 }

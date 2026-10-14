@@ -58,6 +58,12 @@ type HostAgent struct {
 	logger              *zap.Logger
 	httpDoFunc          func(req *http.Request) (resp *http.Response, err error)
 
+	// listenCtx is canceled when ListenForConfigChanges is told to stop, so an
+	// in-flight restart-status call or OpAMP config push doesn't hold up the
+	// agent's shutdown (in supervised mode the supervisor stops the agent to
+	// apply the very config it pushed). Nil outside that loop.
+	listenCtx context.Context
+
 	// opampPushPending is set when a supervised-mode push to the OpAMP server
 	// failed; the backend already cleared its restart flag, so retry next tick.
 	opampPushPending bool
@@ -763,7 +769,7 @@ func (c *HostAgent) callRestartStatusAPI() error {
 		return err
 	}
 
-	resp, err := client.Do(req)
+	resp, err := client.Do(req.WithContext(c.requestContext()))
 	if err != nil {
 		return fmt.Errorf("%w: failed to call restart api for url %s: %v",
 			ErrRestartStatusCheckFailure, url, err)
@@ -870,18 +876,29 @@ func (c *HostAgent) ListenForConfigChanges(errCh chan<- error,
 	stopCh <-chan struct{}) error {
 
 	var err error
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() {
+		select {
+		case <-stopCh:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+	c.listenCtx = ctx
+
 	if c.RemoteAgentEnabled {
 		// Supervised mode: the OpAMP supervisor already provided the OTel
 		// config file we were started with. Only poll for changes below.
 		c.logger.Info("supervised mode: skipping initial config fetch")
-		errCh <- nil
+		if !sendUnlessStopped(errCh, stopCh, nil) {
+			return nil
+		}
 	} else {
 		// First fetch the config
 		_, err = c.getOtelConfig()
-		if err != nil {
-			errCh <- err
-		} else {
-			errCh <- nil
+		if !sendUnlessStopped(errCh, stopCh, err) {
+			return nil
 		}
 	}
 
@@ -903,9 +920,38 @@ func (c *HostAgent) ListenForConfigChanges(errCh chan<- error,
 					c.logger.Error("failed to apply config class", zap.Error(applyErr))
 				}
 			})
-			errCh <- err
+			if !sendUnlessStopped(errCh, stopCh, err) {
+				ticker.Stop()
+				return nil
+			}
 		}
 	}
+}
+
+// sendUnlessStopped sends err on errCh unless stopCh is closed, and reports
+// whether it was sent. After stopCh is closed nobody may be reading errCh any
+// more, so a blocked send would never return.
+func sendUnlessStopped(errCh chan<- error, stopCh <-chan struct{}, err error) bool {
+	select {
+	case <-stopCh:
+		return false
+	default:
+	}
+	select {
+	case errCh <- err:
+		return true
+	case <-stopCh:
+		return false
+	}
+}
+
+// requestContext is the context for the config loop's HTTP calls: canceled
+// when the loop is stopped.
+func (c *HostAgent) requestContext() context.Context {
+	if c.listenCtx != nil {
+		return c.listenCtx
+	}
+	return context.Background()
 }
 
 func (c *HostAgent) UpdateAgentTrackStatus(reason error) error {
@@ -1143,9 +1189,11 @@ func (c *HostAgent) doPushIngestionRules() error {
 	}
 
 	pushURL := fmt.Sprintf("%s/api/v1/agents/%s/config/push", base, c.AgentID)
-	// The server answers once the supervisor reports the config applied (it
-	// waits up to 30s), so leave room beyond that.
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	// The server answers on the agent's next status report, usually the
+	// supervisor's APPLYING (it waits up to 30s), so leave room beyond that.
+	// Canceled when the agent stops: the supervisor restarts this process to
+	// apply the config, and the push must not hold up that shutdown.
+	ctx, cancel := context.WithTimeout(c.requestContext(), 60*time.Second)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, pushURL, bytes.NewReader(rules))
 	if err != nil {

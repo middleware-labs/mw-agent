@@ -2,6 +2,7 @@ package agent
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -185,4 +186,78 @@ func TestListenForConfigChangesSupervisedMode(t *testing.T) {
 	}
 	assert.Equal(t, 1, groupCalls, "config-group registration runs once, got %v", backendPaths)
 	assert.Equal(t, 1, restartCallsAtRetry, "the retry tick re-pushes without polling restart-status again")
+}
+
+// In supervised mode the supervisor stops this process to apply the config it
+// just pushed. A push still waiting for the server must not hold up that stop:
+// program.Stop waits for this loop before it closes errCh.
+func TestListenForConfigChangesStopDuringPush(t *testing.T) {
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.Contains(r.URL.Path, "restart-status"):
+			_, _ = io.WriteString(w, `{"status":true,"restart":true}`)
+		case strings.Contains(r.URL.Path, "ingestion-rules"):
+			_, _ = io.WriteString(w, `{"status":true,"config":{"nodocker":{"receivers":{}}}}`)
+		default:
+			_, _ = io.WriteString(w, `{"status":true}`)
+		}
+	}))
+	defer backend.Close()
+
+	pushStarted := make(chan struct{}, 1)
+	release := make(chan struct{})
+	opamp := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		pushStarted <- struct{}{}
+		select { // a server that doesn't answer before the agent is stopped
+		case <-r.Context().Done():
+		case <-release:
+		}
+	}))
+	defer opamp.Close()
+	defer close(release)
+
+	cfg := HostConfig{BaseConfig: BaseConfig{
+		APIKey:               "testAPIKey",
+		APIURLForConfigCheck: backend.URL,
+		RemoteAgentEnabled:   true,
+		AgentID:              "0198a6d2-0000-7000-8000-000000000001",
+		OpAMPServerURL:       strings.Replace(opamp.URL, "http://", "ws://", 1) + "/v1/opamp",
+		OtelConfigFile:       filepath.Join(t.TempDir(), "otel-config.yaml"),
+	}}
+	cfg.ConfigCheckInterval = "50ms"
+	agent, err := NewHostAgent(cfg, zapcore.NewNopCore())
+	require.NoError(t, err)
+
+	errCh := make(chan error, 1)
+	stopCh := make(chan struct{})
+	done := make(chan struct{})
+	go func() { _ = agent.ListenForConfigChanges(errCh, stopCh); close(done) }()
+	require.NoError(t, <-errCh)
+
+	select {
+	case <-pushStarted:
+	case <-time.After(2 * time.Second):
+		t.Fatal("the push never started")
+	}
+	// What program.Stop does first; errCh is closed only after this returns.
+	close(stopCh)
+
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("ListenForConfigChanges kept waiting for the push after stop")
+	}
+}
+
+func TestSendUnlessStopped(t *testing.T) {
+	t.Run("sent while running", func(t *testing.T) {
+		errCh := make(chan error, 1)
+		assert.True(t, sendUnlessStopped(errCh, make(chan struct{}), errors.New("x")))
+		assert.EqualError(t, <-errCh, "x")
+	})
+	t.Run("stopped, nobody reading", func(t *testing.T) {
+		stopCh := make(chan struct{})
+		close(stopCh)
+		assert.False(t, sendUnlessStopped(make(chan error), stopCh, nil))
+	})
 }
