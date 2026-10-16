@@ -1,0 +1,30 @@
+exporters:
+  otlp_grpc/2:
+    endpoint: ${env:MW_TARGET}
+processors:
+  batch:
+    timeout: 10s
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 127.0.0.1:9319
+  postgresql:
+    collection_interval: 60s
+    databases:
+    - app
+    endpoint: db.example.com:5432
+    password: pg-secret
+    tls:
+      insecure: true
+    username: mw
+service:
+  pipelines:
+    metrics:
+      exporters:
+      - otlp_grpc/2
+      processors:
+      - batch
+      receivers:
+      - otlp
+      - postgresql

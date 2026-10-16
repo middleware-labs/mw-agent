@@ -1,0 +1,19 @@
+{
+  "status": true,
+  "config": {
+    "nodocker": {
+      "receivers": {
+        "otlp": {"protocols": {"grpc": {"endpoint": "127.0.0.1:9319"}}},
+        "postgresql": {"endpoint": "placeholder:1", "collection_interval": "60s", "tls": {"insecure": true}}
+      },
+      "processors": {"batch": {"timeout": "10s"}},
+      "exporters": {"otlp_grpc/2": {"endpoint": "${env:MW_TARGET}"}},
+      "service": {
+        "pipelines": {
+          "metrics": {"receivers": ["otlp", "postgresql"], "processors": ["batch"], "exporters": ["otlp_grpc/2"]}
+        }
+      }
+    }
+  },
+  "pgdb_config": {"path": "testdata/format/pg-credentials.yaml"}
+}

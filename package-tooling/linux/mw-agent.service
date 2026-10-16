@@ -2,6 +2,9 @@
 Description=Middleware Agent Service
 After=network.target
 
+# Standalone and OpAMP-supervised modes must never run at the same time
+Conflicts=mw-agent-opamp.service
+
 [Service]
 MemoryMax=1G
 MemoryHigh=750M

@@ -39,6 +39,11 @@ var (
 	// (network, parsing, provider errors) as opposed to ErrInvalidConfig, which
 	// is a config that was successfully built but fails schema validation.
 	ErrConfigFetchFailure = errors.New("failed to fetch or build otel config")
+	// ErrRestartStatusCheckFailure covers a restart-status call that failed
+	// (network error or timeout, non-200 answer, unreadable body). The backend
+	// answers 200 even for a bad token, so such a failure is always transient
+	// and must not stop collection.
+	ErrRestartStatusCheckFailure = errors.New("failed to check restart status")
 )
 
 // HostAgent implements Agent interface for Hosts (e.g Linux)
@@ -52,8 +57,18 @@ type HostAgent struct {
 	zapCore             zapcore.Core
 	logger              *zap.Logger
 	httpDoFunc          func(req *http.Request) (resp *http.Response, err error)
-	Version             string
-	applyConfigOnce     sync.Once
+
+	// listenCtx is canceled when ListenForConfigChanges is told to stop, so an
+	// in-flight restart-status call or OpAMP config push doesn't hold up the
+	// agent's shutdown (in supervised mode the supervisor stops the agent to
+	// apply the very config it pushed). Nil outside that loop.
+	listenCtx context.Context
+
+	// opampPushPending is set when a supervised-mode push to the OpAMP server
+	// failed; the backend already cleared its restart flag, so retry next tick.
+	opampPushPending bool
+	Version          string
+	applyConfigOnce  sync.Once
 }
 
 // HostOptions takes in various options for HostAgent
@@ -336,17 +351,23 @@ func (c *HostAgent) updateConfigWithRestrictions(config map[string]interface{}) 
 		}
 	}
 
+	// For agents >= 1.21 the backend renames some receivers (filelog ->
+	// file_log, hostmetrics -> host_metrics, kubeletstats -> kubelet_stats),
+	// so delete both names.
 	if !c.HostConfig.AgentFeatures.LogCollection {
 		delete(receiversData, "filelog")
+		delete(receiversData, "file_log")
 		delete(receiversData, "windowseventlog")
 	}
 
 	if !c.HostConfig.AgentFeatures.MetricCollection {
 		delete(receiversData, "hostmetrics")
+		delete(receiversData, "host_metrics")
 		delete(receiversData, "windowsperfcounters")
 		delete(receiversData, "docker_stats")
 		delete(receiversData, "prometheus")
 		delete(receiversData, "kubeletstats")
+		delete(receiversData, "kubelet_stats")
 		delete(receiversData, "k8s_cluster")
 	}
 
@@ -403,6 +424,25 @@ func (c *HostAgent) updateConfig(config map[string]interface{}, cnf integrationC
 }
 
 func (c *HostAgent) updateConfigFile(configType string) error {
+	body, err := c.fetchIngestionRules(configType)
+	if err != nil {
+		return err
+	}
+
+	apiYAMLBytes, err := c.BuildOtelConfig(body, configType)
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(c.OtelConfigFile, apiYAMLBytes, 0644); err != nil {
+		return fmt.Errorf("failed to write new configuration data to file %s: %w", c.OtelConfigFile, err)
+	}
+
+	return nil
+}
+
+// fetchIngestionRules returns the raw ingestion-rules API response for this host.
+func (c *HostAgent) fetchIngestionRules(configType string) ([]byte, error) {
 	// _, apiURLForYAML := checkForConfigURLOverrides()
 
 	hostname := GetHostnameForPlatform(c.InfraPlatform)
@@ -410,7 +450,7 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 	// Call Webhook
 	u, err := url.Parse(c.APIURLForConfigCheck)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	baseURL := u.JoinPath(apiPathForYAML)
@@ -439,46 +479,83 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 	url := baseURL.String()
 	req, err := newAgentAPIRequest(http.MethodGet, url, c.APIKey, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	resp, err := c.httpDoFunc(req)
 	if err != nil {
-		return fmt.Errorf("failed to call get configuration api for %s: %w", url, err)
+		return nil, fmt.Errorf("failed to call get configuration api for %s: %w", url, err)
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("get configuration api returned non-200 status: %d", resp.StatusCode)
+		return nil, fmt.Errorf("get configuration api returned non-200 status: %d", resp.StatusCode)
 	}
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read response body: %w", err)
+		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
+	return body, nil
+}
+
+// BuildOtelConfig turns a raw ingestion-rules API response into the final OTel
+// collector YAML the agent runs: it picks the docker/nodocker variant, merges the
+// integration credential files referenced by the response (e.g. pgdb_config.path),
+// applies the ECS, feature-restriction and host-tag overlays, and validates the
+// result against this binary's component factories. The returned YAML still
+// contains ${env:MW_*} placeholders; the MW_* environment must be set exactly
+// as `start` sets it (see prepareRuntimeEnv). `mw-agent format` exposes this to
+// the OpAMP supervisor.
+func (c *HostAgent) BuildOtelConfig(body []byte, configType string) ([]byte, error) {
+	apiYAMLConfig, err := c.renderRulesConfig(body, configType)
+	if err != nil {
+		return nil, err
+	}
+	return c.finishOtelConfig(apiYAMLConfig)
+}
+
+// renderRulesConfig runs the host-dependent steps that come before the editor
+// edits (see RenderOtelConfig): variant, integration credential files and ECS.
+func (c *HostAgent) renderRulesConfig(body []byte, configType string) (map[string]interface{}, error) {
 	// Unmarshal JSON response into ApiResponse struct
 	var apiResponse apiResponseForYAML
 	if err := json.Unmarshal(body, &apiResponse); err != nil {
-		return fmt.Errorf("failed to unmarshal api response: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal api response: %w", err)
 	}
+	var err error
 
 	// Verify API Response
 	if !apiResponse.Status {
-		return fmt.Errorf("failure status from api response for ingestion rules: %t", apiResponse.Status)
+		return nil, fmt.Errorf("failure status from api response for ingestion rules: %t", apiResponse.Status)
 	}
 
 	var apiYAMLConfig map[string]interface{}
 	if len(apiResponse.Config.Docker) == 0 && len(apiResponse.Config.NoDocker) == 0 {
-		return fmt.Errorf("failed to get valid response, config docker len: %d, config no docker len: %d",
+		return nil, fmt.Errorf("failed to get valid response, config docker len: %d, config no docker len: %d",
 			len(apiResponse.Config.Docker), len(apiResponse.Config.NoDocker))
 	}
 
+	// The backend returns only the requested variant (?config=docker|nodocker).
+	// Use the requested one when present, otherwise whichever one the response
+	// carries, so a caller that detects the docker socket differently from the
+	// fetcher (e.g. `format` run by the supervisor) never renders an empty config.
 	apiYAMLConfig = apiResponse.Config.NoDocker
 	if configType == "docker" {
 		apiYAMLConfig = apiResponse.Config.Docker
+	}
+	if len(apiYAMLConfig) == 0 {
+		fallback := "docker"
+		apiYAMLConfig = apiResponse.Config.Docker
+		if len(apiYAMLConfig) == 0 {
+			fallback = "nodocker"
+			apiYAMLConfig = apiResponse.Config.NoDocker
+		}
+		c.logger.Warn("requested config variant missing from ingestion-rules response; using the available one",
+			zap.String("requested", configType), zap.String("using", fallback))
 	}
 
 	integrationConfigs := map[IntegrationType]integrationConfiguration{
@@ -496,7 +573,7 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 		if c.checkIntConfigValidity(integrationType, integrationConfig) {
 			apiYAMLConfig, err = c.updateConfig(apiYAMLConfig, integrationConfig)
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
 	}
@@ -506,15 +583,45 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 
 		apiYAMLConfig, err = c.updateConfigForECS(apiYAMLConfig)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 	}
 
+	return apiYAMLConfig, nil
+}
+
+// finishOtelConfig applies the feature-restriction and host-tag overlays,
+// marshals and validates. A config that fails validation is reported with
+// UpdateAgentTrackStatus; only the base render may do that (edited copies use
+// overlayAndMarshal + validateOtelConfig directly).
+func (c *HostAgent) finishOtelConfig(apiYAMLConfig map[string]interface{}) ([]byte, error) {
+	apiYAMLBytes, err := c.overlayAndMarshal(apiYAMLConfig)
+	if err != nil {
+		return nil, err
+	}
+	invalid, err := c.validateOtelConfig(apiYAMLBytes)
+	if err != nil {
+		return nil, err
+	}
+	if invalid != nil {
+		trackErr := c.UpdateAgentTrackStatus(invalid)
+		if trackErr != nil {
+			c.logger.Error("failed to update agent track status", zap.Error(trackErr))
+		}
+		return nil, fmt.Errorf("%w: %v", ErrInvalidConfig, invalid)
+	}
+	return apiYAMLBytes, nil
+}
+
+// overlayAndMarshal applies the feature restrictions and host tags (both modify
+// apiYAMLConfig in place) and marshals the result.
+func (c *HostAgent) overlayAndMarshal(apiYAMLConfig map[string]interface{}) ([]byte, error) {
+	var err error
 	if !c.AgentFeatures.LogCollection || !c.AgentFeatures.MetricCollection {
 		apiYAMLConfig, err = c.updateConfigWithRestrictions(apiYAMLConfig)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -522,56 +629,59 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 	if c.HostTags != "" {
 		apiYAMLConfig, err = c.updateConfigForHostTags(apiYAMLConfig)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	//apiYAMLConfig = c.fixTelemetryConfig(apiYAMLConfig)
 
 	apiYAMLBytes, err := yaml.Marshal(apiYAMLConfig)
 	if err != nil {
-		return fmt.Errorf("failed to marshal api data: %w", err)
+		return nil, fmt.Errorf("failed to marshal api data: %w", err)
 	}
 
+	return apiYAMLBytes, nil
+}
+
+// validateOtelConfig checks rendered YAML against this binary's component
+// factories, without side effects. err is a config that cannot be loaded (bad
+// YAML, unknown component type, invalid keys); invalid is a loaded config that
+// fails Validate().
+func (c *HostAgent) validateOtelConfig(apiYAMLBytes []byte) (invalid error, err error) {
 	// check if the config is valid, otherwise return an error
 	factories, err := c.getFactories()
 	if err != nil {
-		return fmt.Errorf("failed to get factories: %w", err)
+		return nil, fmt.Errorf("failed to get factories: %w", err)
 	}
 
 	cfgProviderSettings := c.getConfigProviderSettings("yaml:" + string(apiYAMLBytes))
 
 	configProvider, err := otelcol.NewConfigProvider(cfgProviderSettings)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if configProvider == nil {
-		return fmt.Errorf("config provider is nil, check YAML format and provider settings")
+		return nil, fmt.Errorf("config provider is nil, check YAML format and provider settings")
 	}
 	cfg, err := configProvider.Get(context.Background(), factories)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if err := cfg.Validate(); err != nil {
-		trackErr := c.UpdateAgentTrackStatus(err)
-		if trackErr != nil {
-			c.logger.Error("failed to update agent track status", zap.Error(trackErr))
-		}
-		return fmt.Errorf("%w: %v", ErrInvalidConfig, err)
-	}
-	if err := os.WriteFile(c.OtelConfigFile, apiYAMLBytes, 0644); err != nil {
-		return fmt.Errorf("failed to write new configuration data to file %s: %w", c.OtelConfigFile, err)
-	}
-
-	return nil
+	return cfg.Validate(), nil
 }
 
 // GetUpdatedYAMLPath gets the correct otel configuration file
-func (c *HostAgent) getOtelConfig() (string, error) {
-	configType := "docker"
+// DetectConfigType returns "docker" when the configured docker endpoint is a
+// live unix socket on this host, otherwise "nodocker".
+func (c *HostAgent) DetectConfigType() string {
 	dockerSocketPath := strings.Split(c.DockerEndpoint, "//")
 	if len(dockerSocketPath) != 2 || !isSocketFn(dockerSocketPath[1]) {
-		configType = "nodocker"
+		return "nodocker"
 	}
+	return "docker"
+}
+
+func (c *HostAgent) getOtelConfig() (string, error) {
+	configType := c.DetectConfigType()
 
 	if err := c.updateConfigFile(configType); err != nil {
 		if errors.Is(err, ErrInvalidConfig) {
@@ -623,6 +733,10 @@ func (c *HostAgent) checkIntConfigValidity(integrationType IntegrationType, cnf 
 }
 
 func (c *HostAgent) callRestartStatusAPI() error {
+	if c.RemoteAgentEnabled && c.opampPushPending {
+		c.logger.Info("supervised mode: retrying failed push to OpAMP server")
+		return c.pushIngestionRulesToOpAMPServer()
+	}
 
 	// apiURLForRestart, _ := checkForConfigURLOverrides()
 	hostname := GetHostnameForPlatform(c.InfraPlatform)
@@ -655,23 +769,35 @@ func (c *HostAgent) callRestartStatusAPI() error {
 		return err
 	}
 
-	resp, err := client.Do(req)
+	resp, err := client.Do(req.WithContext(c.requestContext()))
 	if err != nil {
-		return fmt.Errorf("failed to call restart api for url %s: %w", url, err)
+		return fmt.Errorf("%w: failed to call restart api for url %s: %v",
+			ErrRestartStatusCheckFailure, url, err)
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("restart api returned non-200 status: %d", resp.StatusCode)
+		return fmt.Errorf("%w: restart api returned non-200 status: %d",
+			ErrRestartStatusCheckFailure, resp.StatusCode)
 	}
 
 	var apiResponse apiResponseForRestart
 	if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
-		return fmt.Errorf("failed to unmarshal restart api response: %w", err)
+		return fmt.Errorf("%w: failed to unmarshal restart api response: %v",
+			ErrRestartStatusCheckFailure, err)
 	}
 
 	if apiResponse.Restart {
+		if c.RemoteAgentEnabled {
+			// The OpAMP supervisor owns the OTel config: hand the raw ingestion
+			// rules to the OpAMP server, which pushes them down as RemoteConfig.
+			// The supervisor renders them with `mw-agent format` (credential
+			// files stay on this host) and restarts us with the result.
+			c.logger.Info("supervised mode: pushing updated ingestion rules to OpAMP server")
+			return c.pushIngestionRulesToOpAMPServer()
+		}
+
 		c.logger.Info("fetching updated configuration from backend")
 		if _, err := c.getOtelConfig(); err != nil {
 			return err
@@ -704,13 +830,16 @@ func (c *HostAgent) applyConfigClassToHosts() error {
 		return fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
 	req, err := newAgentAPIRequest(http.MethodPut, baseURL.String(), c.APIKey, jsonData)
 	if err != nil {
 		return err
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	req = req.WithContext(ctx)
 
-	resp, err := client.Do(req)
+	// Shared client so tests can intercept it; the context carries the timeout.
+	resp, err := c.httpDoFunc(req)
 	if err != nil {
 		return fmt.Errorf("failed to call config groups api for url %s: %w", baseURL.String(), err)
 	}
@@ -746,12 +875,31 @@ func (c *HostAgent) applyConfigClassToHosts() error {
 func (c *HostAgent) ListenForConfigChanges(errCh chan<- error,
 	stopCh <-chan struct{}) error {
 
-	// First fetch the config
-	_, err := c.getOtelConfig()
-	if err != nil {
-		errCh <- err
+	var err error
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() {
+		select {
+		case <-stopCh:
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+	c.listenCtx = ctx
+
+	if c.RemoteAgentEnabled {
+		// Supervised mode: the OpAMP supervisor already provided the OTel
+		// config file we were started with. Only poll for changes below.
+		c.logger.Info("supervised mode: skipping initial config fetch")
+		if !sendUnlessStopped(errCh, stopCh, nil) {
+			return nil
+		}
 	} else {
-		errCh <- nil
+		// First fetch the config
+		_, err = c.getOtelConfig()
+		if !sendUnlessStopped(errCh, stopCh, err) {
+			return nil
+		}
 	}
 
 	ticker := time.NewTicker(c.configCheckDuration)
@@ -772,9 +920,38 @@ func (c *HostAgent) ListenForConfigChanges(errCh chan<- error,
 					c.logger.Error("failed to apply config class", zap.Error(applyErr))
 				}
 			})
-			errCh <- err
+			if !sendUnlessStopped(errCh, stopCh, err) {
+				ticker.Stop()
+				return nil
+			}
 		}
 	}
+}
+
+// sendUnlessStopped sends err on errCh unless stopCh is closed, and reports
+// whether it was sent. After stopCh is closed nobody may be reading errCh any
+// more, so a blocked send would never return.
+func sendUnlessStopped(errCh chan<- error, stopCh <-chan struct{}, err error) bool {
+	select {
+	case <-stopCh:
+		return false
+	default:
+	}
+	select {
+	case errCh <- err:
+		return true
+	case <-stopCh:
+		return false
+	}
+}
+
+// requestContext is the context for the config loop's HTTP calls: canceled
+// when the loop is stopped.
+func (c *HostAgent) requestContext() context.Context {
+	if c.listenCtx != nil {
+		return c.listenCtx
+	}
+	return context.Background()
 }
 
 func (c *HostAgent) UpdateAgentTrackStatus(reason error) error {
@@ -953,5 +1130,89 @@ func (c *HostAgent) ReportAgentStatusAPI() error {
 		zap.Error(err)
 		return fmt.Errorf("%w: %v", ErrReportApiFailure, err)
 	}
+	return nil
+}
+
+// opampServerHTTPBase derives the OpAMP server's REST base URL from its
+// websocket endpoint, e.g. wss://acct.middleware.io/v1/opamp -> https://acct.middleware.io
+func opampServerHTTPBase(opampURL string) (string, error) {
+	u, err := url.Parse(opampURL)
+	if err != nil {
+		return "", fmt.Errorf("invalid opamp server url %q: %w", opampURL, err)
+	}
+	switch u.Scheme {
+	case "ws":
+		u.Scheme = "http"
+	case "wss":
+		u.Scheme = "https"
+	case "http", "https":
+	default:
+		return "", fmt.Errorf("unsupported opamp server url scheme %q", u.Scheme)
+	}
+	u.Path, u.RawQuery, u.Fragment = "", "", ""
+	return u.String(), nil
+}
+
+// pushIngestionRulesToOpAMPServer fetches the current ingestion rules and hands
+// them, unrendered, to the OpAMP server (POST /api/v1/agents/{id}/config/push,
+// authenticated with the account API key). The server stores them and pushes
+// them to the supervisor as RemoteConfig. Failures are reported as
+// ErrConfigFetchFailure so the running collector is left alone, and the push is
+// retried on the next config check.
+func (c *HostAgent) pushIngestionRulesToOpAMPServer() error {
+	if err := c.doPushIngestionRules(); err != nil {
+		c.opampPushPending = true
+		return fmt.Errorf("%w: %v", ErrConfigFetchFailure, err)
+	}
+	c.opampPushPending = false
+	return nil
+}
+
+func (c *HostAgent) doPushIngestionRules() error {
+	if c.AgentID == "" {
+		return fmt.Errorf("supervised mode requires an agent id (MW_AGENT_ID)")
+	}
+	if c.OpAMPServerURL == "" {
+		return fmt.Errorf("supervised mode requires the opamp server url (MW_OPAMP_SERVER_URL)")
+	}
+	base := strings.TrimSuffix(c.OpAMPAPIURL, "/")
+	if base == "" {
+		var err error
+		if base, err = opampServerHTTPBase(c.OpAMPServerURL); err != nil {
+			return err
+		}
+	}
+
+	rules, err := c.fetchIngestionRules(c.DetectConfigType())
+	if err != nil {
+		return err
+	}
+
+	pushURL := fmt.Sprintf("%s/api/v1/agents/%s/config/push", base, c.AgentID)
+	// The server answers on the agent's next status report, usually the
+	// supervisor's APPLYING (it waits up to 30s), so leave room beyond that.
+	// Canceled when the agent stops: the supervisor restarts this process to
+	// apply the config, and the push must not hold up that shutdown.
+	ctx, cancel := context.WithTimeout(c.requestContext(), 60*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, pushURL, bytes.NewReader(rules))
+	if err != nil {
+		return fmt.Errorf("failed to create config push request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+c.APIKey)
+
+	resp, err := c.httpDoFunc(req)
+	if err != nil {
+		return fmt.Errorf("failed to push config to OpAMP server: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return fmt.Errorf("OpAMP server returned status %d: %s", resp.StatusCode, string(body))
+	}
+	c.logger.Info("ingestion rules pushed to OpAMP server",
+		zap.String("url", pushURL), zap.Int("status", resp.StatusCode))
 	return nil
 }

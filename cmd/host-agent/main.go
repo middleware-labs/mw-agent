@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/url"
 	"os"
@@ -14,8 +16,8 @@ import (
 	"sync"
 	"text/tabwriter"
 
-	"github.com/middleware-labs/mw-injector/pkg/otelinject"
 	"github.com/middleware-labs/mw-agent/pkg/agent"
+	"github.com/middleware-labs/mw-injector/pkg/otelinject"
 	"github.com/middleware-labs/synthetics-agent/pkg/worker"
 	"gopkg.in/natefinch/lumberjack.v2"
 
@@ -50,6 +52,9 @@ type program struct {
 	errCh  chan error
 	stopCh chan struct{}
 	args   []string
+	// senders tracks the goroutines that send on errCh, so Stop closes errCh
+	// only after they have returned.
+	senders sync.WaitGroup
 }
 
 // Service interface for kardianos/service package to run
@@ -62,8 +67,10 @@ func (p *program) Start(s service.Service) error {
 	p.programWG.Add(1)
 	go p.run()
 	p.programWG.Add(1)
+	p.senders.Add(1)
 	go func() {
 		p.hostAgent.ReportServices(p.errCh, p.stopCh)
+		p.senders.Done()
 		p.programWG.Done()
 	}()
 
@@ -71,8 +78,10 @@ func (p *program) Start(s service.Service) error {
 	if p.hostAgent.FetchAccountOtelConfig {
 		// Listen to the config changes provided by Middleware API
 		p.programWG.Add(1)
+		p.senders.Add(1)
 		go func() {
 			p.hostAgent.ListenForConfigChanges(p.errCh, p.stopCh)
+			p.senders.Done()
 			p.programWG.Done()
 		}()
 	} else {
@@ -86,16 +95,31 @@ func (p *program) Stop(s service.Service) error {
 	// Stop should not block. Return with a few seconds.
 	p.logger.Info("stopping service", zap.Stringer("name", s))
 
-	// stop collection
+	// stop collection: the senders return once stopCh is closed (an in-flight
+	// config check or push is canceled), and only then is errCh closed, which
+	// ends run. Closing errCh first would panic a sender still reporting.
 	close(p.stopCh)
+	p.senders.Wait()
 	close(p.errCh)
 	p.programWG.Wait()
 	return nil
 }
 
+// collectorController is the part of agent.HostAgent that controlCollector
+// drives. It is an interface only so tests can pass a fake.
+type collectorController interface {
+	StartCollector() error
+	StopCollector(err error)
+}
+
 func (p *program) run() {
 	defer p.programWG.Done()
+	p.controlCollector(p.hostAgent)
+}
 
+// controlCollector starts and stops collection based on what arrives on errCh,
+// until errCh is closed.
+func (p *program) controlCollector(collector collectorController) {
 	for err := range p.errCh {
 		// if invalid config is received from the backend, then keep collector
 		// in its current state. If it is stopped, keep it stopped until we receive
@@ -117,9 +141,17 @@ func (p *program) run() {
 			continue
 		}
 
+		// The backend answers restart-status with 200 even for a bad token, so
+		// a failed check is transient: keep collecting and retry on the next tick.
+		if errors.Is(err, agent.ErrRestartStatusCheckFailure) {
+			p.logger.Warn("restart status check failed; keeping collector in its current state",
+				zap.Error(err))
+			continue
+		}
+
 		if err != nil {
 			// stop collection only if it's running
-			p.hostAgent.StopCollector(err)
+			collector.StopCollector(err)
 
 			// if err is not agent.ErrRestartAgent, then keep collector stopped.
 			// if err is agent.ErrRestartAgent, then resume collection.
@@ -129,7 +161,7 @@ func (p *program) run() {
 			p.logger.Info("restarting collector", zap.Error(err))
 		}
 		// start collection only if it's not running
-		if err := p.hostAgent.StartCollector(); err != nil {
+		if err := collector.StartCollector(); err != nil {
 			p.logger.Error("failed to start collector",
 				zap.Error(err))
 		}
@@ -333,6 +365,36 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			Destination: &cfg.AgentFeatures.ServiceReporting,
 			DefaultText: "true",
 			Value:       true,
+		}),
+
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "remote-agent-enabled",
+			Usage:       "Run in OpAMP supervised mode: the OpAMP supervisor owns the OTel config and restarts; on a backend config change the agent hands the ingestion rules to the OpAMP server instead of writing otel-config itself.",
+			EnvVars:     []string{"MW_REMOTE_AGENT_ENABLED"},
+			Destination: &cfg.RemoteAgentEnabled,
+			DefaultText: "false",
+			Value:       false,
+		}),
+
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "agent-id",
+			EnvVars:     []string{"MW_AGENT_ID"},
+			Usage:       "OpAMP instance id of this agent (set by the supervisor).",
+			Destination: &cfg.AgentID,
+		}),
+
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "opamp-server-url",
+			EnvVars:     []string{"MW_OPAMP_SERVER_URL"},
+			Usage:       "OpAMP server websocket URL (supervised mode). Used to derive the REST endpoint for config pushes.",
+			Destination: &cfg.OpAMPServerURL,
+		}),
+
+		altsrc.NewStringFlag(&cli.StringFlag{
+			Name:        "opamp-api-url",
+			EnvVars:     []string{"MW_OPAMP_API_URL"},
+			Usage:       "OpAMP server REST base URL (supervised mode). Defaults to the host of --opamp-server-url.",
+			Destination: &cfg.OpAMPAPIURL,
 		}),
 
 		&cli.StringFlag{
@@ -787,62 +849,7 @@ func main() {
 						zap.String("version", agentVersion),
 						zap.Stringer("infra-platform", infraPlatform))
 
-					if cfg.APIURLForConfigCheck == "" {
-						cfg.APIURLForConfigCheck, err = agent.GetAPIURLForConfigCheck(cfg.Target)
-						// could not derive api url for config check from target
-						if err != nil {
-							logger.Info("could not derive api url for config check from target",
-								zap.String("target", cfg.Target))
-							return err
-						}
-
-						logger.Info("derived api url for config check",
-							zap.String("api-url-for-config-check", cfg.APIURLForConfigCheck))
-					}
-
-					if cfg.SyntheticMonitoring.ApiURL == "" {
-						cfg.SyntheticMonitoring.ApiURL, err = agent.GetAPIURLForSyntheticMonitoring(cfg.Target)
-						// could not derive api url for synthetic monitoring from target
-						if err != nil {
-							logger.Info("could not derive api url for synthetic monitoring from target",
-								zap.String("target", cfg.Target))
-							return err
-						}
-
-						logger.Info("derived api url for synthetic monitoring",
-							zap.String("api-url-for-synthetic-monitoring", cfg.SyntheticMonitoring.ApiURL))
-					}
-
-					u, err := url.Parse(cfg.Target)
-					if err != nil {
-						return err
-					}
-
-					target := u.String()
-					if u.Port() == "" {
-						target += ":443"
-					}
-
-					// Set environment variables so that envprovider can fill those in the otel config files
-					os.Setenv("MW_TARGET", target)
-					os.Setenv("MW_API_KEY", cfg.APIKey)
-					os.Setenv("MW_AGENT_GRPC_PORT", cfg.GRPCPort)
-					os.Setenv("MW_AGENT_HTTP_PORT", cfg.HTTPPort)
-					os.Setenv("MW_AGENT_FLUENT_PORT", cfg.FluentPort)
-					os.Setenv("MW_AGENT_INTERNAL_METRICS_PORT", strconv.Itoa(int(cfg.InternalMetricsPort)))
-
-					if cfg.EnableDataDogReceiver {
-						os.Setenv("MW_ENABLE_DATADOG_RECEIVER", "true")
-					}
-
-					// TODO: check if on Windows, socket scheme is different than "unix"
-					os.Setenv("MW_DOCKER_ENDPOINT", cfg.DockerEndpoint)
-
-					// Setting MW_HOST_TAGS so that envprovider can fill those in the otel config files
-					os.Setenv("MW_HOST_TAGS", cfg.HostTags)
-					// Checking if host agent has valid tags
-					if err := agent.HasValidTags(cfg.HostTags); err != nil {
-						logger.Info("host agent has invalid tags", zap.Error(err))
+					if err := prepareRuntimeEnv(&cfg, logger); err != nil {
 						return err
 					}
 					// create hostAgent
@@ -926,6 +933,123 @@ func main() {
 					if err != nil {
 						logger.Error("error after running the service", zap.Error(err))
 					}
+					return nil
+				},
+			},
+			{
+				Name:  "format",
+				Usage: "Render the final OTel collector config from a raw ingestion-rules API response (JSON in, YAML out). Used by the OpAMP supervisor; `start` does the same transformation internally.",
+				Flags: append(flags,
+					&cli.StringFlag{
+						Name:  "input",
+						Usage: "Path of the ingestion-rules JSON response, or - for stdin",
+						Value: "-",
+					},
+					&cli.StringFlag{
+						Name:  "output",
+						Usage: "Path to write the rendered OTel YAML to, or - for stdout",
+						Value: "-",
+					},
+					&cli.StringFlag{
+						Name:  "config-type",
+						Usage: "Which config to render: auto (detect docker socket), docker or nodocker",
+						Value: "auto",
+					},
+					&cli.StringFlag{
+						Name:  "edits",
+						Usage: "Path of an editor-edits JSON document (OpAMP mw.edits) to apply on top of the rendered rules; needs --edits-status",
+					},
+					&cli.StringFlag{
+						Name:  "base-output",
+						Usage: "Path to also write the config rendered from the rules alone (without edits) to",
+					},
+					&cli.StringFlag{
+						Name:  "edits-status",
+						Usage: "Path to write the edits result JSON to (only with --edits)",
+					},
+				),
+				Before: altsrc.InitInputSourceWithContext(flags, altsrc.NewYamlSourceFromFlagFunc("config-file")),
+				Action: func(c *cli.Context) error {
+					editsPath, statusPath := c.String("edits"), c.String("edits-status")
+					if editsPath != "" && statusPath == "" {
+						return errors.New("--edits needs --edits-status")
+					}
+
+					// Logs go to stderr so stdout can carry the YAML.
+					loggingLevel, err := zap.ParseAtomicLevel(cfg.LoggingLevel)
+					if err != nil {
+						return err
+					}
+					zapCore = zapcore.NewCore(zapcore.NewJSONEncoder(zapEncoderCfg), zapcore.AddSync(os.Stderr), loggingLevel.Level())
+					logger := zap.New(zapCore, zap.AddCaller())
+					defer func() { _ = logger.Sync() }()
+
+					if err := prepareRuntimeEnv(&cfg, logger); err != nil {
+						return err
+					}
+					infraPlatform := detectInfraPlatform()
+					hostAgent, err := agent.NewHostAgent(cfg, zapCore,
+						agent.WithHostAgentVersion(agentVersion),
+						agent.WithHostAgentInfraPlatform(infraPlatform))
+					if err != nil {
+						return err
+					}
+
+					var input []byte
+					if in := c.String("input"); in == "-" {
+						input, err = io.ReadAll(os.Stdin)
+					} else {
+						input, err = os.ReadFile(in)
+					}
+					if err != nil {
+						return fmt.Errorf("read ingestion-rules input: %w", err)
+					}
+
+					configType := c.String("config-type")
+					switch configType {
+					case "auto":
+						configType = hostAgent.DetectConfigType()
+					case "docker", "nodocker":
+					default:
+						return fmt.Errorf("invalid --config-type %q (want auto, docker or nodocker)", configType)
+					}
+
+					// A nil edits document renders the base only.
+					var edits []byte
+					if editsPath != "" {
+						edits, err = os.ReadFile(editsPath)
+						if err != nil {
+							return fmt.Errorf("read edits: %w", err)
+						}
+					}
+
+					render, err := hostAgent.RenderOtelConfig(input, configType, edits)
+					if err != nil {
+						return err
+					}
+					if baseOut := c.String("base-output"); baseOut != "" {
+						if err := os.WriteFile(baseOut, render.Base, 0600); err != nil {
+							return fmt.Errorf("write base config: %w", err)
+						}
+					}
+					if out := c.String("output"); out == "-" {
+						_, err = os.Stdout.Write(render.Final)
+					} else {
+						err = os.WriteFile(out, render.Final, 0600)
+					}
+					if err != nil {
+						return fmt.Errorf("write rendered config: %w", err)
+					}
+					if render.Status != nil {
+						status, err := json.Marshal(render.Status)
+						if err != nil {
+							return fmt.Errorf("marshal edits status: %w", err)
+						}
+						if err := os.WriteFile(statusPath, status, 0600); err != nil {
+							return fmt.Errorf("write edits status: %w", err)
+						}
+					}
+					logger.Info("rendered otel config", zap.String("config_type", configType), zap.Int("bytes", len(render.Final)))
 					return nil
 				},
 			},
@@ -1081,4 +1205,71 @@ func main() {
 	if err := app.Run(os.Args); err != nil {
 		logger.Fatal("could not run application", zap.Error(err))
 	}
+}
+
+// prepareRuntimeEnv derives the API URLs from the target and exports the MW_*
+// environment variables that the ${env:...} placeholders in the OTel config
+// resolve against. It is shared by `start` and `format` so both validate and
+// run the exact same config.
+func prepareRuntimeEnv(cfg *agent.HostConfig, logger *zap.Logger) error {
+	var err error
+	if cfg.APIURLForConfigCheck == "" {
+		cfg.APIURLForConfigCheck, err = agent.GetAPIURLForConfigCheck(cfg.Target)
+		// could not derive api url for config check from target
+		if err != nil {
+			logger.Info("could not derive api url for config check from target",
+				zap.String("target", cfg.Target))
+			return err
+		}
+
+		logger.Info("derived api url for config check",
+			zap.String("api-url-for-config-check", cfg.APIURLForConfigCheck))
+	}
+
+	if cfg.SyntheticMonitoring.ApiURL == "" {
+		cfg.SyntheticMonitoring.ApiURL, err = agent.GetAPIURLForSyntheticMonitoring(cfg.Target)
+		// could not derive api url for synthetic monitoring from target
+		if err != nil {
+			logger.Info("could not derive api url for synthetic monitoring from target",
+				zap.String("target", cfg.Target))
+			return err
+		}
+
+		logger.Info("derived api url for synthetic monitoring",
+			zap.String("api-url-for-synthetic-monitoring", cfg.SyntheticMonitoring.ApiURL))
+	}
+
+	u, err := url.Parse(cfg.Target)
+	if err != nil {
+		return err
+	}
+
+	target := u.String()
+	if u.Port() == "" {
+		target += ":443"
+	}
+
+	// Set environment variables so that envprovider can fill those in the otel config files
+	os.Setenv("MW_TARGET", target)
+	os.Setenv("MW_API_KEY", cfg.APIKey)
+	os.Setenv("MW_AGENT_GRPC_PORT", cfg.GRPCPort)
+	os.Setenv("MW_AGENT_HTTP_PORT", cfg.HTTPPort)
+	os.Setenv("MW_AGENT_FLUENT_PORT", cfg.FluentPort)
+	os.Setenv("MW_AGENT_INTERNAL_METRICS_PORT", strconv.Itoa(int(cfg.InternalMetricsPort)))
+
+	if cfg.EnableDataDogReceiver {
+		os.Setenv("MW_ENABLE_DATADOG_RECEIVER", "true")
+	}
+
+	// TODO: check if on Windows, socket scheme is different than "unix"
+	os.Setenv("MW_DOCKER_ENDPOINT", cfg.DockerEndpoint)
+
+	// Setting MW_HOST_TAGS so that envprovider can fill those in the otel config files
+	os.Setenv("MW_HOST_TAGS", cfg.HostTags)
+	// Checking if host agent has valid tags
+	if err := agent.HasValidTags(cfg.HostTags); err != nil {
+		logger.Info("host agent has invalid tags", zap.Error(err))
+		return err
+	}
+	return nil
 }

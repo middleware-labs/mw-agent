@@ -1,0 +1,25 @@
+{
+  "status": true,
+  "config": {
+    "nodocker": {
+      "receivers": {
+        "otlp": {"protocols": {"grpc": {"endpoint": "127.0.0.1:9319"}}},
+        "file_log": {"include": ["/var/log/*.log"], "start_at": "end"},
+        "host_metrics": {"collection_interval": "60s", "scrapers": {"cpu": {}, "memory": {}}}
+      },
+      "processors": {
+        "batch": {"timeout": "10s", "send_batch_size": 1000},
+        "resourcedetection": {"detectors": ["system"]}
+      },
+      "exporters": {
+        "otlp_grpc/2": {"endpoint": "${env:MW_TARGET}", "headers": {"authorization": "${env:MW_API_KEY}"}}
+      },
+      "service": {
+        "pipelines": {
+          "logs": {"receivers": ["otlp", "file_log"], "processors": ["batch"], "exporters": ["otlp_grpc/2"]},
+          "metrics": {"receivers": ["otlp", "host_metrics"], "processors": ["resourcedetection", "batch"], "exporters": ["otlp_grpc/2"]}
+        }
+      }
+    }
+  }
+}

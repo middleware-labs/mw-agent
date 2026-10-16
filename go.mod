@@ -127,6 +127,7 @@ require (
 require (
 	github.com/middleware-labs/mw-injector v1.2.3
 	github.com/middleware-labs/synthetics-agent v1.0.65
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.152.0
@@ -137,8 +138,10 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.58.0
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.58.0
 	go.opentelemetry.io/collector/connector v0.152.0
+	go.opentelemetry.io/collector/exporter/nopexporter v0.152.0
 	go.opentelemetry.io/collector/featuregate v1.58.0
 	go.opentelemetry.io/collector/otelcol v0.152.0
+	go.opentelemetry.io/collector/receiver/nopreceiver v0.152.0
 	go.opentelemetry.io/collector/service v0.152.0
 	go.uber.org/zap/exp v0.3.0
 )
@@ -389,6 +392,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mdlayher/socket v0.5.1 // indirect
 	github.com/mdlayher/vsock v1.2.1 // indirect
+	github.com/michel-laterman/proxy-connect-dialer-go v0.1.0 // indirect
 	github.com/microsoft/go-mssqldb v1.9.6 // indirect
 	github.com/middleware-labs/innoParser v0.0.0-20240729092319-ddbdd8e42266 // indirect
 	github.com/miekg/dns v1.1.72 // indirect
@@ -406,7 +410,9 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
+	github.com/open-telemetry/opamp-go v0.23.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.152.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.152.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.152.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.152.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.152.0 // indirect
