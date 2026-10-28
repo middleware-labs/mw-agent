@@ -299,7 +299,7 @@ func (d IntegrationType) String() string {
 	return "unknown"
 }
 
-func (c *HostAgent) getConfigProviderSettings(uri string) otelcol.ConfigProviderSettings {
+func (c *HostAgent) getConfigProviderSettings(uris ...string) otelcol.ConfigProviderSettings {
 	return otelcol.ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			ProviderFactories: []confmap.ProviderFactory{
@@ -307,7 +307,7 @@ func (c *HostAgent) getConfigProviderSettings(uri string) otelcol.ConfigProvider
 				yamlprovider.NewFactory(),
 				envprovider.NewFactory(),
 			},
-			URIs: []string{uri},
+			URIs: uris,
 		},
 	}
 }
@@ -667,6 +667,20 @@ func (c *HostAgent) validateOtelConfig(apiYAMLBytes []byte) (invalid error, err 
 		return nil, err
 	}
 	return cfg.Validate(), nil
+}
+
+// ValidateConfigFiles checks collector config files (merged in order, with
+// ${env:...} resolved) the way `otelcol validate` does: unknown components or
+// keys, each component's own Validate(), and pipeline references. Nothing is
+// started and nothing is sent.
+func (c *HostAgent) ValidateConfigFiles(ctx context.Context, uris []string) error {
+	settings := c.collectorSettings
+	settings.ConfigProviderSettings = c.getConfigProviderSettings(uris...)
+	col, err := otelcol.NewCollector(settings)
+	if err != nil {
+		return err
+	}
+	return col.DryRun(ctx)
 }
 
 // GetUpdatedYAMLPath gets the correct otel configuration file

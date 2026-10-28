@@ -160,6 +160,7 @@ jobs:
           cp agent/package-tooling/mw-agent.env.sample build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/etc/${PACKAGE_NAME}/mw-agent.env.sample
           # cp agent/package-tooling/mw-supervisor.env build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/etc/${PACKAGE_NAME}/mw-supervisor.env
           cp agent/package-tooling/otel-config.yaml.sample build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/etc/${PACKAGE_NAME}/otel-config.yaml.sample
+          cp agent/package-tooling/otel-fallback.yaml build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/etc/${PACKAGE_NAME}/otel-fallback.yaml
           cp supervisor/package-tooling/supervisor-config.yaml.sample build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/etc/${PACKAGE_NAME}/supervisor-config.yaml.sample
 
           cp agent/package-tooling/linux/postinst build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}/DEBIAN/postinst

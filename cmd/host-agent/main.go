@@ -1054,6 +1054,46 @@ func main() {
 				},
 			},
 			{
+				Name:  "validate",
+				Usage: "Check OTel collector config files without starting anything (unknown components or keys, invalid settings, pipeline references). Used by the OpAMP supervisor for its startup fallback config.",
+				Flags: append(flags,
+					&cli.StringSliceFlag{
+						Name:     "config",
+						Usage:    "Path of a collector config file; repeat to merge several in order",
+						Required: true,
+					},
+				),
+				Before: altsrc.InitInputSourceWithContext(flags, altsrc.NewYamlSourceFromFlagFunc("config-file")),
+				Action: func(c *cli.Context) error {
+					loggingLevel, err := zap.ParseAtomicLevel(cfg.LoggingLevel)
+					if err != nil {
+						return err
+					}
+					zapCore = zapcore.NewCore(zapcore.NewJSONEncoder(zapEncoderCfg), zapcore.AddSync(os.Stderr), loggingLevel.Level())
+					logger := zap.New(zapCore, zap.AddCaller())
+					defer func() { _ = logger.Sync() }()
+
+					// Same ${env:MW_*} values as `start`.
+					if err := prepareRuntimeEnv(&cfg, logger); err != nil {
+						return err
+					}
+					hostAgent, err := agent.NewHostAgent(cfg, zapCore,
+						agent.WithHostAgentVersion(agentVersion),
+						agent.WithHostAgentInfraPlatform(detectInfraPlatform()))
+					if err != nil {
+						return err
+					}
+
+					paths := c.StringSlice("config")
+					if err := hostAgent.ValidateConfigFiles(c.Context, paths); err != nil {
+						// Exit 1 with the reason on stderr, where the supervisor reads it.
+						return cli.Exit(fmt.Sprintf("invalid config %v: %v", paths, err), 1)
+					}
+					logger.Info("config is valid", zap.Strings("config", paths))
+					return nil
+				},
+			},
+			{
 				Name:  "version",
 				Usage: "Returns the current agent version",
 				Action: func(c *cli.Context) error {

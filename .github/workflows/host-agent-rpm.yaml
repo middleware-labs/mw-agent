@@ -81,6 +81,8 @@ jobs:
         ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/mw-agent.env.sample
         cp agent/package-tooling/otel-config.yaml.sample \
         ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/otel-config.yaml.sample
+        cp agent/package-tooling/otel-fallback.yaml \
+        ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/otel-fallback.yaml
         cp supervisor/package-tooling/supervisor-config.yaml.sample \
         ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/supervisor-config.yaml.sample
         cp agent/package-tooling/linux/postinst ~/build/rpmbuild/SOURCES/${{ matrix.arch }}/${PACKAGE_NAME}-${RELEASE_VERSION}/postinstall.sh
