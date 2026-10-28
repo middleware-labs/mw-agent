@@ -442,6 +442,16 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 }
 
 // fetchIngestionRules returns the raw ingestion-rules API response for this host.
+// collectorRunningParam is the col_running query parameter: "1" while the
+// collector runs, "0" otherwise.
+func (c *HostAgent) collectorRunningParam() string {
+	// Don't need to take lock on the c.collector because it is not deferenced
+	if c.collector != nil {
+		return "1"
+	}
+	return "0"
+}
+
 func (c *HostAgent) fetchIngestionRules(configType string) ([]byte, error) {
 	// _, apiURLForYAML := checkForConfigURLOverrides()
 
@@ -466,12 +476,7 @@ func (c *HostAgent) fetchIngestionRules(configType string) ([]byte, error) {
 		params.Add("enable_datadog_receiver", "true")
 	}
 
-	collectorRunning := 0
-	// Don't need to take lock on the c.collector because it is not deferenced
-	if c.collector == nil {
-		collectorRunning = 1
-	}
-	params.Add("col_running", fmt.Sprintf("%d", collectorRunning))
+	params.Add("col_running", c.collectorRunningParam())
 
 	// Add Query Parameters to the URL
 	baseURL.RawQuery = params.Encode() // Escape Query Parameters
@@ -752,12 +757,7 @@ func (c *HostAgent) callRestartStatusAPI() error {
 	params.Add("agent_version", c.Version)
 	params.Add("infra_platform", fmt.Sprint(c.InfraPlatform))
 
-	collectorRunning := 0
-	// Don't need to take lock on the c.collector because it is not deferenced
-	if c.collector == nil {
-		collectorRunning = 1
-	}
-	params.Add("col_running", fmt.Sprintf("%d", collectorRunning))
+	params.Add("col_running", c.collectorRunningParam())
 
 	// Add Query Parameters to the URL
 	baseURL.RawQuery = params.Encode() // Escape Query Parameters
