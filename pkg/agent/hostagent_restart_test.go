@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/otelcol"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -99,6 +100,41 @@ func TestHostAgentCallRestartStatusAPI(t *testing.T) {
 			if tt.wantErr == ErrRestartStatusCheckFailure {
 				assert.NotErrorIs(t, err, ErrRestartAgent)
 			}
+		})
+	}
+}
+
+// col_running on the restart-status and ingestion-rules calls is 1 while the
+// collector runs and 0 otherwise (it was inverted).
+func TestColRunningParam(t *testing.T) {
+	for _, running := range []bool{false, true} {
+		t.Run(map[bool]string{false: "stopped", true: "running"}[running], func(t *testing.T) {
+			got := map[string]string{}
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				got[r.URL.Path] = r.URL.Query().Get("col_running")
+				if strings.Contains(r.URL.Path, apiPathForRestart) {
+					w.Write([]byte(`{"status":true,"restart":false}`))
+					return
+				}
+				w.Write([]byte(restartTestRules))
+			}))
+			t.Cleanup(srv.Close)
+			cfg := HostConfig{BaseConfig: BaseConfig{APIKey: "k", APIURLForConfigCheck: srv.URL}}
+			cfg.ConfigCheckInterval = "1s"
+			cfg.OtelConfigFile = filepath.Join(t.TempDir(), "otel-config.yaml")
+			agent, err := NewHostAgent(cfg, zapcore.NewNopCore())
+			require.NoError(t, err)
+			if running {
+				agent.collector, err = otelcol.NewCollector(agent.collectorSettings)
+				require.NoError(t, err)
+			}
+
+			require.NoError(t, agent.callRestartStatusAPI())
+			_, err = agent.fetchIngestionRules("nodocker")
+			require.NoError(t, err)
+
+			want := map[bool]string{false: "0", true: "1"}[running]
+			assert.Equal(t, map[string]string{"/" + apiPathForRestart: want, "/" + apiPathForYAML: want}, got)
 		})
 	}
 }
