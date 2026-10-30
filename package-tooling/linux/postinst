@@ -75,15 +75,16 @@ update_config() {
         local parent_key=${key%%.*}       # Extract parent key (e.g., agent-features)
         local child_key=${key#*.}         # Extract child key (e.g., synthetic-monitoring)
         
-        # Check if the parent key exists
-        grep -q "^\s*${parent_key}:" "$file"
+        # Check if the parent key exists. Parents are top-level, so anchor at
+        # column 0: "synthetic-monitoring:" is also a child of agent-features.
+        grep -q "^${parent_key}:" "$file"
         if [ $? -eq 0 ]; then
             # Parent key exists, try updating the child key
-            sed -i "/^\s*${parent_key}:/,/^\s*[a-zA-Z_-]\+:/ s|^\s*${child_key}:.*|  ${child_key}: ${value}|" "$file"
-            
+            sed -i "/^${parent_key}:/,/^\s*[a-zA-Z_-]\+:/ s|^\s*${child_key}:.*|  ${child_key}: ${value}|" "$file"
+
             # If the child key update fails (not found), append it under the parent key
-            if ! grep -q "^\s*${parent_key}:.*${child_key}:.*" "$file"; then
-                sed -i "/^\s*${parent_key}:/a\  ${child_key}: ${value}" "$file"
+            if ! grep -q "^${parent_key}:.*${child_key}:.*" "$file"; then
+                sed -i "/^${parent_key}:/a\  ${child_key}: ${value}" "$file"
             fi
         else
             # Parent key doesn't exist, append both parent and child key
@@ -143,9 +144,9 @@ handle_variable() {
         MW_API_URL_FOR_CONFIG_CHECK)
             update_config "api-url-for-config-check" "$value" "${CONFIG_FILE}"
             ;;
-        MW_API_URL_FOR_SYNTHETIC_MONITORING)
-            update_config "api-url-for-synthetic-monitoring" "$value" "${CONFIG_FILE}"
-            ;; 
+        MW_API_URL_FOR_SYNTHETIC_MONITORING|MW_SYNTHETIC_MONITORING_API_URL)
+            update_config "synthetic-monitoring.api-url" "$value" "${CONFIG_FILE}"
+            ;;
         MW_FETCH_ACCOUNT_OTEL_CONFIG)
             update_config "fetch-account-otel-config" "$value" "${CONFIG_FILE}"
             ;;
@@ -162,10 +163,10 @@ handle_variable() {
             update_config "agent-features.service-reporting" "$value" "${CONFIG_FILE}"
             ;;
         MW_AGENT_SELF_PROFILING)
-            update_config "mw-agent-self-profiling" "$value" "${CONFIG_FILE}"
+            update_config "agent-self-profiling" "$value" "${CONFIG_FILE}"
             ;;
         MW_PROFILING_SERVER_URL)
-            update_config "mw-profiling-server-url" "$value" "${CONFIG_FILE}"
+            update_config "profiling-server-url" "$value" "${CONFIG_FILE}"
             ;;
         MW_LOGFILE)
             update_config "logfile" "$value" "${CONFIG_FILE}"
@@ -173,8 +174,9 @@ handle_variable() {
         MW_LOGFILE_SIZE)
             update_config "logfile-size" "$value" "${CONFIG_FILE}"
             ;;
-        MW_FLUENT_PORT)
-            update_config "fluent-port" "$value" "${CONFIG_FILE}"
+        MW_AGENT_FLUENT_PORT|MW_FLUENT_PORT)
+            # fluent-port is a string flag; an unquoted number fails to load.
+            update_config "fluent-port" "\"$value\"" "${CONFIG_FILE}"
             ;;
         MW_DOCKER_ENDPOINT)
             update_config "docker-endpoint" "$value" "${CONFIG_FILE}"
@@ -440,8 +442,8 @@ else
                 handle_variable "MW_AGENT_FEATURES_REPORT_SERVICES" "${MW_AGENT_FEATURES_REPORT_SERVICES}"
             fi
 
-            if [ -n "${MW_API_URL_FOR_SYNTHETIC_MONITORING}" ]; then
-                handle_variable "MW_API_URL_FOR_SYNTHETIC_MONITORING" "${MW_API_URL_FOR_SYNTHETIC_MONITORING}"
+            if [ -n "${MW_SYNTHETIC_MONITORING_API_URL:-$MW_API_URL_FOR_SYNTHETIC_MONITORING}" ]; then
+                handle_variable "MW_SYNTHETIC_MONITORING_API_URL" "${MW_SYNTHETIC_MONITORING_API_URL:-$MW_API_URL_FOR_SYNTHETIC_MONITORING}"
             fi
 
             if [ -n "${MW_AGENT_SELF_PROFILING}" ]; then
@@ -460,8 +462,8 @@ else
                 handle_variable "MW_LOGFILE_SIZE" "${MW_LOGFILE_SIZE}"
             fi
 
-            if [ -n "${MW_FLUENT_PORT}" ]; then
-                handle_variable "MW_FLUENT_PORT" "${MW_FLUENT_PORT}"
+            if [ -n "${MW_AGENT_FLUENT_PORT:-$MW_FLUENT_PORT}" ]; then
+                handle_variable "MW_AGENT_FLUENT_PORT" "${MW_AGENT_FLUENT_PORT:-$MW_FLUENT_PORT}"
             fi
 
             if [ -n "${MW_DOCKER_ENDPOINT}" ]; then

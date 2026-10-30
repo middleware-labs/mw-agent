@@ -125,7 +125,58 @@ Var TextAPIKey
 Var TextTarget
 Var MWAPIKey
 Var MWTarget
-Var LogFilePath
+
+# Optional agent settings. These mirror the MW_* variables the Linux packages
+# accept and map to the flags defined in cmd/host-agent/main.go.
+Var MWConfigCheckInterval
+Var MWHostTags
+Var MWAgentInternalMetricsPort
+Var MWAPIURLForConfigCheck
+Var MWSyntheticMonitoringAPIURL
+Var MWFetchAccountOtelConfig
+Var MWFeatureInfraMonitoring
+Var MWFeatureMetricCollection
+Var MWFeatureLogCollection
+Var MWFeatureSyntheticMonitoring
+Var MWFeatureServiceReporting
+Var MWServiceReportInterval
+Var MWAgentSelfProfiling
+Var MWProfilingServerURL
+Var MWLogFile
+Var MWLogFileSize
+Var MWLoggingLevel
+Var MWGRPCPort
+Var MWHTTPPort
+Var MWFluentPort
+Var MWDockerEndpoint
+Var MWEnableDatadogReceiver
+
+# Read /NAME=value from the installer command line into VAR ("" if absent).
+# Values may be wrapped in "", '' or `` quotes.
+!macro ReadOption NAME VAR
+  ${GetOptions} "$0" "/${NAME}=" ${VAR}
+!macroend
+
+# Bool flags must be written as unquoted true/false or the agent fails to
+# parse its config, so anything else is dropped and the agent default applies.
+!macro NormalizeBool VAR
+  ${If} ${VAR} == "true"
+    StrCpy ${VAR} "true"
+  ${ElseIf} ${VAR} == "false"
+    StrCpy ${VAR} "false"
+  ${Else}
+    StrCpy ${VAR} ""
+  ${EndIf}
+!macroend
+
+# Same for numeric flags: drop values that are not plain integers.
+!macro NormalizeInt VAR
+  IntOp $R1 ${VAR} + 0
+  ${If} "$R1" != "${VAR}"
+  ${OrIf} $R1 < 0
+    StrCpy ${VAR} ""
+  ${EndIf}
+!macroend
 
 Function .onInit
   Strcpy $InstallerOperation "install"
@@ -136,11 +187,47 @@ Function .onInit
 
   # Get input arguments if passed
   ${GetParameters} $0
-  ${GetOptions} "$0" "/MW_API_KEY=" $1
-  ${GetOptions} "$0" "/MW_TARGET=" $2
+  !insertmacro ReadOption "MW_API_KEY" $MWAPIKey
+  !insertmacro ReadOption "MW_TARGET" $MWTarget
+  !insertmacro ReadOption "MW_CONFIG_CHECK_INTERVAL" $MWConfigCheckInterval
+  !insertmacro ReadOption "MW_HOST_TAGS" $MWHostTags
+  !insertmacro ReadOption "MW_AGENT_INTERNAL_METRICS_PORT" $MWAgentInternalMetricsPort
+  !insertmacro ReadOption "MW_API_URL_FOR_CONFIG_CHECK" $MWAPIURLForConfigCheck
+  !insertmacro ReadOption "MW_SYNTHETIC_MONITORING_API_URL" $MWSyntheticMonitoringAPIURL
+  ${If} $MWSyntheticMonitoringAPIURL == ""
+    !insertmacro ReadOption "MW_API_URL_FOR_SYNTHETIC_MONITORING" $MWSyntheticMonitoringAPIURL
+  ${EndIf}
+  !insertmacro ReadOption "MW_FETCH_ACCOUNT_OTEL_CONFIG" $MWFetchAccountOtelConfig
+  !insertmacro ReadOption "MW_AGENT_FEATURES_INFRA_MONITORING" $MWFeatureInfraMonitoring
+  !insertmacro ReadOption "MW_AGENT_FEATURES_METRIC_COLLECTION" $MWFeatureMetricCollection
+  !insertmacro ReadOption "MW_AGENT_FEATURES_LOG_COLLECTION" $MWFeatureLogCollection
+  !insertmacro ReadOption "MW_AGENT_FEATURES_SYNTHETIC_MONITORING" $MWFeatureSyntheticMonitoring
+  !insertmacro ReadOption "MW_AGENT_FEATURES_REPORT_SERVICES" $MWFeatureServiceReporting
+  !insertmacro ReadOption "MW_SERVICE_REPORT_INTERVAL" $MWServiceReportInterval
+  !insertmacro ReadOption "MW_AGENT_SELF_PROFILING" $MWAgentSelfProfiling
+  !insertmacro ReadOption "MW_PROFILING_SERVER_URL" $MWProfilingServerURL
+  !insertmacro ReadOption "MW_LOGFILE" $MWLogFile
+  !insertmacro ReadOption "MW_LOGFILE_SIZE" $MWLogFileSize
+  !insertmacro ReadOption "MW_LOGGING_LEVEL" $MWLoggingLevel
+  !insertmacro ReadOption "MW_AGENT_GRPC_PORT" $MWGRPCPort
+  !insertmacro ReadOption "MW_AGENT_HTTP_PORT" $MWHTTPPort
+  !insertmacro ReadOption "MW_AGENT_FLUENT_PORT" $MWFluentPort
+  ${If} $MWFluentPort == ""
+    !insertmacro ReadOption "MW_FLUENT_PORT" $MWFluentPort
+  ${EndIf}
+  !insertmacro ReadOption "MW_DOCKER_ENDPOINT" $MWDockerEndpoint
+  !insertmacro ReadOption "MW_ENABLE_DATADOG_RECEIVER" $MWEnableDatadogReceiver
 
-  StrCpy $MWAPIKey $1
-  StrCpy $MWTarget $2
+  !insertmacro NormalizeBool $MWFetchAccountOtelConfig
+  !insertmacro NormalizeBool $MWFeatureInfraMonitoring
+  !insertmacro NormalizeBool $MWFeatureMetricCollection
+  !insertmacro NormalizeBool $MWFeatureLogCollection
+  !insertmacro NormalizeBool $MWFeatureSyntheticMonitoring
+  !insertmacro NormalizeBool $MWFeatureServiceReporting
+  !insertmacro NormalizeBool $MWAgentSelfProfiling
+  !insertmacro NormalizeBool $MWEnableDatadogReceiver
+  !insertmacro NormalizeInt $MWAgentInternalMetricsPort
+  !insertmacro NormalizeInt $MWLogFileSize
 FunctionEnd
 
 Function onManualInstallClick
@@ -198,14 +285,69 @@ Function PgPageLeave
     StrCpy $InstallerMessage "api key and target entered"
 FunctionEnd
 
+# Write KEY: "VALUE" to the open config file ($4), escaping backslashes and
+# double quotes for YAML. Always writes, even when VALUE is empty.
+!macro WriteStringSetting INDENT KEY VALUE
+  ${StrRep} $R0 "${VALUE}" "\" "\\"
+  ${StrRep} $R0 $R0 '"' '\"'
+  FileWrite $4 '${INDENT}${KEY}: "$R0"$\r$\n'
+!macroend
+
+# Write KEY: "VALUE" only when VALUE is set.
+!macro WriteOptionalString INDENT KEY VALUE
+  ${If} "${VALUE}" != ""
+    !insertmacro WriteStringSetting "${INDENT}" "${KEY}" "${VALUE}"
+  ${EndIf}
+!macroend
+
+# Write KEY: VALUE unquoted (bool and int flags) only when VALUE is set.
+!macro WriteOptionalRaw INDENT KEY VALUE
+  ${If} "${VALUE}" != ""
+    FileWrite $4 "${INDENT}${KEY}: ${VALUE}$\r$\n"
+  ${EndIf}
+!macroend
+
 Function UpdateConfigFile
+    ${If} $MWConfigCheckInterval == ""
+        StrCpy $MWConfigCheckInterval "5m"
+    ${EndIf}
+    ${If} $MWLogFile == ""
+        StrCpy $MWLogFile "$INSTDIR\mw-agent.log"
+    ${EndIf}
+
     FileOpen $4 "$INSTDIR\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}" w
-    FileWrite $4 "api-key: $MWAPIKey $\r$\n"
-    FileWrite $4 "target: $MWTarget $\r$\n"
-    FileWrite $4 "config-check-interval: $\"5m$\"$\r$\n"
-    Strcpy $LogFilePath "$INSTDIR\mw-agent.log"
-    ${StrRep} $R0 $LogFilePath "\" "\\"
-    FileWrite $4 "logfile: $\"$R0$\"$\r$\n"
+    !insertmacro WriteStringSetting "" "api-key" $MWAPIKey
+    !insertmacro WriteStringSetting "" "target" $MWTarget
+    !insertmacro WriteStringSetting "" "config-check-interval" $MWConfigCheckInterval
+    !insertmacro WriteStringSetting "" "logfile" $MWLogFile
+    !insertmacro WriteOptionalRaw "" "logfile-size" $MWLogFileSize
+    !insertmacro WriteOptionalString "" "logging-level" $MWLoggingLevel
+    !insertmacro WriteOptionalString "" "host-tags" $MWHostTags
+    !insertmacro WriteOptionalRaw "" "agent-internal-metrics-port" $MWAgentInternalMetricsPort
+    !insertmacro WriteOptionalString "" "api-url-for-config-check" $MWAPIURLForConfigCheck
+    !insertmacro WriteOptionalRaw "" "fetch-account-otel-config" $MWFetchAccountOtelConfig
+    !insertmacro WriteOptionalString "" "service-report-interval" $MWServiceReportInterval
+    !insertmacro WriteOptionalRaw "" "agent-self-profiling" $MWAgentSelfProfiling
+    !insertmacro WriteOptionalString "" "profiling-server-url" $MWProfilingServerURL
+    !insertmacro WriteOptionalString "" "grpc-port" $MWGRPCPort
+    !insertmacro WriteOptionalString "" "http-port" $MWHTTPPort
+    !insertmacro WriteOptionalString "" "fluent-port" $MWFluentPort
+    !insertmacro WriteOptionalString "" "docker-endpoint" $MWDockerEndpoint
+    !insertmacro WriteOptionalRaw "" "enable-datadog-receiver" $MWEnableDatadogReceiver
+
+    ${If} "$MWFeatureInfraMonitoring$MWFeatureMetricCollection$MWFeatureLogCollection$MWFeatureSyntheticMonitoring$MWFeatureServiceReporting" != ""
+        FileWrite $4 "agent-features:$\r$\n"
+        !insertmacro WriteOptionalRaw "  " "infra-monitoring" $MWFeatureInfraMonitoring
+        !insertmacro WriteOptionalRaw "  " "metric-collection" $MWFeatureMetricCollection
+        !insertmacro WriteOptionalRaw "  " "log-collection" $MWFeatureLogCollection
+        !insertmacro WriteOptionalRaw "  " "synthetic-monitoring" $MWFeatureSyntheticMonitoring
+        !insertmacro WriteOptionalRaw "  " "service-reporting" $MWFeatureServiceReporting
+    ${EndIf}
+
+    ${If} $MWSyntheticMonitoringAPIURL != ""
+        FileWrite $4 "synthetic-monitoring:$\r$\n"
+        !insertmacro WriteStringSetting "  " "api-url" $MWSyntheticMonitoringAPIURL
+    ${EndIf}
     FileClose $4
     StrCpy $InstallerMessage "$INSTDIR\${CONFIG_FILE_NAME_IN_INSTALLED_DIR} file created"
 FunctionEnd
@@ -286,7 +428,7 @@ SectionEnd
 
   function un.onInit		
 	# Verify the uninstaller - last chance to back out
-	MessageBox MB_OKCANCEL "Permanantly remove ${APPNAME}?" IDOK next
+	MessageBox MB_OKCANCEL "Permanantly remove ${APPNAME}?" /SD IDOK IDOK next
 		Abort
 	next:
 	!insertmacro VerifyUserIsAdmin
