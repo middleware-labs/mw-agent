@@ -1,7 +1,7 @@
 RELEASE_VERSION=1.11.152
 LD_FLAGS="-s -w -X main.agentVersion=${RELEASE_VERSION}"
 build-windows:
-	GOOS=windows CGO_ENABLED=0 go build -ldflags=${LD_FLAGS} -o build/mw-windows-agent.exe cmd/host-agent/main.go
+	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags=${LD_FLAGS} -o build/mw-windows-agent.exe cmd/host-agent/main.go
 build-linux:
 	GOOS=linux CGO_ENABLED=0 go build -ldflags=${LD_FLAGS} -o build/mw-host-agent cmd/host-agent/main.go
 build-darwin-amd64:
