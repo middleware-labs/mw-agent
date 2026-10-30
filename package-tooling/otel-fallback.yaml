@@ -154,7 +154,7 @@ processors:
       key: mw.dummy_resource
     - action: upsert
       key: mw.agent.version
-      value: 2.0.0-dev
+      value: ${env:MW_AGENT_VERSION}
   resource/deletelogs:
     attributes:
     - action: delete
@@ -206,7 +206,7 @@ processors:
       key: mw.dummy_resource
     - action: upsert
       key: mw.agent.version
-      value: 2.0.0-dev
+      value: ${env:MW_AGENT_VERSION}
   resource/traces:
     attributes:
     - action: delete
@@ -291,7 +291,6 @@ receivers:
     exclude:
     - /**/*.gz
     include:
-    - $MW_LOG_PATHS
     - /var/log/**/*.log*
     - /var/lib/docker/containers/**/*.log*
     include_file_name_resolved: true

@@ -6,6 +6,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,6 +23,7 @@ func newValidateTestAgent(t *testing.T) *HostAgent {
 	t.Setenv("MW_AGENT_HTTP_PORT", "9320")
 	t.Setenv("MW_AGENT_FLUENT_PORT", "8006")
 	t.Setenv("MW_AGENT_INTERNAL_METRICS_PORT", "8888")
+	t.Setenv("MW_AGENT_VERSION", "2.0.0")
 	return agent
 }
 
@@ -51,6 +53,34 @@ func TestPackageFallbackHasNoDocker(t *testing.T) {
 	for name, p := range cfg.Processors {
 		assert.NotContains(t, p.Detectors, "docker", name)
 	}
+}
+
+// The fallback is shipped as-is to every release: the agent version comes
+// from the binary, and only ${...} references are expanded (a bare $VAR stays
+// a literal).
+func TestPackageFallbackReferences(t *testing.T) {
+	b, err := os.ReadFile(fallbackConfigPath)
+	require.NoError(t, err)
+	assert.Empty(t, regexp.MustCompile(`\$[A-Za-z_]\w*`).FindAllString(string(b), -1))
+	var cfg struct {
+		Processors map[string]struct {
+			Attributes []struct {
+				Key   string `yaml:"key"`
+				Value string `yaml:"value"`
+			} `yaml:"attributes"`
+		} `yaml:"processors"`
+	}
+	require.NoError(t, yaml.Unmarshal(b, &cfg))
+	n := 0
+	for name, p := range cfg.Processors {
+		for _, a := range p.Attributes {
+			if a.Key == "mw.agent.version" {
+				assert.Equal(t, "${env:MW_AGENT_VERSION}", a.Value, name)
+				n++
+			}
+		}
+	}
+	assert.Positive(t, n)
 }
 
 func TestValidateConfigFiles_Invalid(t *testing.T) {

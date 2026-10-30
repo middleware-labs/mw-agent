@@ -1296,6 +1296,7 @@ func prepareRuntimeEnv(cfg *agent.HostConfig, logger *zap.Logger) error {
 	os.Setenv("MW_AGENT_HTTP_PORT", cfg.HTTPPort)
 	os.Setenv("MW_AGENT_FLUENT_PORT", cfg.FluentPort)
 	os.Setenv("MW_AGENT_INTERNAL_METRICS_PORT", strconv.Itoa(int(cfg.InternalMetricsPort)))
+	os.Setenv("MW_AGENT_VERSION", agentVersion)
 
 	if cfg.EnableDataDogReceiver {
 		os.Setenv("MW_ENABLE_DATADOG_RECEIVER", "true")
