@@ -173,6 +173,7 @@ Var MWEnableDatadogReceiver
 !macro NormalizeInt VAR
   IntOp $R1 ${VAR} + 0
   ${If} "$R1" != "${VAR}"
+  ${OrIf} $R1 < 0
     StrCpy ${VAR} ""
   ${EndIf}
 !macroend
