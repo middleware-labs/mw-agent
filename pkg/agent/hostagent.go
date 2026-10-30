@@ -299,7 +299,7 @@ func (d IntegrationType) String() string {
 	return "unknown"
 }
 
-func (c *HostAgent) getConfigProviderSettings(uri string) otelcol.ConfigProviderSettings {
+func (c *HostAgent) getConfigProviderSettings(uris ...string) otelcol.ConfigProviderSettings {
 	return otelcol.ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			ProviderFactories: []confmap.ProviderFactory{
@@ -307,7 +307,7 @@ func (c *HostAgent) getConfigProviderSettings(uri string) otelcol.ConfigProvider
 				yamlprovider.NewFactory(),
 				envprovider.NewFactory(),
 			},
-			URIs: []string{uri},
+			URIs: uris,
 		},
 	}
 }
@@ -442,6 +442,16 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 }
 
 // fetchIngestionRules returns the raw ingestion-rules API response for this host.
+// collectorRunningParam is the col_running query parameter: "1" while the
+// collector runs, "0" otherwise.
+func (c *HostAgent) collectorRunningParam() string {
+	// Don't need to take lock on the c.collector because it is not deferenced
+	if c.collector != nil {
+		return "1"
+	}
+	return "0"
+}
+
 func (c *HostAgent) fetchIngestionRules(configType string) ([]byte, error) {
 	// _, apiURLForYAML := checkForConfigURLOverrides()
 
@@ -466,12 +476,7 @@ func (c *HostAgent) fetchIngestionRules(configType string) ([]byte, error) {
 		params.Add("enable_datadog_receiver", "true")
 	}
 
-	collectorRunning := 0
-	// Don't need to take lock on the c.collector because it is not deferenced
-	if c.collector == nil {
-		collectorRunning = 1
-	}
-	params.Add("col_running", fmt.Sprintf("%d", collectorRunning))
+	params.Add("col_running", c.collectorRunningParam())
 
 	// Add Query Parameters to the URL
 	baseURL.RawQuery = params.Encode() // Escape Query Parameters
@@ -669,6 +674,20 @@ func (c *HostAgent) validateOtelConfig(apiYAMLBytes []byte) (invalid error, err 
 	return cfg.Validate(), nil
 }
 
+// ValidateConfigFiles checks collector config files (merged in order, with
+// ${env:...} resolved) the way `otelcol validate` does: unknown components or
+// keys, each component's own Validate(), and pipeline references. Nothing is
+// started and nothing is sent.
+func (c *HostAgent) ValidateConfigFiles(ctx context.Context, uris []string) error {
+	settings := c.collectorSettings
+	settings.ConfigProviderSettings = c.getConfigProviderSettings(uris...)
+	col, err := otelcol.NewCollector(settings)
+	if err != nil {
+		return err
+	}
+	return col.DryRun(ctx)
+}
+
 // GetUpdatedYAMLPath gets the correct otel configuration file
 // DetectConfigType returns "docker" when the configured docker endpoint is a
 // live unix socket on this host, otherwise "nodocker".
@@ -752,12 +771,7 @@ func (c *HostAgent) callRestartStatusAPI() error {
 	params.Add("agent_version", c.Version)
 	params.Add("infra_platform", fmt.Sprint(c.InfraPlatform))
 
-	collectorRunning := 0
-	// Don't need to take lock on the c.collector because it is not deferenced
-	if c.collector == nil {
-		collectorRunning = 1
-	}
-	params.Add("col_running", fmt.Sprintf("%d", collectorRunning))
+	params.Add("col_running", c.collectorRunningParam())
 
 	// Add Query Parameters to the URL
 	baseURL.RawQuery = params.Encode() // Escape Query Parameters

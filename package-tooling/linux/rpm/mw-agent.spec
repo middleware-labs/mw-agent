@@ -29,6 +29,7 @@ cp -rfa ~/build/rpmbuild/SOURCES/%{arch}/%{package_name}-%{release_version}/mw-o
 cp -rfa ~/build/rpmbuild/SOURCES/%{arch}/%{package_name}-%{release_version}/agent-config.yaml.sample %{buildroot}/etc/%{package_name}/
 cp -rfa ~/build/rpmbuild/SOURCES/%{arch}/%{package_name}-%{release_version}/mw-agent.env.sample %{buildroot}/etc/%{package_name}/
 cp -rfa ~/build/rpmbuild/SOURCES/%{arch}/%{package_name}-%{release_version}/otel-config.yaml.sample %{buildroot}/etc/%{package_name}/
+cp -rfa ~/build/rpmbuild/SOURCES/%{arch}/%{package_name}-%{release_version}/otel-fallback.yaml %{buildroot}/etc/%{package_name}/
 cp -rfa ~/build/rpmbuild/SOURCES/%{arch}/%{package_name}-%{release_version}/supervisor-config.yaml.sample %{buildroot}/etc/%{package_name}/
 cp -rfa ~/build/rpmbuild/SOURCES/%{arch}/%{package_name}-%{release_version}/postinstall.sh %{buildroot}/opt/%{package_name}/.postinstall.sh
 cp -rfa ~/build/rpmbuild/SOURCES/%{arch}/%{package_name}-%{release_version}/%{package_name}.service %{buildroot}/lib/systemd/system/%{package_name}.service
@@ -41,6 +42,7 @@ cp -rfa ~/build/rpmbuild/SOURCES/%{arch}/%{package_name}-%{release_version}/%{pa
 /etc/%{package_name}/agent-config.yaml.sample
 /etc/%{package_name}/mw-agent.env.sample
 /etc/%{package_name}/otel-config.yaml.sample
+/etc/%{package_name}/otel-fallback.yaml
 /etc/%{package_name}/supervisor-config.yaml.sample
 /opt/%{package_name}/.postinstall.sh
 /lib/systemd/system/%{package_name}.service
