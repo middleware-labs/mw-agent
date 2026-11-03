@@ -54,9 +54,11 @@ type HostAgent struct {
 	collectorSettings   otelcol.CollectorSettings
 	collector           *otelcol.Collector
 	collectorWG         *sync.WaitGroup
-	zapCore             zapcore.Core
-	logger              *zap.Logger
-	httpDoFunc          func(req *http.Request) (resp *http.Response, err error)
+	// exit ends the process when the collector fails in supervised mode.
+	exit       func(code int)
+	zapCore    zapcore.Core
+	logger     *zap.Logger
+	httpDoFunc func(req *http.Request) (resp *http.Response, err error)
 
 	// listenCtx is canceled when ListenForConfigChanges is told to stop, so an
 	// in-flight restart-status call or OpAMP config push doesn't hold up the
@@ -166,6 +168,7 @@ func NewHostAgent(cfg HostConfig, zapCore zapcore.Core,
 		ConfigProviderSettings: agent.getConfigProviderSettings(agent.OtelConfigFile),
 	}
 	agent.collectorWG = &sync.WaitGroup{}
+	agent.exit = os.Exit
 
 	return &agent, nil
 }
@@ -1010,6 +1013,10 @@ func (c *HostAgent) UpdateAgentTrackStatus(reason error) error {
 	return nil
 }
 
+// exitCodeCollectorFailed is the agent's exit code when its collector fails in
+// supervised mode.
+const exitCodeCollectorFailed = 1
+
 // StartCollector initializes a new OpenTelemetry collector with the configured
 // settings and starts it. This function blocks until the collector is stopped
 func (c *HostAgent) StartCollector() error {
@@ -1031,6 +1038,14 @@ func (c *HostAgent) StartCollector() error {
 			c.logger.Error("collector server run finished with error",
 				zap.Error(err))
 			c.collector = nil
+			// In supervised mode nothing in this process restarts the collector,
+			// so staying up would leave an agent that collects nothing while its
+			// supervisor sees it running. Exit so the supervisor can act. It reads
+			// the reason from the log line above, so keep that line first.
+			if c.RemoteAgentEnabled {
+				_ = c.logger.Sync()
+				c.exit(exitCodeCollectorFailed)
+			}
 		} else {
 			c.logger.Info("collector server run finished gracefully")
 		}
