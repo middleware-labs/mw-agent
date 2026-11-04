@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/middleware-labs/mw-injector/pkg/otelinject"
@@ -53,10 +54,16 @@ type HostAgent struct {
 	collectorFactories  otelcol.Factories
 	collectorSettings   otelcol.CollectorSettings
 	collector           *otelcol.Collector
-	collectorWG         *sync.WaitGroup
-	zapCore             zapcore.Core
-	logger              *zap.Logger
-	httpDoFunc          func(req *http.Request) (resp *http.Response, err error)
+	// collectorMu guards collector, which the collector's goroutine also clears.
+	collectorMu sync.Mutex
+	// stopRequested is set while StopCollector stops the collector on purpose.
+	stopRequested atomic.Bool
+	collectorWG   *sync.WaitGroup
+	// exit ends the process when the collector fails in supervised mode.
+	exit       func(code int)
+	zapCore    zapcore.Core
+	logger     *zap.Logger
+	httpDoFunc func(req *http.Request) (resp *http.Response, err error)
 
 	// listenCtx is canceled when ListenForConfigChanges is told to stop, so an
 	// in-flight restart-status call or OpAMP config push doesn't hold up the
@@ -166,6 +173,7 @@ func NewHostAgent(cfg HostConfig, zapCore zapcore.Core,
 		ConfigProviderSettings: agent.getConfigProviderSettings(agent.OtelConfigFile),
 	}
 	agent.collectorWG = &sync.WaitGroup{}
+	agent.exit = os.Exit
 
 	return &agent, nil
 }
@@ -445,8 +453,7 @@ func (c *HostAgent) updateConfigFile(configType string) error {
 // collectorRunningParam is the col_running query parameter: "1" while the
 // collector runs, "0" otherwise.
 func (c *HostAgent) collectorRunningParam() string {
-	// Don't need to take lock on the c.collector because it is not deferenced
-	if c.collector != nil {
+	if c.runningCollector() != nil {
 		return "1"
 	}
 	return "0"
@@ -1010,10 +1017,30 @@ func (c *HostAgent) UpdateAgentTrackStatus(reason error) error {
 	return nil
 }
 
+// exitCodeCollectorFailed is the agent's exit code when its collector fails in
+// supervised mode.
+const exitCodeCollectorFailed = 1
+
+// errCollectorStoppedItself is the reason when the collector ends without an
+// error nobody asked for: Run returns nil after a component's fatal error.
+var errCollectorStoppedItself = errors.New("collector stopped after a fatal component error, see the agent log")
+
+func (c *HostAgent) runningCollector() *otelcol.Collector {
+	c.collectorMu.Lock()
+	defer c.collectorMu.Unlock()
+	return c.collector
+}
+
+func (c *HostAgent) setRunningCollector(collector *otelcol.Collector) {
+	c.collectorMu.Lock()
+	defer c.collectorMu.Unlock()
+	c.collector = collector
+}
+
 // StartCollector initializes a new OpenTelemetry collector with the configured
 // settings and starts it. This function blocks until the collector is stopped
 func (c *HostAgent) StartCollector() error {
-	if c.collector != nil {
+	if c.runningCollector() != nil {
 		return nil
 	}
 
@@ -1022,32 +1049,63 @@ func (c *HostAgent) StartCollector() error {
 		return err
 	}
 
-	c.collector = collector
+	c.setRunningCollector(collector)
+	c.stopRequested.Store(false)
 
 	c.collectorWG.Add(1)
 	go func() {
 		defer c.collectorWG.Done()
-		if err := collector.Run(context.Background()); err != nil {
-			c.logger.Error("collector server run finished with error",
-				zap.Error(err))
-			c.collector = nil
-		} else {
-			c.logger.Info("collector server run finished gracefully")
-		}
-
+		c.handleCollectorEnd(collector.Run(context.Background()))
 	}()
 
 	return nil
 
 }
 
+// handleCollectorEnd handles the collector's Run returning.
+func (c *HostAgent) handleCollectorEnd(runErr error) {
+	if c.stopRequested.Load() {
+		// Run also returns a component's shutdown error. That is not why the
+		// collector stopped, and it must not use the failure line below, which
+		// the supervisor reports as the reason. StopCollector clears c.collector.
+		if runErr != nil {
+			c.logger.Warn("collector stopped on request, with a shutdown error", zap.Error(runErr))
+		} else {
+			c.logger.Info("collector server run finished gracefully")
+		}
+		return
+	}
+
+	if runErr == nil {
+		if !c.RemoteAgentEnabled {
+			c.logger.Info("collector server run finished gracefully")
+			return
+		}
+		runErr = errCollectorStoppedItself
+	}
+
+	c.logger.Error("collector server run finished with error", zap.Error(runErr))
+	c.setRunningCollector(nil)
+
+	// In supervised mode nothing in this process restarts the collector, so
+	// staying up would leave an agent that collects nothing while its supervisor
+	// sees it running. Exit so the supervisor can act. It reads the reason from
+	// the log line above, so keep that line first.
+	if c.RemoteAgentEnabled {
+		_ = c.logger.Sync()
+		c.exit(exitCodeCollectorFailed)
+	}
+}
+
 func (c *HostAgent) StopCollector(err error) {
-	if c.collector != nil {
+	collector := c.runningCollector()
+	if collector != nil {
+		c.stopRequested.Store(true)
 		c.logger.Error("stopping telemetry collection", zap.Error(err))
-		c.collector.Shutdown()
+		collector.Shutdown()
 		c.collectorWG.Wait()
 		c.logger.Info("stopped telemetry collection at", zap.Time("time", time.Now()))
-		c.collector = nil
+		c.setRunningCollector(nil)
 		return
 	}
 	c.logger.Error("received error while telemetry collection is not running", zap.Error(err))

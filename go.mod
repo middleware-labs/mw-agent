@@ -134,10 +134,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver v0.152.0
+	go.opentelemetry.io/collector/component/componentstatus v0.152.0
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.58.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.58.0
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.58.0
 	go.opentelemetry.io/collector/connector v0.152.0
+	go.opentelemetry.io/collector/consumer v1.58.0
 	go.opentelemetry.io/collector/exporter/nopexporter v0.152.0
 	go.opentelemetry.io/collector/featuregate v1.58.0
 	go.opentelemetry.io/collector/otelcol v0.152.0
@@ -521,7 +523,6 @@ require (
 	go.mongodb.org/mongo-driver/v2 v2.3.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.58.0 // indirect
-	go.opentelemetry.io/collector/component/componentstatus v0.152.0 // indirect
 	go.opentelemetry.io/collector/component/componenttest v0.152.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v1.58.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.58.0 // indirect
@@ -537,7 +538,6 @@ require (
 	go.opentelemetry.io/collector/confmap/xconfmap v0.152.0 // indirect
 	go.opentelemetry.io/collector/connector/connectortest v0.152.0 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.152.0 // indirect
-	go.opentelemetry.io/collector/consumer v1.58.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.152.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.152.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.152.0 // indirect
