@@ -149,3 +149,12 @@ func TestWithKubeAgentMonitorDeploymentConfigMap(t *testing.T) {
 		t.Errorf("Expected deployment configmap name %s, got %s", expected, kubeAgentMonitor.DeploymentConfigMap)
 	}
 }
+
+func TestConfigStringHidesAPIKey(t *testing.T) {
+	const apiKey = "secret-api-key"
+	base := BaseConfig{APIKey: apiKey}
+
+	assert.NotContains(t, base.String(), apiKey)
+	assert.NotContains(t, HostConfig{BaseConfig: base}.String(), apiKey)
+	assert.NotContains(t, KubeConfig{BaseConfig: base}.String(), apiKey)
+}
