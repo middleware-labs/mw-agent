@@ -133,10 +133,10 @@ type AgentFeatures struct {
 	SyntheticMonitoring bool
 }
 
-// String() implements stringer interface for KubeAgentUpdaterConfig
-func (c KubeAgent) String() string {
+// String() implements stringer interface for BaseConfig
+func (c BaseConfig) String() string {
 	var s string
-	s += fmt.Sprintf("api-key: %s, ", c.APIKey)
+	s += "api-key: ***, "
 	s += fmt.Sprintf("target: %s, ", c.Target)
 	s += fmt.Sprintf("enable-synthetic-monitoring: %t, ", c.EnableSyntheticMonitoring)
 	s += fmt.Sprintf("config-check-interval: %s, ", c.ConfigCheckInterval)

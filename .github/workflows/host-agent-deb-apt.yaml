@@ -295,8 +295,16 @@ jobs:
     needs: build
     if: ${{ github.actor != 'nektos/act' }}
     runs-on: ubuntu-latest
-    
+    concurrency:
+      group: release-checksums-${{ github.event.inputs.release_version || github.ref_name }}
+      cancel-in-progress: false
+
     steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GHCR_TOKEN }}
+
     - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
@@ -396,7 +404,7 @@ jobs:
           echo ""
           echo "=== Uploading checksums file ==="
           cat "$CHECKSUM_FILE"
-          gh release upload "$VERSION" "$CHECKSUM_FILE" --clobber --repo ${{ github.repository }}
+          package-tooling/merge-release-checksums.sh "$VERSION" ${{ github.repository }} "$CHECKSUM_FILE"
         fi
 
 

@@ -150,6 +150,9 @@ jobs:
   upload-to-release:
     needs: create_installer
     runs-on: ubuntu-latest
+    concurrency:
+      group: release-checksums-${{ github.event.inputs.release_version || github.ref_name }}
+      cancel-in-progress: false
     
     steps:
     - name: Checkout Repo  
@@ -220,11 +223,7 @@ jobs:
           fi
         fi
 
-        # The OpAMP server reads the hash from checksums.txt, which the Linux
-        # workflow also writes, so keep its lines. A later Linux run replaces
-        # this file: run this workflow after the Linux ones.
         TARBALL="mw-agent-${VERSION}-windows-amd64.tar.gz"
-        gh release download "$VERSION" --pattern checksums.txt --clobber --repo ${{ github.repository }} || touch checksums.txt
-        sed -i "/  ${TARBALL}\$/d" checksums.txt
-        (cd artifacts && sha256sum "$TARBALL") >> checksums.txt
-        gh release upload "$VERSION" "./artifacts/$TARBALL" checksums.txt --clobber --repo ${{ github.repository }}
+        gh release upload "$VERSION" "./artifacts/$TARBALL" --clobber --repo ${{ github.repository }}
+        (cd artifacts && sha256sum "$TARBALL") > windows-checksums.txt
+        package-tooling/merge-release-checksums.sh "$VERSION" ${{ github.repository }} windows-checksums.txt

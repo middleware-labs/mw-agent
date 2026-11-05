@@ -11,6 +11,7 @@
 !include "nsDialogs.nsh"
 !include "MUI2.nsh"
 !include "LogicLib.nsh"
+!include "TextFunc.nsh"
 !addplugindir "Plugins"
 !include "StrFunc.nsh"
 !include "windows-version.nsh"
@@ -161,6 +162,8 @@ Var MWOpAMPServerURL
 Var MWOpAMPAPIURL
 Var MWAgentGroup
 Var DataDir
+Var OptionOpAMPServerURL
+Var LoadedTarget
 
 # Read /NAME=value from the installer command line into VAR ("" if absent).
 # Values may be wrapped in "", '' or `` quotes.
@@ -189,17 +192,107 @@ Var DataDir
   ${EndIf}
 !macroend
 
-# Stop and remove a service if it exists.
+# Stop and remove a service if it exists. Leaves 0 in $1 unless removing failed.
 !macro RemoveServiceIfPresent NAME
+  StrCpy $1 0
   SimpleSC::ExistsService "${NAME}"
   Pop $0
   ${If} $0 == 0
     SimpleSC::StopService "${NAME}" 1 30
     Pop $0
     SimpleSC::RemoveService "${NAME}"
-    Pop $0
+    Pop $1
   ${EndIf}
 !macroend
+
+!macro FailInstall MESSAGE
+  StrCpy $InstallerStatus "failed"
+  StrCpy $InstallerMessage "${MESSAGE}"
+  SetErrorLevel 1
+!macroend
+
+# Use the value of NAME from the old environment if the option wasn't given.
+!macro LoadEnv NAME VAR
+  ${If} $R1 == "${NAME}"
+  ${AndIf} ${VAR} == ""
+    StrCpy ${VAR} $R2
+  ${EndIf}
+!macroend
+
+# Text for a single-quoted PowerShell string: a temp path can hold an apostrophe.
+!macro PowerShellEnvFilePath VAR
+  ${StrRep} ${VAR} "$PLUGINSDIR\mw-env" "'" "''"
+!macroend
+
+# Removing the service deletes its Environment value, and supervisor fixes can
+# only ship by running the installer again, so a reinstall must keep the settings.
+Function LoadSupervisorEnvironment
+    InitPluginsDir
+    !insertmacro PowerShellEnvFilePath $R0
+    nsExec::Exec `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$ErrorActionPreference = 'Stop'; Set-Content -LiteralPath '$R0' -Value (Get-ItemProperty -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Services\${SUPERVISOR_NAME}' -Name Environment).Environment"`
+    Pop $0
+    ${If} $0 != 0
+        Delete "$PLUGINSDIR\mw-env"
+        Return
+    ${EndIf}
+
+    FileOpen $4 "$PLUGINSDIR\mw-env" r
+    ${Do}
+        ClearErrors
+        FileRead $4 $R0
+        ${If} ${Errors}
+            ${ExitDo}
+        ${EndIf}
+        ${TrimNewLines} $R0 $R0
+
+        # Split NAME=VALUE at the first "=" into $R1 and $R2.
+        StrCpy $R3 0
+        ${Do}
+            StrCpy $R1 $R0 1 $R3
+            ${If} $R1 == ""
+            ${OrIf} $R1 == "="
+                ${ExitDo}
+            ${EndIf}
+            IntOp $R3 $R3 + 1
+        ${Loop}
+        StrCpy $R1 $R0 $R3
+        IntOp $R3 $R3 + 1
+        StrCpy $R2 $R0 "" $R3
+
+        ${If} $R1 == "MW_TARGET"
+            StrCpy $LoadedTarget $R2
+        ${EndIf}
+        !insertmacro LoadEnv "MW_API_KEY" $MWAPIKey
+        !insertmacro LoadEnv "MW_TARGET" $MWTarget
+        !insertmacro LoadEnv "MW_OPAMP_SERVER_URL" $MWOpAMPServerURL
+        !insertmacro LoadEnv "MW_OPAMP_API_URL" $MWOpAMPAPIURL
+        !insertmacro LoadEnv "MW_AGENT_GROUP" $MWAgentGroup
+        !insertmacro LoadEnv "MW_CONFIG_CHECK_INTERVAL" $MWConfigCheckInterval
+        !insertmacro LoadEnv "MW_FETCH_ACCOUNT_OTEL_CONFIG" $MWFetchAccountOtelConfig
+        !insertmacro LoadEnv "MW_HOST_TAGS" $MWHostTags
+        !insertmacro LoadEnv "MW_API_URL_FOR_CONFIG_CHECK" $MWAPIURLForConfigCheck
+        !insertmacro LoadEnv "MW_SYNTHETIC_MONITORING_API_URL" $MWSyntheticMonitoringAPIURL
+        !insertmacro LoadEnv "MW_DOCKER_ENDPOINT" $MWDockerEndpoint
+        !insertmacro LoadEnv "MW_LOGFILE" $MWLogFile
+        !insertmacro LoadEnv "MW_LOGFILE_SIZE" $MWLogFileSize
+        !insertmacro LoadEnv "MW_LOGGING_LEVEL" $MWLoggingLevel
+        !insertmacro LoadEnv "MW_AGENT_FEATURES_INFRA_MONITORING" $MWFeatureInfraMonitoring
+        !insertmacro LoadEnv "MW_AGENT_FEATURES_METRIC_COLLECTION" $MWFeatureMetricCollection
+        !insertmacro LoadEnv "MW_AGENT_FEATURES_LOG_COLLECTION" $MWFeatureLogCollection
+        !insertmacro LoadEnv "MW_AGENT_FEATURES_SYNTHETIC_MONITORING" $MWFeatureSyntheticMonitoring
+        !insertmacro LoadEnv "MW_AGENT_FEATURES_REPORT_SERVICES" $MWFeatureServiceReporting
+        !insertmacro LoadEnv "MW_SERVICE_REPORT_INTERVAL" $MWServiceReportInterval
+        !insertmacro LoadEnv "MW_AGENT_SELF_PROFILING" $MWAgentSelfProfiling
+        !insertmacro LoadEnv "MW_PROFILING_SERVER_URL" $MWProfilingServerURL
+        !insertmacro LoadEnv "MW_AGENT_GRPC_PORT" $MWGRPCPort
+        !insertmacro LoadEnv "MW_AGENT_HTTP_PORT" $MWHTTPPort
+        !insertmacro LoadEnv "MW_AGENT_FLUENT_PORT" $MWFluentPort
+        !insertmacro LoadEnv "MW_AGENT_INTERNAL_METRICS_PORT" $MWAgentInternalMetricsPort
+        !insertmacro LoadEnv "MW_ENABLE_DATADOG_RECEIVER" $MWEnableDatadogReceiver
+    ${Loop}
+    FileClose $4
+    Delete "$PLUGINSDIR\mw-env"
+FunctionEnd
 
 # Config and state stay outside Program Files: the supervisor writes to them
 # while running, and an upgrade only replaces the agent binary.
@@ -265,15 +358,18 @@ Function .onInit
   !insertmacro NormalizeInt $MWAgentInternalMetricsPort
   !insertmacro NormalizeInt $MWLogFileSize
 
+  StrCpy $OptionOpAMPServerURL $MWOpAMPServerURL
+
   # Without an explicit choice, reinstalling keeps the current mode.
-  ${If} $MWRemoteManagement == ""
-    SimpleSC::ExistsService "${SUPERVISOR_NAME}"
-    Pop $0
-    ${If} $0 == 0
+  SimpleSC::ExistsService "${SUPERVISOR_NAME}"
+  Pop $0
+  ${If} $0 == 0
+    Call LoadSupervisorEnvironment
+    ${If} $MWRemoteManagement == ""
       StrCpy $MWRemoteManagement "true"
-    ${Else}
-      StrCpy $MWRemoteManagement "false"
     ${EndIf}
+  ${ElseIf} $MWRemoteManagement == ""
+    StrCpy $MWRemoteManagement "false"
   ${EndIf}
 FunctionEnd
 
@@ -429,6 +525,12 @@ FunctionEnd
 
 # wss://host/v1/opamp from https://host, ws:// from http://.
 Function SetOpAMPServerURL
+    # A kept URL belongs to the old target, unless it was passed as an option.
+    ${If} $OptionOpAMPServerURL == ""
+    ${AndIf} $MWTarget != $LoadedTarget
+        StrCpy $MWOpAMPServerURL ""
+    ${EndIf}
+
     ${If} $MWOpAMPServerURL != ""
         Return
     ${EndIf}
@@ -495,9 +597,13 @@ Function WriteSupervisorEnvironment
     !insertmacro WriteEnvOrDefault "MW_ENABLE_DATADOG_RECEIVER" $MWEnableDatadogReceiver "false"
     FileClose $4
 
-    nsExec::ExecToLog `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "Set-ItemProperty -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Services\${SUPERVISOR_NAME}' -Name Environment -Type MultiString -Value (Get-Content -LiteralPath '$PLUGINSDIR\mw-env')"`
+    !insertmacro PowerShellEnvFilePath $R0
+    nsExec::Exec `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$ErrorActionPreference = 'Stop'; Set-ItemProperty -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Services\${SUPERVISOR_NAME}' -Name Environment -Type MultiString -Value (Get-Content -LiteralPath '$R0')"`
     Pop $0
     Delete "$PLUGINSDIR\mw-env"
+    ${If} $0 != 0
+        !insertmacro FailInstall "could not write the supervisor service environment"
+    ${EndIf}
 FunctionEnd
 
 Function InstallAgentService
@@ -507,10 +613,17 @@ Function InstallAgentService
     SimpleSC::InstallService ${APP_NAME_IN_INSTALLED_DIR} "Middleware Agent" "16" "2" "$\"$INSTDIR\${APP_NAME_IN_INSTALLED_DIR}.exe$\" start --config-file $\"$INSTDIR\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}$\"" "" "" ""
     Pop $0 ; returns an errorcode (<>0) otherwise success (0)
     StrCpy $InstallServiceStatus $0
+    ${If} $0 != 0
+        !insertmacro FailInstall "could not install the agent service"
+        Return
+    ${EndIf}
 
     SimpleSC::StartService "${APP_NAME_IN_INSTALLED_DIR}" "" 30
     Pop $0 ; returns an errorcode (<>0) otherwise success (0)
     StrCpy $StartServiceStatus $0
+    ${If} $0 != 0
+        !insertmacro FailInstall "could not start the agent service"
+    ${EndIf}
 FunctionEnd
 
 Function InstallSupervisorService
@@ -532,24 +645,53 @@ Function InstallSupervisorService
     SimpleSC::InstallService ${SUPERVISOR_NAME} "Middleware Agent Supervisor" "16" "2" "$\"$INSTDIR\${SUPERVISOR_NAME}.exe$\" --config $\"$DataDir\${SUPERVISOR_CONFIG_FILE}$\"" "" "" ""
     Pop $0 ; returns an errorcode (<>0) otherwise success (0)
     StrCpy $InstallServiceStatus $0
+    ${If} $0 != 0
+        !insertmacro FailInstall "could not install the supervisor service"
+        Return
+    ${EndIf}
 
     Call WriteSupervisorEnvironment
+    ${If} $InstallerStatus == "failed"
+        Return
+    ${EndIf}
 
-    # Restart after a crash, like Restart=on-failure in the Linux unit.
+    # Restart after a crash and, with failureflag, after a failed start, like
+    # Restart=on-failure in the Linux unit. Windows applies the flag at the next
+    # system start.
     nsExec::ExecToLog 'sc.exe failure ${SUPERVISOR_NAME} reset= 86400 actions= restart/5000/restart/5000/restart/30000'
+    Pop $0
+    nsExec::ExecToLog 'sc.exe failureflag ${SUPERVISOR_NAME} 1'
     Pop $0
 
     SimpleSC::StartService "${SUPERVISOR_NAME}" "" 60
     Pop $0 ; returns an errorcode (<>0) otherwise success (0)
     StrCpy $StartServiceStatus $0
+    ${If} $0 != 0
+        !insertmacro FailInstall "could not start the supervisor service"
+    ${EndIf}
 FunctionEnd
 ;--------------------------------
 ;Installer section
 
 Section "install"
+  # Check this while any working service is still in place.
+  ${If} $MWAPIKey == ""
+  ${OrIf} $MWTarget == ""
+    !insertmacro FailInstall "MW_API_KEY and MW_TARGET are required"
+    Abort
+  ${EndIf}
+
   # A running service locks its binary, and the two services use the same ports.
   !insertmacro RemoveServiceIfPresent "${APP_NAME_IN_INSTALLED_DIR}"
+  ${If} $1 != 0
+    !insertmacro FailInstall "could not remove the agent service"
+    Abort
+  ${EndIf}
   !insertmacro RemoveServiceIfPresent "${SUPERVISOR_NAME}"
+  ${If} $1 != 0
+    !insertmacro FailInstall "could not remove the supervisor service"
+    Abort
+  ${EndIf}
 
   # Files for install directory - to build the installer, these should be in the same directory as the install script (this file)
   SetOutPath $INSTDIR
@@ -568,8 +710,10 @@ Section "install"
     Call InstallAgentService
   ${EndIf}
 
-  StrCpy $InstallerStatus "installed"
-  StrCpy $InstallerMessage "installer completed"
+  ${If} $InstallerStatus != "failed"
+    StrCpy $InstallerStatus "installed"
+    StrCpy $InstallerMessage "installer completed"
+  ${EndIf}
  
   ################################################################################################################
 

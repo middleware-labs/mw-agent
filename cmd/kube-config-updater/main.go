@@ -151,7 +151,7 @@ func main() {
 							zap.String("api-url-for-config-check", cfg.APIURLForConfigCheck))
 					}
 
-					logger.Info("creating kube agent config updater", zap.Any("config", cfg))
+					logger.Info("creating kube agent config updater", zap.Stringer("config", cfg))
 					config, err := rest.InClusterConfig()
 					if err != nil {
 						return err
