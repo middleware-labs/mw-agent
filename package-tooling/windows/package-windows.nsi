@@ -20,6 +20,9 @@ ${StrRep}
   !define APPNAME "Middleware Agent"
   !define APP_NAME_IN_INSTALLED_DIR "mw-windows-agent"
   !define CONFIG_FILE_NAME_IN_INSTALLED_DIR "agent-config.yaml"
+  !define SUPERVISOR_NAME "mw-opamp-supervisor"
+  !define SUPERVISOR_CONFIG_FILE "supervisor-config.yaml"
+  !define SUPERVISOR_EVENT_SOURCE "SYSTEM\CurrentControlSet\Services\EventLog\Application\${SUPERVISOR_NAME}"
   !define COMPANYNAME "Middleware Inc"
   !define DESCRIPTION "Middleware Agent for Microsoft Windows"
   !define DEVELOPER "Middleware Lab Inc" #License Holder
@@ -151,6 +154,14 @@ Var MWFluentPort
 Var MWDockerEndpoint
 Var MWEnableDatadogReceiver
 
+# Remote management (OpAMP). The supervisor service replaces the agent service.
+Var CheckRemoteManagement
+Var MWRemoteManagement
+Var MWOpAMPServerURL
+Var MWOpAMPAPIURL
+Var MWAgentGroup
+Var DataDir
+
 # Read /NAME=value from the installer command line into VAR ("" if absent).
 # Values may be wrapped in "", '' or `` quotes.
 !macro ReadOption NAME VAR
@@ -178,8 +189,28 @@ Var MWEnableDatadogReceiver
   ${EndIf}
 !macroend
 
+# Stop and remove a service if it exists.
+!macro RemoveServiceIfPresent NAME
+  SimpleSC::ExistsService "${NAME}"
+  Pop $0
+  ${If} $0 == 0
+    SimpleSC::StopService "${NAME}" 1 30
+    Pop $0
+    SimpleSC::RemoveService "${NAME}"
+    Pop $0
+  ${EndIf}
+!macroend
+
+# Config and state stay outside Program Files: the supervisor writes to them
+# while running, and an upgrade only replaces the agent binary.
+!macro SetDataDir
+  ReadEnvStr $DataDir "ProgramData"
+  StrCpy $DataDir "$DataDir\${APPNAME}"
+!macroend
+
 Function .onInit
   Strcpy $InstallerOperation "install"
+  !insertmacro SetDataDir
   StrCpy $InstallerStatus "pending"
   StrCpy $InstallerMessage "installer loaded"
   StrCpy $InstallServiceStatus "not yet installed"
@@ -217,6 +248,10 @@ Function .onInit
   ${EndIf}
   !insertmacro ReadOption "MW_DOCKER_ENDPOINT" $MWDockerEndpoint
   !insertmacro ReadOption "MW_ENABLE_DATADOG_RECEIVER" $MWEnableDatadogReceiver
+  !insertmacro ReadOption "MW_REMOTE_MANAGEMENT" $MWRemoteManagement
+  !insertmacro ReadOption "MW_OPAMP_SERVER_URL" $MWOpAMPServerURL
+  !insertmacro ReadOption "MW_OPAMP_API_URL" $MWOpAMPAPIURL
+  !insertmacro ReadOption "MW_AGENT_GROUP" $MWAgentGroup
 
   !insertmacro NormalizeBool $MWFetchAccountOtelConfig
   !insertmacro NormalizeBool $MWFeatureInfraMonitoring
@@ -226,8 +261,20 @@ Function .onInit
   !insertmacro NormalizeBool $MWFeatureServiceReporting
   !insertmacro NormalizeBool $MWAgentSelfProfiling
   !insertmacro NormalizeBool $MWEnableDatadogReceiver
+  !insertmacro NormalizeBool $MWRemoteManagement
   !insertmacro NormalizeInt $MWAgentInternalMetricsPort
   !insertmacro NormalizeInt $MWLogFileSize
+
+  # Without an explicit choice, reinstalling keeps the current mode.
+  ${If} $MWRemoteManagement == ""
+    SimpleSC::ExistsService "${SUPERVISOR_NAME}"
+    Pop $0
+    ${If} $0 == 0
+      StrCpy $MWRemoteManagement "true"
+    ${Else}
+      StrCpy $MWRemoteManagement "false"
+    ${EndIf}
+  ${EndIf}
 FunctionEnd
 
 Function onManualInstallClick
@@ -260,10 +307,16 @@ Function pgPageCreate
         ${NSD_CreateText} 40% 53u 50% 14u "$MWTarget"
         Pop $TextTarget
     
-    ${NSD_CreateLabel} 5% 86u 90% 34u "API Key and Target URL can be found in the installation section of your Middleware account."
+    ${NSD_CreateCheckbox} 5% 84u 90% 12u "Enable remote management from the Agent Control Panel"
+    Pop $CheckRemoteManagement
+    ${If} $MWRemoteManagement == "true"
+        ${NSD_Check} $CheckRemoteManagement
+    ${EndIf}
+
+    ${NSD_CreateLabel} 5% 100u 90% 24u "API Key and Target URL can be found in the installation section of your Middleware account."
     Pop $0
 
-    ${NSD_CreateLink}  5% 120u 90% 34u "Click here to access your API Key and Target URL."
+    ${NSD_CreateLink}  5% 126u 90% 12u "Click here to access your API Key and Target URL."
     Pop $R9
 
     ${NSD_OnClick} $R9 onManualInstallClick
@@ -274,6 +327,12 @@ FunctionEnd
 Function PgPageLeave
     ${NSD_GetText} $TextAPIKey $MWAPIKey
     ${NSD_GetText} $TextTarget $MWTarget
+    ${NSD_GetState} $CheckRemoteManagement $0
+    ${If} $0 == ${BST_CHECKED}
+        StrCpy $MWRemoteManagement "true"
+    ${Else}
+        StrCpy $MWRemoteManagement "false"
+    ${EndIf}
     ${If} $MWAPIKey == ""
         MessageBox MB_OK "Please provide a valid Middleware API key"
         Abort
@@ -351,10 +410,147 @@ Function UpdateConfigFile
     FileClose $4
     StrCpy $InstallerMessage "$INSTDIR\${CONFIG_FILE_NAME_IN_INSTALLED_DIR} file created"
 FunctionEnd
+
+# Write KEY=VALUE to the open environment file ($4) only when VALUE is set.
+!macro WriteEnv KEY VALUE
+  ${If} "${VALUE}" != ""
+    FileWrite $4 "${KEY}=${VALUE}$\r$\n"
+  ${EndIf}
+!macroend
+
+# Write KEY=VALUE, or KEY=DEFAULT when VALUE is empty.
+!macro WriteEnvOrDefault KEY VALUE DEFAULT
+  ${If} "${VALUE}" != ""
+    FileWrite $4 "${KEY}=${VALUE}$\r$\n"
+  ${Else}
+    FileWrite $4 "${KEY}=${DEFAULT}$\r$\n"
+  ${EndIf}
+!macroend
+
+# wss://host/v1/opamp from https://host, ws:// from http://.
+Function SetOpAMPServerURL
+    ${If} $MWOpAMPServerURL != ""
+        Return
+    ${EndIf}
+
+    StrCpy $R1 "wss"
+    StrCpy $R0 $MWTarget 7
+    ${If} $R0 == "http://"
+        StrCpy $R1 "ws"
+    ${EndIf}
+
+    ${StrRep} $R2 $MWTarget "https://" ""
+    ${StrRep} $R2 $R2 "http://" ""
+    StrCpy $R3 0
+    ${Do}
+        StrCpy $R0 $R2 1 $R3
+        ${If} $R0 == ""
+        ${OrIf} $R0 == "/"
+            ${ExitDo}
+        ${EndIf}
+        IntOp $R3 $R3 + 1
+    ${Loop}
+    StrCpy $R2 $R2 $R3
+
+    StrCpy $MWOpAMPServerURL "$R1://$R2/v1/opamp"
+FunctionEnd
+
+# The same variables the Linux package writes to mw-supervisor.env. They go in
+# the service's Environment value, so the supervisor and the agent it starts
+# both see them. The temporary file keeps the API key off a command line.
+Function WriteSupervisorEnvironment
+    Call SetOpAMPServerURL
+    InitPluginsDir
+
+    FileOpen $4 "$PLUGINSDIR\mw-env" w
+    !insertmacro WriteEnv "MW_API_KEY" $MWAPIKey
+    !insertmacro WriteEnv "MW_TARGET" $MWTarget
+    !insertmacro WriteEnv "MW_OPAMP_SERVER_URL" $MWOpAMPServerURL
+    !insertmacro WriteEnv "MW_OPAMP_API_URL" $MWOpAMPAPIURL
+    !insertmacro WriteEnvOrDefault "MW_AGENT_GROUP" $MWAgentGroup "default"
+    !insertmacro WriteEnv "MW_INSTALL_DIR" $INSTDIR
+    !insertmacro WriteEnv "MW_DATA_DIR" $DataDir
+    FileWrite $4 "MW_REMOTE_AGENT_ENABLED=true$\r$\n"
+    !insertmacro WriteEnvOrDefault "MW_CONFIG_CHECK_INTERVAL" $MWConfigCheckInterval "5m"
+    !insertmacro WriteEnvOrDefault "MW_FETCH_ACCOUNT_OTEL_CONFIG" $MWFetchAccountOtelConfig "true"
+    !insertmacro WriteEnv "MW_HOST_TAGS" $MWHostTags
+    !insertmacro WriteEnv "MW_API_URL_FOR_CONFIG_CHECK" $MWAPIURLForConfigCheck
+    !insertmacro WriteEnv "MW_SYNTHETIC_MONITORING_API_URL" $MWSyntheticMonitoringAPIURL
+    !insertmacro WriteEnv "MW_DOCKER_ENDPOINT" $MWDockerEndpoint
+    !insertmacro WriteEnv "MW_LOGFILE" $MWLogFile
+    !insertmacro WriteEnv "MW_LOGFILE_SIZE" $MWLogFileSize
+    !insertmacro WriteEnvOrDefault "MW_LOGGING_LEVEL" $MWLoggingLevel "info"
+    !insertmacro WriteEnvOrDefault "MW_AGENT_FEATURES_INFRA_MONITORING" $MWFeatureInfraMonitoring "true"
+    !insertmacro WriteEnvOrDefault "MW_AGENT_FEATURES_METRIC_COLLECTION" $MWFeatureMetricCollection "true"
+    !insertmacro WriteEnvOrDefault "MW_AGENT_FEATURES_LOG_COLLECTION" $MWFeatureLogCollection "true"
+    !insertmacro WriteEnvOrDefault "MW_AGENT_FEATURES_SYNTHETIC_MONITORING" $MWFeatureSyntheticMonitoring "false"
+    !insertmacro WriteEnvOrDefault "MW_AGENT_FEATURES_REPORT_SERVICES" $MWFeatureServiceReporting "true"
+    !insertmacro WriteEnv "MW_SERVICE_REPORT_INTERVAL" $MWServiceReportInterval
+    !insertmacro WriteEnvOrDefault "MW_AGENT_SELF_PROFILING" $MWAgentSelfProfiling "false"
+    !insertmacro WriteEnv "MW_PROFILING_SERVER_URL" $MWProfilingServerURL
+    !insertmacro WriteEnvOrDefault "MW_AGENT_GRPC_PORT" $MWGRPCPort "9319"
+    !insertmacro WriteEnvOrDefault "MW_AGENT_HTTP_PORT" $MWHTTPPort "9320"
+    !insertmacro WriteEnvOrDefault "MW_AGENT_FLUENT_PORT" $MWFluentPort "8006"
+    !insertmacro WriteEnvOrDefault "MW_AGENT_INTERNAL_METRICS_PORT" $MWAgentInternalMetricsPort "8888"
+    !insertmacro WriteEnvOrDefault "MW_ENABLE_DATADOG_RECEIVER" $MWEnableDatadogReceiver "false"
+    FileClose $4
+
+    nsExec::ExecToLog `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "Set-ItemProperty -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Services\${SUPERVISOR_NAME}' -Name Environment -Type MultiString -Value (Get-Content -LiteralPath '$PLUGINSDIR\mw-env')"`
+    Pop $0
+    Delete "$PLUGINSDIR\mw-env"
+FunctionEnd
+
+Function InstallAgentService
+    file /oname=${CONFIG_FILE_NAME_IN_INSTALLED_DIR} "..\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}.sample"
+    Call UpdateConfigFile
+
+    SimpleSC::InstallService ${APP_NAME_IN_INSTALLED_DIR} "Middleware Agent" "16" "2" "$\"$INSTDIR\${APP_NAME_IN_INSTALLED_DIR}.exe$\" start --config-file $\"$INSTDIR\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}$\"" "" "" ""
+    Pop $0 ; returns an errorcode (<>0) otherwise success (0)
+    StrCpy $InstallServiceStatus $0
+
+    SimpleSC::StartService "${APP_NAME_IN_INSTALLED_DIR}" "" 30
+    Pop $0 ; returns an errorcode (<>0) otherwise success (0)
+    StrCpy $StartServiceStatus $0
+FunctionEnd
+
+Function InstallSupervisorService
+    # The standalone config holds the API key and isn't used in this mode.
+    Delete "$INSTDIR\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}"
+
+    CreateDirectory "$DataDir\opamp"
+    SetOutPath $DataDir
+    file /oname=${SUPERVISOR_CONFIG_FILE} "${SUPERVISOR_CONFIG_FILE}.sample"
+    file "..\otel-fallback.yaml"
+    SetOutPath $INSTDIR
+
+    # The supervisor logs to the Windows Event Log. Without this source its
+    # entries are stored with no readable message.
+    WriteRegExpandStr HKLM "${SUPERVISOR_EVENT_SOURCE}" "EventMessageFile" "%SystemRoot%\System32\EventCreate.exe"
+    WriteRegDWORD HKLM "${SUPERVISOR_EVENT_SOURCE}" "TypesSupported" 7
+    WriteRegDWORD HKLM "${SUPERVISOR_EVENT_SOURCE}" "CustomSource" 1
+
+    SimpleSC::InstallService ${SUPERVISOR_NAME} "Middleware Agent Supervisor" "16" "2" "$\"$INSTDIR\${SUPERVISOR_NAME}.exe$\" --config $\"$DataDir\${SUPERVISOR_CONFIG_FILE}$\"" "" "" ""
+    Pop $0 ; returns an errorcode (<>0) otherwise success (0)
+    StrCpy $InstallServiceStatus $0
+
+    Call WriteSupervisorEnvironment
+
+    # Restart after a crash, like Restart=on-failure in the Linux unit.
+    nsExec::ExecToLog 'sc.exe failure ${SUPERVISOR_NAME} reset= 86400 actions= restart/5000/restart/5000/restart/30000'
+    Pop $0
+
+    SimpleSC::StartService "${SUPERVISOR_NAME}" "" 60
+    Pop $0 ; returns an errorcode (<>0) otherwise success (0)
+    StrCpy $StartServiceStatus $0
+FunctionEnd
 ;--------------------------------
 ;Installer section
 
 Section "install"
+  # A running service locks its binary, and the two services use the same ports.
+  !insertmacro RemoveServiceIfPresent "${APP_NAME_IN_INSTALLED_DIR}"
+  !insertmacro RemoveServiceIfPresent "${SUPERVISOR_NAME}"
+
   # Files for install directory - to build the installer, these should be in the same directory as the install script (this file)
   SetOutPath $INSTDIR
 
@@ -363,18 +559,15 @@ Section "install"
   #Add your Files Here
   # Files add here should be removed by the uninstaller (see section "uninstall")
   file "${BUILD_DIR}\${APP_NAME_IN_INSTALLED_DIR}.exe"
+  file "${BUILD_DIR}\${SUPERVISOR_NAME}.exe"
   file "logo.ico"
-  file /oname=${CONFIG_FILE_NAME_IN_INSTALLED_DIR} "..\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}.sample"
 
-  Call UpdateConfigFile
- 
-  SimpleSC::InstallService ${APP_NAME_IN_INSTALLED_DIR} "Middleware Agent" "16" "2" "$\"$INSTDIR\${APP_NAME_IN_INSTALLED_DIR}.exe$\" start --config-file $\"$INSTDIR\${CONFIG_FILE_NAME_IN_INSTALLED_DIR}$\"" "" "" ""
-  Pop $0 ; returns an errorcode (<>0) otherwise success (0)
-  StrCpy $InstallServiceStatus $0
+  ${If} $MWRemoteManagement == "true"
+    Call InstallSupervisorService
+  ${Else}
+    Call InstallAgentService
+  ${EndIf}
 
-  SimpleSC::StartService "${APP_NAME_IN_INSTALLED_DIR}" "" 30
-  Pop $0 ; returns an errorcode (<>0) otherwise success (0)
-  StrCpy $StartServiceStatus $0
   StrCpy $InstallerStatus "installed"
   StrCpy $InstallerMessage "installer completed"
  
@@ -432,6 +625,7 @@ SectionEnd
 		Abort
 	next:
 	!insertmacro VerifyUserIsAdmin
+	!insertmacro SetDataDir
   functionEnd
   
 ;--------------------------------
@@ -447,16 +641,14 @@ Section "uninstall"
   #Try to remove the Start Menu folder - this will only happen if it is empty
   rmDir "$SMPROGRAMS\${APPNAME}"
 
-  ;ExecWait "sc delete ${APP_NAME_IN_INSTALLED_DIR}"
-  SimpleSC::StopService "${APP_NAME_IN_INSTALLED_DIR}" 1 30
-  Pop $0 ; returns an errorcode (<>0) otherwise success (0)
- 
-  SimpleSC::RemoveService "${APP_NAME_IN_INSTALLED_DIR}"
-  Pop $0 ; returns an errorcode (<>0) otherwise success (0)
+  !insertmacro RemoveServiceIfPresent "${APP_NAME_IN_INSTALLED_DIR}"
+  !insertmacro RemoveServiceIfPresent "${SUPERVISOR_NAME}"
 
   ################################################################################################################
   #Delete installation folder from registry if available - this will only happen if it is empty
   rmDir /r "$INSTDIR"
+  rmDir /r "$DataDir"
+  DeleteRegKey HKLM "${SUPERVISOR_EVENT_SOURCE}"
 
   DeleteRegKey /ifempty HKLM "Software\${APPNAME}"
 
