@@ -57,3 +57,6 @@ jobs:
           if (( $(awk "BEGIN {print ($average < 80)}") )); then
             echo "::warning::Code coverage is below 80%"
           fi
+
+      - name: Check the Windows build
+        run: GOOS=windows go vet ./pkg/agent/ ./cmd/host-agent/
