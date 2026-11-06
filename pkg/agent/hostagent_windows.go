@@ -22,6 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
@@ -45,6 +46,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/debugexporter"
+	"go.opentelemetry.io/collector/exporter/nopexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/extension"
@@ -53,6 +55,7 @@ import (
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/nopreceiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
@@ -70,6 +73,7 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 	factories.Extensions = make(map[component.Type]extension.Factory)
 	exts := []extension.Factory{
 		healthcheckextension.NewFactory(),
+		opampextension.NewFactory(),
 		// frontend.NewAuthFactory(),
 	}
 	for _, f := range exts {
@@ -80,6 +84,7 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 		kafkametricsreceiver.NewFactory(),
 		jmxreceiver.NewFactory(),
 		otlpreceiver.NewFactory(),
+		nopreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),
 		filelogreceiver.NewFactory(),
 		fluentforwardreceiver.NewFactory(),
@@ -113,6 +118,7 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 	exps := []exporter.Factory{
 		debugexporter.NewFactory(),
 		otlpexporter.NewFactory(),
+		nopexporter.NewFactory(),
 		otlphttpexporter.NewFactory(),
 		kafkaexporter.NewFactory(),
 	}

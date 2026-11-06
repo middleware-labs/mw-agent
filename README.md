@@ -68,7 +68,7 @@ make build-kube              # Kubernetes agent
 make build-kube-config-updater  # Kubernetes config updater
 
 # Package components
-make package-windows    # Windows installer
+make package-windows SUPERVISOR_DIR=<path to mw-opampsupervisor>  # Windows installer
 make package-linux-deb  # Debian package
 make package-linux-rpm  # RPM package
 make package-linux-docker  # Docker image

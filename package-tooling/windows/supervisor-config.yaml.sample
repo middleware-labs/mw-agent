@@ -1,0 +1,35 @@
+server:
+  endpoint: ${env:MW_OPAMP_SERVER_URL}
+  # No tls block: the server certificate is verified against the system CAs.
+  # Don't add insecure_skip_verify; on its own it switches verification off.
+  headers:
+    Authorization: 'Bearer ${env:MW_API_KEY}'
+
+telemetry:
+  resource:
+    agent.group_name: ${env:MW_AGENT_GROUP}
+    service.name: mw-supervisor
+    deployment.environment: production
+
+capabilities:
+  reports_effective_config: true
+  reports_own_metrics: true
+  reports_own_logs: true
+  reports_health: true
+  accepts_remote_config: true
+  reports_remote_config: true
+  accepts_restart_command: true
+
+agent:
+  executable: '${env:MW_INSTALL_DIR}\mw-windows-agent.exe'
+  config_apply_timeout: 15s
+  bootstrap_timeout: 15s
+  description:
+    identifying_attributes:
+      agent.group_name: ${env:MW_AGENT_GROUP}
+  # Runs until the server's first config, e.g. when it is down at install.
+  startup_fallback_configs:
+    - '${env:MW_DATA_DIR}\otel-fallback.yaml'
+
+storage:
+  directory: '${env:MW_DATA_DIR}\opamp'

@@ -31,6 +31,14 @@ jobs:
         ssh-key: ${{ secrets.CHECK_AGENT_ACCESS }}
         submodules: 'recursive'
 
+    - name: Checkout MW Supervisor Repo
+      uses: actions/checkout@v4
+      with:
+        repository: middleware-labs/mw-opampsupervisor
+        token: ${{ secrets.GHCR_TOKEN }}
+        path: supervisor
+        ref: master
+
     - name: Setup SM_CLIENT_CERT_FILE from base64 secret data
       run: |
         echo "SM_CLIENT_CERT_FILE=${RUNNER_TEMP}/sm_client_cert.p12" >> "$GITHUB_ENV"
@@ -78,7 +86,43 @@ jobs:
     - name: Build MW Agent for Windows
       run: |
         GOOS=windows CGO_ENABLED=0 GOPRIVATE=github.com/middleware-labs go build -ldflags "-s -w -X main.agentVersion=${{ env.RELEASE_VERSION }}" -o build/mw-windows-agent.exe cmd/host-agent/main.go
+
+    - name: Build Supervisor for Windows
+      run: |
+        cd supervisor
+        GOOS=windows GOARCH=amd64 CGO_ENABLED=0 GOPRIVATE=github.com/middleware-labs go build -ldflags "-s -w -X main.version=${{ env.RELEASE_VERSION }}" -o ../build/mw-opamp-supervisor.exe .
+
+    - name: Sign MW Agent
+      uses: digicert/code-signing-software-trust-action@v1
+      with:
+        simple-signing-mode: true
+        input: build/mw-windows-agent.exe
+        keypair-alias: ${{ secrets.SM_KEYPAIR_ALIAS }}
+      env:
+        SM_HOST: ${{ secrets.SM_HOST }}
+        SM_API_KEY: ${{ secrets.SM_API_KEY }}
+        SM_CLIENT_CERT_FILE: ${{ env.SM_CLIENT_CERT_FILE }}
+        SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
+
+    - name: Sign Supervisor
+      uses: digicert/code-signing-software-trust-action@v1
+      with:
+        simple-signing-mode: true
+        input: build/mw-opamp-supervisor.exe
+        keypair-alias: ${{ secrets.SM_KEYPAIR_ALIAS }}
+      env:
+        SM_HOST: ${{ secrets.SM_HOST }}
+        SM_API_KEY: ${{ secrets.SM_API_KEY }}
+        SM_CLIENT_CERT_FILE: ${{ env.SM_CLIENT_CERT_FILE }}
+        SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
+
+    - name: Build Installer and Upgrade Package
+      run: |
         makensis -DVERSION=${{ env.RELEASE_VERSION }} package-tooling/windows/package-windows.nsi
+        # The supervisor extracts a file named mw-agent on every platform.
+        mkdir -p build/upgrade
+        cp build/mw-windows-agent.exe build/upgrade/mw-agent
+        tar -czf package-tooling/windows/mw-agent-${{ env.RELEASE_VERSION }}-windows-amd64.tar.gz -C build/upgrade mw-agent
 
     - name: Sign MW Agent Installer Package
       uses: digicert/code-signing-software-trust-action@v1
@@ -97,9 +141,18 @@ jobs:
         name: mw-windows-agent-${{ env.RELEASE_VERSION }}-setup.exe
         path: package-tooling/windows/mw-windows-agent-${{ env.RELEASE_VERSION }}-setup.exe
 
+    - name: Upload Upgrade Package Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: mw-agent-${{ env.RELEASE_VERSION }}-windows-amd64.tar.gz
+        path: package-tooling/windows/mw-agent-${{ env.RELEASE_VERSION }}-windows-amd64.tar.gz
+
   upload-to-release:
     needs: create_installer
     runs-on: ubuntu-latest
+    concurrency:
+      group: release-checksums-${{ github.event.inputs.release_version || github.ref_name }}
+      cancel-in-progress: false
     
     steps:
     - name: Checkout Repo  
@@ -122,6 +175,12 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name:  mw-windows-agent-${{ env.RELEASE_VERSION }}-setup.exe
+        path: ./artifacts
+
+    - name: Download upgrade package
+      uses: actions/download-artifact@v4
+      with:
+        name: mw-agent-${{ env.RELEASE_VERSION }}-windows-amd64.tar.gz
         path: ./artifacts
 
     - name: Set up GitHub CLI
@@ -163,3 +222,8 @@ jobs:
             gh release upload "$VERSION" "$FOUND_FILE" --clobber --repo ${{ github.repository }}
           fi
         fi
+
+        TARBALL="mw-agent-${VERSION}-windows-amd64.tar.gz"
+        gh release upload "$VERSION" "./artifacts/$TARBALL" --clobber --repo ${{ github.repository }}
+        (cd artifacts && sha256sum "$TARBALL") > windows-checksums.txt
+        package-tooling/merge-release-checksums.sh "$VERSION" ${{ github.repository }} windows-checksums.txt

@@ -1,7 +1,11 @@
 RELEASE_VERSION=1.11.152
 LD_FLAGS="-s -w -X main.agentVersion=${RELEASE_VERSION}"
+# A checkout of middleware-labs/mw-opampsupervisor, needed for the Windows installer.
+SUPERVISOR_DIR?=supervisor
 build-windows:
 	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags=${LD_FLAGS} -o build/mw-windows-agent.exe cmd/host-agent/main.go
+build-windows-supervisor:
+	cd ${SUPERVISOR_DIR} && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w -X main.version=${RELEASE_VERSION}" -o ${CURDIR}/build/mw-opamp-supervisor.exe .
 build-linux:
 	GOOS=linux CGO_ENABLED=0 go build -ldflags=${LD_FLAGS} -o build/mw-host-agent cmd/host-agent/main.go
 build-darwin-amd64:
@@ -22,7 +26,7 @@ build-kube-config-updater:
 	CGO_ENABLED=0 go build -ldflags=${LD_FLAGS} -o build/mw-kube-agent-config-updater cmd/kube-config-updater/main.go
 build: build-linux build-windows build-kube
 
-package-windows: build-windows
+package-windows: build-windows build-windows-supervisor
 	makensis -DVERSION=${RELEASE_VERSION} package-tooling/windows/package-windows.nsi 
 
 package-linux-deb: build-linux-amd64 build-linux-arm64
