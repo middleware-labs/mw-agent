@@ -29,6 +29,9 @@ ${StrRep}
   !define DEVELOPER "Middleware Lab Inc" #License Holder
 
   !define BUILDNUMBER "0"
+  # Seconds to wait for a service to report running. The first start of a new
+  # binary can take over a minute while antivirus scans it.
+  !define SERVICE_START_TIMEOUT 180
   # Files Directory
   !define BUILD_DIR "..\..\build" #Replace with the full path of install folder
   !define REPO_ROOT_DIR "..\..\"
@@ -618,7 +621,7 @@ Function InstallAgentService
         Return
     ${EndIf}
 
-    SimpleSC::StartService "${APP_NAME_IN_INSTALLED_DIR}" "" 30
+    SimpleSC::StartService "${APP_NAME_IN_INSTALLED_DIR}" "" ${SERVICE_START_TIMEOUT}
     Pop $0 ; returns an errorcode (<>0) otherwise success (0)
     StrCpy $StartServiceStatus $0
     ${If} $0 != 0
@@ -663,7 +666,7 @@ Function InstallSupervisorService
     nsExec::ExecToLog 'sc.exe failureflag ${SUPERVISOR_NAME} 1'
     Pop $0
 
-    SimpleSC::StartService "${SUPERVISOR_NAME}" "" 60
+    SimpleSC::StartService "${SUPERVISOR_NAME}" "" ${SERVICE_START_TIMEOUT}
     Pop $0 ; returns an errorcode (<>0) otherwise success (0)
     StrCpy $StartServiceStatus $0
     ${If} $0 != 0
