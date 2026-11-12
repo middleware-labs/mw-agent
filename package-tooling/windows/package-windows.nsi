@@ -170,6 +170,7 @@ Var MWAgentGroup
 Var DataDir
 Var OptionOpAMPServerURL
 Var LoadedTarget
+Var SettingsLoadFailed
 
 # Read /NAME=value from the installer command line into VAR ("" if absent).
 # Values may be wrapped in "", '' or `` quotes.
@@ -240,6 +241,7 @@ Function LoadSupervisorEnvironment
     nsExec::Exec `"${POWERSHELL}" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$ErrorActionPreference = 'Stop'; Set-Content -LiteralPath '$R0' -Value (Get-ItemProperty -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Services\${SUPERVISOR_NAME}' -Name Environment).Environment"`
     Pop $0
     ${If} $0 != 0
+        StrCpy $SettingsLoadFailed "true"
         Delete "$PLUGINSDIR\mw-env"
         Return
     ${EndIf}
@@ -685,8 +687,15 @@ Section "install"
   # Check this while any working service is still in place.
   ${If} $MWAPIKey == ""
   ${OrIf} $MWTarget == ""
-    !insertmacro FailInstall "MW_API_KEY and MW_TARGET are required"
+    ${If} $SettingsLoadFailed == "true"
+      !insertmacro FailInstall "could not read the settings of the existing install, so MW_API_KEY and MW_TARGET are required"
+    ${Else}
+      !insertmacro FailInstall "MW_API_KEY and MW_TARGET are required"
+    ${EndIf}
     Abort
+  ${EndIf}
+  ${If} $SettingsLoadFailed == "true"
+    DetailPrint "Could not read the settings of the existing install. Settings not passed as options use their defaults."
   ${EndIf}
 
   # A running service locks its binary, and the two services use the same ports.
