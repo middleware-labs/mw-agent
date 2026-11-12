@@ -13,6 +13,7 @@ import (
 	"github.com/urfave/cli/v2/altsrc"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	obireceiver "go.opentelemetry.io/obi/collector"
 
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
@@ -21,6 +22,16 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+// The obi (eBPF) receiver is added here, not in pkg/agent, so agents that don't use it
+// (opsai, synthetics) don't import OBI and don't need its generated eBPF files. It is in
+// main.go because the builds compile only this file (go build cmd/<agent>/main.go).
+// Only the Linux factories add agent.ExtraReceivers; on other platforms OBI is a stub.
+// The receiver runs only when the backend config includes it
+// (agent-features.cloud-network-monitoring).
+func init() {
+	agent.ExtraReceivers = append(agent.ExtraReceivers, obireceiver.NewFactory())
+}
 
 var agentVersion = "0.0.1"
 

@@ -19,6 +19,7 @@ import (
 	"github.com/middleware-labs/mw-agent/pkg/agent"
 	"github.com/middleware-labs/mw-injector/pkg/otelinject"
 	"github.com/middleware-labs/synthetics-agent/pkg/worker"
+	obireceiver "go.opentelemetry.io/obi/collector"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/kardianos/service"
@@ -29,6 +30,16 @@ import (
 	"go.uber.org/zap/exp/zapslog"
 	"go.uber.org/zap/zapcore"
 )
+
+// The obi (eBPF) receiver is added here, not in pkg/agent, so agents that don't use it
+// (opsai, synthetics) don't import OBI and don't need its generated eBPF files. It is in
+// main.go because the builds compile only this file (go build cmd/<agent>/main.go).
+// Only the Linux factories add agent.ExtraReceivers; on other platforms OBI is a stub.
+// The receiver runs only when the backend config includes it
+// (agent-features.cloud-network-monitoring).
+func init() {
+	agent.ExtraReceivers = append(agent.ExtraReceivers, obireceiver.NewFactory())
+}
 
 // zapToSlog bridges a zap logger to an slog.Logger so packages that accept
 // *slog.Logger (like pkg/discovery in mw-injector) can share mw-agent's
