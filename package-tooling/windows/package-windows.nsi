@@ -32,6 +32,9 @@ ${StrRep}
   # Seconds to wait for a service to report running. The first start of a new
   # binary can take over a minute while antivirus scans it.
   !define SERVICE_START_TIMEOUT 180
+  # By full path: powershell.exe is not in System32 itself, so a bare name is
+  # found only through PATH, which some machines have broken.
+  !define POWERSHELL "$SYSDIR\WindowsPowerShell\v1.0\powershell.exe"
   # Files Directory
   !define BUILD_DIR "..\..\build" #Replace with the full path of install folder
   !define REPO_ROOT_DIR "..\..\"
@@ -212,6 +215,8 @@ Var LoadedTarget
   StrCpy $InstallerStatus "failed"
   StrCpy $InstallerMessage "${MESSAGE}"
   SetErrorLevel 1
+  DetailPrint "Installation failed: ${MESSAGE}"
+  MessageBox MB_OK|MB_ICONSTOP "Middleware Agent installation failed: ${MESSAGE}" /SD IDOK
 !macroend
 
 # Use the value of NAME from the old environment if the option wasn't given.
@@ -232,7 +237,7 @@ Var LoadedTarget
 Function LoadSupervisorEnvironment
     InitPluginsDir
     !insertmacro PowerShellEnvFilePath $R0
-    nsExec::Exec `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$ErrorActionPreference = 'Stop'; Set-Content -LiteralPath '$R0' -Value (Get-ItemProperty -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Services\${SUPERVISOR_NAME}' -Name Environment).Environment"`
+    nsExec::Exec `"${POWERSHELL}" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$ErrorActionPreference = 'Stop'; Set-Content -LiteralPath '$R0' -Value (Get-ItemProperty -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Services\${SUPERVISOR_NAME}' -Name Environment).Environment"`
     Pop $0
     ${If} $0 != 0
         Delete "$PLUGINSDIR\mw-env"
@@ -601,7 +606,7 @@ Function WriteSupervisorEnvironment
     FileClose $4
 
     !insertmacro PowerShellEnvFilePath $R0
-    nsExec::Exec `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$ErrorActionPreference = 'Stop'; Set-ItemProperty -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Services\${SUPERVISOR_NAME}' -Name Environment -Type MultiString -Value (Get-Content -LiteralPath '$R0')"`
+    nsExec::Exec `"${POWERSHELL}" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$$ErrorActionPreference = 'Stop'; Set-ItemProperty -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Services\${SUPERVISOR_NAME}' -Name Environment -Type MultiString -Value (Get-Content -LiteralPath '$R0')"`
     Pop $0
     Delete "$PLUGINSDIR\mw-env"
     ${If} $0 != 0
