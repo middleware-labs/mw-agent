@@ -2,21 +2,27 @@ RELEASE_VERSION=1.11.152
 LD_FLAGS="-s -w -X main.agentVersion=${RELEASE_VERSION}"
 # A checkout of middleware-labs/mw-opampsupervisor, needed for the Windows installer.
 SUPERVISOR_DIR?=supervisor
+# OBI (eBPF receiver) source, pinned as a git submodule. Its eBPF files are
+# generated, not committed, so Linux builds generate them first.
+OBI_SRC=.obi-src
+generate-obi:
+	test -f ${OBI_SRC}/go.mod || git submodule update --init ${OBI_SRC}
+	$(MAKE) -C ${OBI_SRC} docker-generate
 build-windows:
 	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags=${LD_FLAGS} -o build/mw-windows-agent.exe cmd/host-agent/main.go
 build-windows-supervisor:
 	cd ${SUPERVISOR_DIR} && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w -X main.version=${RELEASE_VERSION}" -o ${CURDIR}/build/mw-opamp-supervisor.exe .
-build-linux:
+build-linux: generate-obi
 	GOOS=linux CGO_ENABLED=0 go build -ldflags=${LD_FLAGS} -o build/mw-host-agent cmd/host-agent/main.go
 build-darwin-amd64:
 	GOOS=darwin GOARCH=amd64 CGO_ENABLED=1 go build -ldflags=${LD_FLAGS} -o build/mw-host-agent cmd/host-agent/main.go
 build-darwin-arm64:
 	GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 go build -ldflags=${LD_FLAGS} -o build/mw-host-agent cmd/host-agent/main.go
-build-linux-amd64:
+build-linux-amd64: generate-obi
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags=${LD_FLAGS} -o build/mw-host-agent-amd64 cmd/host-agent/main.go
-build-linux-arm64:
+build-linux-arm64: generate-obi
 	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags=${LD_FLAGS} -o build/mw-host-agent-arm64 cmd/host-agent/main.go
-build-kube:
+build-kube: generate-obi
 	GOOS=linux CGO_ENABLED=0 go build -ldflags=${LD_FLAGS} -o build/mw-kube-agent cmd/kube-agent/main.go
 build-synthetics:
 	GOOS=linux CGO_ENABLED=0 go build -ldflags=${LD_FLAGS} -o build/mw-synthetics cmd/synthetics/main.go
@@ -68,10 +74,10 @@ clean:
 	rm mw-host-agent
 	rm mw-windows-agent
 
-test:
+test: generate-obi
 	go test ./...
 
-test_coverage:
+test_coverage: generate-obi
 	go test ./... -coverprofile=coverage.out
 
 vet:

@@ -113,6 +113,11 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
 
+    # OBI's eBPF files are not committed in the .obi-src submodule, so generate them before building
+    - name: Generate OBI eBPF files
+      if: ${{ github.actor != 'nektos/act' }}
+      run: make -C agent generate-obi
+
     # Building with CGO_ENABLED=0 so that we can build static binary which is not dependent on any external libraries
     # Building with -ldflags="-s -w" to reduce the size of binary
     - name: Go Build

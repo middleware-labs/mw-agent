@@ -152,6 +152,14 @@ func getFlags(cfg *agent.KubeConfig) []cli.Flag {
 			DefaultText: "false",
 			Value:       false,
 		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "agent-features.cloud-network-monitoring",
+			Usage:       "Enable cloud network monitoring (CNM) with the eBPF obi receiver. Linux only.",
+			EnvVars:     []string{"MW_AGENT_FEATURES_CLOUD_NETWORK_MONITORING"},
+			Destination: &cfg.EnableCloudNetworkMonitoring,
+			DefaultText: "false",
+			Value:       false,
+		}),
 
 		&cli.StringFlag{
 			Name:    "config-file",

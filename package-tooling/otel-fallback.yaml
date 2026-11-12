@@ -76,7 +76,7 @@ processors:
     send_batch_max_size: 500
     send_batch_size: 500
     timeout: 10s
-  cumulativetodelta/ratecalculation:
+  cumulative_to_delta/ratecalculation:
     include:
       match_type: strict
       metrics:
@@ -86,7 +86,7 @@ processors:
       - system.network.packets.rate
       - system.network.errors.rate
       - system.network.dropped.rate
-  deltatorate/ratecalculation:
+  delta_to_rate/ratecalculation:
     metrics:
     - system.network.io.rate
     - system.disk.io.rate
@@ -211,7 +211,7 @@ processors:
     attributes:
     - action: delete
       key: mw.dummy_resource
-  resourcedetection:
+  resource_detection:
     detectors:
     - system
     - env
@@ -383,7 +383,7 @@ service:
       exporters:
       - otlp_grpc/2
       processors:
-      - resourcedetection
+      - resource_detection
       - resource/hostid
       - resource/logs
       - resource/deletelogs
@@ -399,15 +399,15 @@ service:
       exporters:
       - otlp_grpc/2
       processors:
-      - resourcedetection
+      - resource_detection
       - resource/hostid
       - resource
       - transform/ostype
       - metrics_transform/system
       - transform/deleteostype
       - transform/ratecalculation/copymetric
-      - cumulativetodelta/ratecalculation
-      - deltatorate/ratecalculation
+      - cumulative_to_delta/ratecalculation
+      - delta_to_rate/ratecalculation
       - transform/ratecalculation/sumtogauge
       - batch
       receivers:
@@ -417,7 +417,7 @@ service:
       exporters:
       - otlp_grpc/2
       processors:
-      - resourcedetection
+      - resource_detection
       - resource/hostid
       - resource/traces
       - resource/deletetraces

@@ -483,6 +483,10 @@ func (c *HostAgent) fetchIngestionRules(configType string) ([]byte, error) {
 		params.Add("enable_datadog_receiver", "true")
 	}
 
+	if c.EnableCloudNetworkMonitoring {
+		params.Add("enable_cloud_network_monitoring", "true")
+	}
+
 	params.Add("col_running", c.collectorRunningParam())
 
 	// Add Query Parameters to the URL

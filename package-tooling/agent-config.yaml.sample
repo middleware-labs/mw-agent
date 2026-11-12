@@ -42,7 +42,12 @@ agent-internal-metrics-port: 8888
 #
 # log-collection: By setting this flag to false, you can disable log 
 # collection from this agent. log-collection is set to true by default.
+#
+# cloud-network-monitoring: By setting this flag to true, the agent asks the backend
+# for a config with the eBPF obi receiver (network metrics). Linux only.
+# cloud-network-monitoring is set to false by default.
 #agent-features:
 #  metric-collection: true
 #  log-collection: true
 #  service-reporting: true
+#  cloud-network-monitoring: false

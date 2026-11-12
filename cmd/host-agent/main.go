@@ -348,6 +348,14 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			DefaultText: "false",
 			Value:       false,
 		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "agent-features.cloud-network-monitoring",
+			Usage:       "Enable cloud network monitoring (CNM) with the eBPF obi receiver. Linux only.",
+			EnvVars:     []string{"MW_AGENT_FEATURES_CLOUD_NETWORK_MONITORING"},
+			Destination: &cfg.EnableCloudNetworkMonitoring,
+			DefaultText: "false",
+			Value:       false,
+		}),
 
 		altsrc.NewStringFlag(&cli.StringFlag{
 			Name:        "service-report-interval",
@@ -1300,6 +1308,10 @@ func prepareRuntimeEnv(cfg *agent.HostConfig, logger *zap.Logger) error {
 
 	if cfg.EnableDataDogReceiver {
 		os.Setenv("MW_ENABLE_DATADOG_RECEIVER", "true")
+	}
+
+	if cfg.EnableCloudNetworkMonitoring {
+		os.Setenv("MW_AGENT_FEATURES_CLOUD_NETWORK_MONITORING", "true")
 	}
 
 	// TODO: check if on Windows, socket scheme is different than "unix"

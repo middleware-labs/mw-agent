@@ -120,6 +120,8 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 			awsecscontainermetricsreceiver.NewFactory())
 	}
 
+	receiverfactories = append(receiverfactories, ExtraReceivers...)
+
 	for _, f := range receiverfactories {
 		factories.Receivers[f.Type()] = f
 	}

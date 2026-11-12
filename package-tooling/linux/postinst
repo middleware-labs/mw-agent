@@ -187,6 +187,9 @@ handle_variable() {
         MW_ENABLE_DATADOG_RECEIVER)
             update_config "enable-datadog-receiver" "$value" "${CONFIG_FILE}"
             ;;
+        MW_AGENT_FEATURES_CLOUD_NETWORK_MONITORING)
+            update_config "agent-features.cloud-network-monitoring" "$value" "${CONFIG_FILE}"
+            ;;
         
         PATH)
             ;;
@@ -337,6 +340,7 @@ if [ "${INSTALL_MODE}" = "managed" ]; then
     
     # Additional features
     echo "MW_ENABLE_DATADOG_RECEIVER=${MW_ENABLE_DATADOG_RECEIVER:-false}" >> "${SUPERVISOR_ENV_FILE}"
+    echo "MW_AGENT_FEATURES_CLOUD_NETWORK_MONITORING=${MW_AGENT_FEATURES_CLOUD_NETWORK_MONITORING:-false}" >> "${SUPERVISOR_ENV_FILE}"
     echo "MW_AGENT_FEATURES_REPORT_SERVICES=${MW_AGENT_FEATURES_REPORT_SERVICES:-true}" >> "${SUPERVISOR_ENV_FILE}"
     echo "MW_REMOTE_AGENT_ENABLED=${MW_REMOTE_AGENT_ENABLED:-true}" >> "${SUPERVISOR_ENV_FILE}"
 
@@ -472,6 +476,10 @@ else
 
             if [ -n "${MW_ENABLE_DATADOG_RECEIVER}" ]; then
                 handle_variable "MW_ENABLE_DATADOG_RECEIVER" "${MW_ENABLE_DATADOG_RECEIVER}"
+            fi
+
+            if [ -n "${MW_AGENT_FEATURES_CLOUD_NETWORK_MONITORING}" ]; then
+                handle_variable "MW_AGENT_FEATURES_CLOUD_NETWORK_MONITORING" "${MW_AGENT_FEATURES_CLOUD_NETWORK_MONITORING}"
             fi
         fi
     fi

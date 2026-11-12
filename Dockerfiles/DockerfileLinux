@@ -1,8 +1,16 @@
+# Generate OBI's eBPF files (*_bpfel.go, *_bpfel.o) in the .obi-src submodule.
+# The image version must match GEN_IMG in .obi-src/Makefile.
+FROM ghcr.io/open-telemetry/obi-generator:0.2.17 AS bpf-generator
+WORKDIR /src/.obi-src
+COPY .obi-src .
+RUN /generate.sh
+
 FROM golang:1.26.0 AS build
 RUN apt-get update && apt-get install -y ca-certificates openssl git openssh-client
 
 RUN update-ca-certificates
 COPY . .
+COPY --from=bpf-generator /src/.obi-src ./.obi-src
 ARG AGENT_VERSION
 ENV AGENT_VERSION=$AGENT_VERSION
 ARG GITHUB_TOKEN

@@ -12,7 +12,7 @@ processors:
     - action: insert
       key: mw.host.tags
       value: env:prod,team:core
-  resourcedetection:
+  resource_detection:
     detectors:
     - system
 receivers:
@@ -45,7 +45,7 @@ service:
       - otlp_grpc/2
       processors:
       - resource/host_tags
-      - resourcedetection
+      - resource_detection
       - batch
       receivers:
       - otlp
