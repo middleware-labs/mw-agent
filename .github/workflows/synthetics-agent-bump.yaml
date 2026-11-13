@@ -44,24 +44,17 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "branch=deps/synthetics-agent-$VERSION" >> "$GITHUB_OUTPUT"
 
-      # A GitHub App token (not GITHUB_TOKEN) so the PR it opens runs PR checks.
-      - name: Create GitHub App token
-        id: app-token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ vars.RELEASE_APP_ID }}
-          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
       - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: master
-          token: ${{ steps.app-token.outputs.token }}
+          token: ${{ secrets.RELEASE_CHAIN_TOKEN }}
 
       - name: Skip if a PR for this version already exists
         id: existing
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_CHAIN_TOKEN }}
           BRANCH: ${{ steps.version.outputs.branch }}
         run: |
           PR_URL=$(gh pr list --head "$BRANCH" --state all --json url --jq '.[0].url')
@@ -113,7 +106,7 @@ jobs:
       - name: Open PR
         if: steps.bump.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_CHAIN_TOKEN }}
           VERSION: ${{ steps.version.outputs.version }}
           OLD: ${{ steps.bump.outputs.old }}
           BRANCH: ${{ steps.version.outputs.branch }}

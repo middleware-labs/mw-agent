@@ -197,18 +197,10 @@ jobs:
     if: github.event_name != 'workflow_dispatch' || github.event.inputs.bump_helm == 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Create GitHub App token
-        id: app-token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ vars.RELEASE_APP_ID }}
-          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
-          owner: middleware-labs
-          repositories: helm-charts
 
       - name: Dispatch to helm-charts
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_CHAIN_TOKEN }}
           TAG: ${{ needs.prepare.outputs.tag }}
           SYN_VERSION: ${{ needs.prepare.outputs.synthetics_version }}
           SHA: ${{ needs.prepare.outputs.sha }}
