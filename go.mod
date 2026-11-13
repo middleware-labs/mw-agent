@@ -126,7 +126,7 @@ require (
 
 require (
 	github.com/middleware-labs/mw-injector v1.2.3
-	github.com/middleware-labs/synthetics-agent v1.0.65
+	github.com/middleware-labs/synthetics-agent v1.0.67
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.152.0
@@ -411,6 +411,7 @@ require (
 	github.com/mtibben/percent v0.2.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
+	github.com/ohler55/ojg v1.28.4 // indirect
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
 	github.com/open-telemetry/opamp-go v0.23.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.152.0 // indirect
