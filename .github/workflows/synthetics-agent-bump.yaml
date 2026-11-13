@@ -44,7 +44,6 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "branch=deps/synthetics-agent-$VERSION" >> "$GITHUB_OUTPUT"
 
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
