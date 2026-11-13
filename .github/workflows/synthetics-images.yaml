@@ -174,7 +174,9 @@ jobs:
           push: true
           platforms: ${{ needs.prepare.outputs.platforms }}
           cache-from: type=gha,scope=${{ matrix.agent.name }}
-          cache-to: type=gha,scope=${{ matrix.agent.name }},mode=max
+          # ignore-error: a cache save must never fail a release. On the PR-merged
+          # event the cache token is read-only ("token has no writable scopes").
+          cache-to: type=gha,scope=${{ matrix.agent.name }},mode=max,ignore-error=true
           secrets: |
             GITHUB_TOKEN=${{ secrets.GHCR_TOKEN }}
           build-args: |
