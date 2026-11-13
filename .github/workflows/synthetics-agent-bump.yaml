@@ -1,0 +1,140 @@
+# Stage 2 of the synthetics release chain:
+#   synthetics-agent (tag) -> [this] go.mod bump PR -> (manual merge)
+#   -> synthetics-images.yaml -> helm-charts bump PR
+#
+# Opens a PR that bumps github.com/middleware-labs/synthetics-agent. The PR is
+# merged by a human; merging it triggers synthetics-images.yaml.
+name: Synthetics Agent - Bump Dependency
+
+on:
+  repository_dispatch:
+    types: [synthetics-agent-released]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'synthetics-agent version to bump to (e.g. v1.0.66)'
+        required: true
+
+concurrency:
+  group: synthetics-agent-bump
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  GOPRIVATE: github.com/middleware-labs
+  PR_LABEL: synthetics-release
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve version
+        id: version
+        env:
+          DISPATCH_VERSION: ${{ github.event.client_payload.version }}
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          VERSION="${DISPATCH_VERSION:-$INPUT_VERSION}"
+          if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid synthetics-agent version '$VERSION' (expected vX.Y.Z)"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "branch=deps/synthetics-agent-$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          token: ${{ secrets.RELEASE_CHAIN_TOKEN }}
+
+      - name: Skip if a PR for this version already exists
+        id: existing
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_CHAIN_TOKEN }}
+          BRANCH: ${{ steps.version.outputs.branch }}
+        run: |
+          PR_URL=$(gh pr list --head "$BRANCH" --state all --json url --jq '.[0].url')
+          if [ -n "$PR_URL" ]; then
+            echo "PR already exists: $PR_URL"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Go
+        if: steps.existing.outputs.skip == 'false'
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Configure private module access
+        if: steps.existing.outputs.skip == 'false'
+        env:
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        run: git config --global url."https://${GHCR_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
+      - name: Bump synthetics-agent
+        id: bump
+        if: steps.existing.outputs.skip == 'false'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          OLD=$(go list -m -f '{{.Version}}' github.com/middleware-labs/synthetics-agent)
+          echo "old=$OLD" >> "$GITHUB_OUTPUT"
+          go get "github.com/middleware-labs/synthetics-agent@${VERSION}"
+          go mod tidy
+          if git diff --quiet -- go.mod go.sum; then
+            echo "go.mod already at $VERSION, nothing to do"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Everything that embeds the synthetics worker: both k8s images and the host agent.
+      - name: Build affected binaries
+        if: steps.bump.outputs.changed == 'true'
+        run: |
+          CGO_ENABLED=0 GOOS=linux go build -o /dev/null ./cmd/synthetics
+          CGO_ENABLED=0 GOOS=linux go build -o /dev/null ./cmd/opsai
+          CGO_ENABLED=0 GOOS=linux go build -o /dev/null ./cmd/host-agent
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o /dev/null ./cmd/host-agent
+
+      - name: Open PR
+        if: steps.bump.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_CHAIN_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+          OLD: ${{ steps.bump.outputs.old }}
+          BRANCH: ${{ steps.version.outputs.branch }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add go.mod go.sum
+          git commit -m "Bump synthetics-agent from ${OLD} to ${VERSION}"
+          git push origin "$BRANCH"
+
+          gh label create "$PR_LABEL" --color 1D76DB \
+            --description "Merging builds mw-synthetics/mw-opsai images and opens a helm-charts PR" 2>/dev/null || true
+
+          gh pr create \
+            --base master \
+            --head "$BRANCH" \
+            --label "$PR_LABEL" \
+            --title "Bump synthetics-agent to ${VERSION}" \
+            --body "$(cat <<EOF
+          Bumps \`github.com/middleware-labs/synthetics-agent\` from \`${OLD}\` to \`${VERSION}\`.
+
+          Release notes: https://github.com/middleware-labs/synthetics-agent/releases/tag/${VERSION}
+
+          **What merging this does**
+          - Builds and pushes \`mw-synthetics\` and \`mw-opsai\` images (no mw-agent release tag is created).
+          - Opens a PR in \`helm-charts\` bumping those image tags in \`mw-kube-agent-v3\`.
+          - The host agent picks this up in the next regular mw-agent release.
+
+          _Opened automatically by \`synthetics-agent-bump.yaml\`._
+          EOF
+          )"

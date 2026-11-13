@@ -109,7 +109,19 @@ jobs:
             echo "PLATFORMS=linux/amd64,linux/arm64" >> $GITHUB_ENV
           fi
 
+      # synthetics-images.yaml publishes mw-synthetics/mw-opsai tags on its own, which
+      # the helm chart may already reference. Don't overwrite them on a release tag push.
+      - name: Skip existing synthetics/opsai tag
+        id: guard
+        if: github.event_name == 'push' && matrix.agent.name != 'kube-agent'
+        run: |
+          if docker manifest inspect "${{ matrix.agent.image }}:${{ env.RELEASE_VERSION }}" >/dev/null 2>&1; then
+            echo "::notice::${{ matrix.agent.image }}:${{ env.RELEASE_VERSION }} already exists; not overwriting"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build and Push
+        if: steps.guard.outputs.skip != 'true'
         uses: docker/build-push-action@v6
         with:
           context: ./
