@@ -64,11 +64,25 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # Build with the same Go the release images use. go.mod's `go` line is only
+      # the minimum (e.g. 1.25.0), and older patch releases can fail to link the
+      # host agent ("relocation target ... not defined").
+      - name: Resolve Go version
+        id: go
+        if: steps.existing.outputs.skip == 'false'
+        run: |
+          GO_VERSION=$(grep -m1 -oE 'golang:[0-9]+\.[0-9]+(\.[0-9]+)?' Dockerfiles/DockerfileKube.base | cut -d: -f2)
+          if [ -z "$GO_VERSION" ]; then
+            echo "::error::Could not read the Go version from Dockerfiles/DockerfileKube.base"; exit 1
+          fi
+          echo "Using Go $GO_VERSION (from DockerfileKube.base)"
+          echo "version=$GO_VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Set up Go
         if: steps.existing.outputs.skip == 'false'
         uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version: ${{ steps.go.outputs.version }}
 
       - name: Configure private module access
         if: steps.existing.outputs.skip == 'false'
