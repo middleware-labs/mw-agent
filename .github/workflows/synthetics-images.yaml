@@ -1,0 +1,241 @@
+# Stage 3 of the synthetics release chain:
+#   synthetics-agent tag -> synthetics-agent-bump.yaml PR -> (manual merge)
+#   -> [this] build mw-synthetics + mw-opsai -> helm-charts bump PR
+#
+# Runs automatically when a PR labelled `synthetics-release` is merged into
+# master, or manually from the Actions tab (Run workflow).
+#
+# Builds ONLY mw-synthetics and mw-opsai. It never creates an mw-agent git tag,
+# because tag pushes trigger the full host-agent release workflows.
+name: Synthetics Images - Build & Bump Helm
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag (leave empty to use the next free patch version)'
+        required: false
+        default: ''
+      platform:
+        description: 'Platforms to build'
+        type: choice
+        options: [both, amd64, arm64]
+        default: both
+      bump_helm:
+        description: 'Open a helm-charts PR with the new tags after a successful build'
+        type: boolean
+        default: true
+
+concurrency:
+  group: synthetics-images
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  SYNTHETICS_IMAGE: ghcr.io/middleware-labs/mw-synthetics
+  OPSAI_IMAGE: ghcr.io/middleware-labs/mw-opsai
+  HELM_REPO: middleware-labs/helm-charts
+  HELM_VALUES: charts/mw-kube-agent-v3/values.yaml
+
+jobs:
+  prepare:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged == true &&
+       contains(github.event.pull_request.labels.*.name, 'synthetics-release'))
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      sha: ${{ steps.ref.outputs.sha }}
+      synthetics_version: ${{ steps.syn.outputs.synthetics_version }}
+      platforms: ${{ steps.ref.outputs.platforms }}
+    steps:
+      - name: Resolve commit and platforms
+        id: ref
+        env:
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          PLATFORM: ${{ github.event.inputs.platform }}
+        run: |
+          echo "sha=${MERGE_SHA:-$GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          case "$PLATFORM" in
+            amd64) echo "platforms=linux/amd64" >> "$GITHUB_OUTPUT" ;;
+            arm64) echo "platforms=linux/arm64" >> "$GITHUB_OUTPUT" ;;
+            *)     echo "platforms=linux/amd64,linux/arm64" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.ref.outputs.sha }}
+
+      - name: Read synthetics-agent version
+        id: syn
+        run: |
+          V=$(awk '$1=="github.com/middleware-labs/synthetics-agent"{print $2}' go.mod)
+          echo "synthetics_version=$V" >> "$GITHUB_OUTPUT"
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      # Next free patch above max(latest mw-agent release tag, tags in the chart),
+      # skipping any tag already present on either image so nothing is overwritten.
+      - name: Resolve image tag
+        id: tag
+        env:
+          GH_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          exists() { docker manifest inspect "$1" >/dev/null 2>&1; }
+
+          if [ -n "$INPUT_TAG" ]; then
+            if ! [[ "$INPUT_TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+              echo "::error::Invalid tag '$INPUT_TAG'"; exit 1
+            fi
+            for img in "$SYNTHETICS_IMAGE" "$OPSAI_IMAGE"; do
+              if exists "$img:$INPUT_TAG"; then
+                echo "::error::$img:$INPUT_TAG already exists. Pick another tag."; exit 1
+              fi
+            done
+            echo "tag=$INPUT_TAG" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+
+          RELEASE=$(git ls-remote --tags --refs origin | sed 's|.*refs/tags/||' \
+            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+          VALUES=$(gh api "repos/$HELM_REPO/contents/$HELM_VALUES" -H "Accept: application/vnd.github.raw")
+          CHART_SYN=$(echo "$VALUES" | yq '.syntheticMonitoring.tag')
+          CHART_OPS=$(echo "$VALUES" | yq '.opsai.tag')
+          echo "latest mw-agent release: $RELEASE, chart: synthetics=$CHART_SYN opsai=$CHART_OPS"
+
+          BASE=$(printf '%s\n' "$RELEASE" "$CHART_SYN" "$CHART_OPS" \
+            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
+          IFS=. read -r MAJ MIN PAT <<< "$BASE"
+          for _ in $(seq 1 50); do
+            PAT=$((PAT + 1)); CANDIDATE="$MAJ.$MIN.$PAT"
+            if ! exists "$SYNTHETICS_IMAGE:$CANDIDATE" && ! exists "$OPSAI_IMAGE:$CANDIDATE"; then
+              echo "tag=$CANDIDATE" >> "$GITHUB_OUTPUT"
+              echo "Using tag $CANDIDATE"; exit 0
+            fi
+            echo "$CANDIDATE already exists, trying next"
+          done
+          echo "::error::No free tag found above $BASE"; exit 1
+
+  build:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        agent:
+          - name: synthetics
+            binary: mw-synthetics
+            image: ghcr.io/middleware-labs/mw-synthetics
+          - name: opsai
+            binary: mw-opsai
+            image: ghcr.io/middleware-labs/mw-opsai
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+          token: ${{ secrets.GHCR_TOKEN }}
+          ssh-key: ${{ secrets.CHECK_AGENT_ACCESS }}
+          submodules: 'recursive'
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost "$AGENT_TOOLSDIRECTORY"
+          sudo docker system prune -af
+          df -h
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./
+          file: Dockerfiles/DockerfileKube.base
+          push: true
+          platforms: ${{ needs.prepare.outputs.platforms }}
+          cache-from: type=gha,scope=${{ matrix.agent.name }}
+          cache-to: type=gha,scope=${{ matrix.agent.name }},mode=max
+          secrets: |
+            GITHUB_TOKEN=${{ secrets.GHCR_TOKEN }}
+          build-args: |
+            AGENT_VERSION=${{ needs.prepare.outputs.tag }}
+            APP_BINARY=${{ matrix.agent.binary }}
+          tags: |
+            ${{ matrix.agent.image }}:${{ needs.prepare.outputs.tag }}
+
+      # Pull the pushed image and make sure the binary starts. Gates the helm bump.
+      - name: Smoke test
+        env:
+          IMAGE: ${{ matrix.agent.image }}:${{ needs.prepare.outputs.tag }}
+          PLATFORMS: ${{ needs.prepare.outputs.platforms }}
+        run: |
+          PLATFORM="${PLATFORMS%%,*}"
+          docker run --rm --platform "$PLATFORM" "$IMAGE" mw-agent --help
+
+  bump-helm:
+    needs: [prepare, build]
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.bump_helm == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: middleware-labs
+          repositories: helm-charts
+
+      - name: Dispatch to helm-charts
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+          SYN_VERSION: ${{ needs.prepare.outputs.synthetics_version }}
+          SHA: ${{ needs.prepare.outputs.sha }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          gh api "repos/$HELM_REPO/dispatches" \
+            -f event_type=agent-images-released \
+            -f "client_payload[synthetics_tag]=$TAG" \
+            -f "client_payload[opsai_tag]=$TAG" \
+            -f "client_payload[synthetics_agent_version]=$SYN_VERSION" \
+            -f "client_payload[mw_agent_sha]=$SHA" \
+            -f "client_payload[source_url]=${PR_URL:-$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID}"
+
+  summary:
+    needs: [prepare, build, bump-helm]
+    if: always() && needs.prepare.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write summary
+        run: |
+          {
+            echo "### Synthetics images"
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Tag | \`${{ needs.prepare.outputs.tag }}\` |"
+            echo "| synthetics-agent | \`${{ needs.prepare.outputs.synthetics_version }}\` |"
+            echo "| mw-agent commit | \`${{ needs.prepare.outputs.sha }}\` |"
+            echo "| Build | ${{ needs.build.result }} |"
+            echo "| Helm dispatch | ${{ needs.bump-helm.result }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
