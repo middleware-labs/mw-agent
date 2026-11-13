@@ -19,6 +19,7 @@ import (
 	"github.com/middleware-labs/mw-agent/pkg/agent"
 	"github.com/middleware-labs/mw-injector/pkg/otelinject"
 	"github.com/middleware-labs/synthetics-agent/pkg/worker"
+	obireceiver "go.opentelemetry.io/obi/collector"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/kardianos/service"
@@ -29,6 +30,16 @@ import (
 	"go.uber.org/zap/exp/zapslog"
 	"go.uber.org/zap/zapcore"
 )
+
+// The obi (eBPF) receiver is added here, not in pkg/agent, so agents that don't use it
+// (opsai, synthetics) don't import OBI and don't need its generated eBPF files. It is in
+// main.go because the builds compile only this file (go build cmd/<agent>/main.go).
+// Only the Linux factories add agent.ExtraReceivers; on other platforms OBI is a stub.
+// The receiver runs only when the backend config includes it
+// (agent-features.cloud-network-monitoring).
+func init() {
+	agent.ExtraReceivers = append(agent.ExtraReceivers, obireceiver.NewFactory())
+}
 
 // zapToSlog bridges a zap logger to an slog.Logger so packages that accept
 // *slog.Logger (like pkg/discovery in mw-injector) can share mw-agent's
@@ -345,6 +356,14 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			Usage:       "Enable datadog receiver in agent",
 			EnvVars:     []string{"MW_ENABLE_DATADOG_RECEIVER"},
 			Destination: &cfg.EnableDataDogReceiver,
+			DefaultText: "false",
+			Value:       false,
+		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "agent-features.cloud-network-monitoring",
+			Usage:       "Enable cloud network monitoring (CNM) with the eBPF obi receiver. Linux only.",
+			EnvVars:     []string{"MW_AGENT_FEATURES_CLOUD_NETWORK_MONITORING"},
+			Destination: &cfg.EnableCloudNetworkMonitoring,
 			DefaultText: "false",
 			Value:       false,
 		}),
@@ -1300,6 +1319,10 @@ func prepareRuntimeEnv(cfg *agent.HostConfig, logger *zap.Logger) error {
 
 	if cfg.EnableDataDogReceiver {
 		os.Setenv("MW_ENABLE_DATADOG_RECEIVER", "true")
+	}
+
+	if cfg.EnableCloudNetworkMonitoring {
+		os.Setenv("MW_AGENT_FEATURES_CLOUD_NETWORK_MONITORING", "true")
 	}
 
 	// TODO: check if on Windows, socket scheme is different than "unix"
