@@ -50,12 +50,16 @@ git add .obi-src
 ### 2. Point `go.mod` at the submodule
 
 ```
-require go.opentelemetry.io/obi v1.0.0
+require go.opentelemetry.io/obi/collector v1.0.0
 
 replace go.opentelemetry.io/obi => ./.obi-src
+
+replace go.opentelemetry.io/obi/collector => ./.obi-src/collector
 ```
 
-`v1.0.0` is only a placeholder. Because of the `replace`, Go builds whatever
+The receiver (`collector/`) is its own Go module in OBI, with its own `go.mod`,
+so it needs its own `replace`. `go.opentelemetry.io/obi` stays in `go.mod` as
+an indirect requirement of it. `v1.0.0` is only a placeholder. Because of the `replace`, Go builds whatever
 commit `.obi-src` is on. Then run `go mod tidy`.
 
 ### 3. Register the receiver
@@ -149,6 +153,7 @@ RUN CGO_ENABLED=0 go build ...
   ```dockerfile
   COPY go.mod go.sum ./
   COPY .obi-src/go.mod .obi-src/go.sum ./.obi-src/
+  COPY .obi-src/collector/go.mod .obi-src/collector/go.sum ./.obi-src/collector/
   RUN go mod download
   ```
 

@@ -1,6 +1,6 @@
 # Generate OBI's eBPF files (*_bpfel.go, *_bpfel.o) in the .obi-src submodule.
 # The image version must match GEN_IMG in .obi-src/Makefile.
-FROM ghcr.io/open-telemetry/obi-generator:0.2.17 AS bpf-generator
+FROM ghcr.io/open-telemetry/obi-generator:0.2.18 AS bpf-generator
 WORKDIR /src/.obi-src
 COPY .obi-src .
 RUN /generate.sh

@@ -70,6 +70,10 @@ This matters when the new OBI commit changed its `go.mod`. Check:
   collector, mw-agent has to be upgraded to that version too. Otherwise the
   build fails.
 - **Other bumped dependencies.** `git diff go.mod` shows what changed.
+- **New OBI modules.** If `go mod tidy` says a package is in no module (OBI
+  split it into its own `go.mod`, as it did for `collector/`), add a
+  `require` and a `replace` pointing into `.obi-src`, and copy that `go.mod`
+  in `Dockerfiles/DockerfileKube.base` before `go mod download`.
 
 ## 5. Check the generator image version
 
