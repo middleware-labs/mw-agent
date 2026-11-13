@@ -6,6 +6,15 @@ on:
       release_version:
         description: 'Release version for DEB + APT package'
         required: true
+      platform:
+        description: 'Architecture to build the DEB package for (amd64, arm64, or both)'
+        required: true
+        type: choice
+        options:
+          - both
+          - amd64
+          - arm64
+        default: 'both'
   push:
     paths-ignore:
       - '.github/**'
@@ -20,9 +29,8 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        arch:
-          - arm64
-          - amd64
+        # Tag pushes have no inputs, so they fall through to both architectures.
+        arch: ${{ fromJSON(github.event.inputs.platform == 'amd64' && '["amd64"]' || github.event.inputs.platform == 'arm64' && '["arm64"]' || '["arm64","amd64"]') }}
       max-parallel: 1
 
     steps:
@@ -322,11 +330,19 @@ jobs:
     - name: Create and upload to release
       env:
         GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        PLATFORM: ${{ github.event.inputs.platform || 'both' }}
       run: |
         VERSION="${{ github.event.inputs.release_version }}"
         if [ -z "$VERSION" ]; then
           VERSION="${GITHUB_REF#refs/tags/}"
         fi
+
+        if [ "$PLATFORM" = "both" ]; then
+          ARCHES="arm64 amd64"
+        else
+          ARCHES="$PLATFORM"
+        fi
+        echo "Architectures: $ARCHES"
 
         # Initialize Checksum file
         CHECKSUM_FILE="checksums.txt"
@@ -338,7 +354,7 @@ jobs:
         ls -R ./artifacts
         
         # For each architecture
-        for arch in arm64 amd64; do
+        for arch in $ARCHES; do
           echo "Processing $arch architecture"
           FILE="./artifacts/mw-agent-${arch}-deb/mw-agent_${VERSION}_${arch}.deb"
           if [ ! -f "$FILE" ]; then
@@ -361,7 +377,7 @@ jobs:
 
         echo ""
         echo "=== Creating and uploading agent tarballs ==="
-        for arch in arm64 amd64; do
+        for arch in $ARCHES; do
           BINARY_FILE="./artifacts/mw-agent-${arch}-binary/mw-agent"
           if [ -f "$BINARY_FILE" ]; then
             # Create tarball directory
@@ -395,10 +411,10 @@ jobs:
 
         echo ""
         echo "Upload complete! Release assets:"
-        echo "  - mw-agent_${VERSION}_amd64.deb"
-        echo "  - mw-agent_${VERSION}_arm64.deb"
-        echo "  - mw-agent-${VERSION}-amd64.tar.gz"
-        echo "  - mw-agent-${VERSION}-arm64.tar.gz"
+        for arch in $ARCHES; do
+          echo "  - mw-agent_${VERSION}_${arch}.deb"
+          echo "  - mw-agent-${VERSION}-${arch}.tar.gz"
+        done
 
         if [ -s "$CHECKSUM_FILE" ]; then
           echo ""
