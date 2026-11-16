@@ -819,8 +819,8 @@ github.com/microsoft/go-winmd v0.0.0-20261026085843-5b48fee0edb4 h1:UanqOxH21Wmj
 github.com/microsoft/go-winmd v0.0.0-20261026085843-5b48fee0edb4/go.mod h1:DwZXw1EdT93dmgUakSlwABXeY8Fz9JypqXL5vyCJOJA=
 github.com/middleware-labs/innoParser v0.0.0-20240729092319-ddbdd8e42266 h1:X/xVGWjivIA2OK+7BbKL7WH6ZrryGTqxmRUwrKoDQ6E=
 github.com/middleware-labs/innoParser v0.0.0-20240729092319-ddbdd8e42266/go.mod h1:K2Iq9MJAEQyQO+ZXQHraf1zxZgS+bRgv/D6p+ClJWRM=
-github.com/middleware-labs/mw-injector v1.2.3 h1:XOK0pj6WemZhGLvg1scc4HIlvkUtBVgVQcXVRqMXZUQ=
-github.com/middleware-labs/mw-injector v1.2.3/go.mod h1:/GBMrvr6uRbOWS9gtjm+5k6HZEfgFL6fZ9+Z3UdDhyM=
+github.com/middleware-labs/mw-injector v1.2.4 h1:bYzv5stkz6k9rUswBqUdWoSMmJJiBvZQ0p+TWzem4Lw=
+github.com/middleware-labs/mw-injector v1.2.4/go.mod h1:/GBMrvr6uRbOWS9gtjm+5k6HZEfgFL6fZ9+Z3UdDhyM=
 github.com/middleware-labs/opentelemetry-collector-contrib/internal/docker v0.91.1-0.20261112055836-5a01843f508c h1:wqpaua0P6R2V1bY0WfjbMHc0tI9zp3TP7Ugd5LvFtf8=
 github.com/middleware-labs/opentelemetry-collector-contrib/internal/docker v0.91.1-0.20261112055836-5a01843f508c/go.mod h1:fb2z+YJFngdhhzhOQ28sTIVQMPAK37eUQKwkZAcgp48=
 github.com/middleware-labs/opentelemetry-collector-contrib/internal/filter v0.91.1-0.20261112055836-5a01843f508c h1:KGu6fC1zYJazOxfws3Q/Y4xTEg80D6rhvISnhWHvPnE=
