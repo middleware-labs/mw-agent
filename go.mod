@@ -124,11 +124,12 @@ require (
 
 require (
 	github.com/middleware-labs/mw-injector v1.2.4
-	github.com/middleware-labs/synthetics-agent v1.0.65
+	github.com/middleware-labs/synthetics-agent v1.0.67
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension v0.163.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.163.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.163.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.163.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver v0.163.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.163.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver v0.163.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver v0.163.0
