@@ -131,6 +131,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.152.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver v0.152.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver v0.152.0

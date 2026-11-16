@@ -271,6 +271,14 @@
         "collection_interval": "10s"
     },
     {
+        "type": "iis",
+        "prefixes": ["iis"],
+        "files": [
+            "https://raw.githubusercontent.com/middleware-labs/opentelemetry-collector-contrib/main/receiver/iisreceiver/metadata.yaml"
+        ],
+        "collection_interval": "10s"
+    },
+    {
         "type": "service",
         "prefixes": ["service"],
         "files": [
