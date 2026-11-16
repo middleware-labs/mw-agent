@@ -46,8 +46,13 @@ agent-internal-metrics-port: 8888
 # cloud-network-monitoring: By setting this flag to true, the agent asks the backend
 # for a config with the eBPF obi receiver (network metrics). Linux only.
 # cloud-network-monitoring is set to false by default.
+#
+# ebpf-apm: By setting this flag to true, the agent asks the backend for a config
+# where the eBPF obi receiver traces the services selected on the Linux agent
+# screen. Linux only. ebpf-apm is set to false by default.
 #agent-features:
 #  metric-collection: true
 #  log-collection: true
 #  service-reporting: true
 #  cloud-network-monitoring: false
+#  ebpf-apm: false

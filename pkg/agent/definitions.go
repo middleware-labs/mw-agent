@@ -126,8 +126,10 @@ type BaseConfig struct {
 	EnableDataDogReceiver bool
 	// EnableCloudNetworkMonitoring asks the backend for a config with the obi (eBPF) receiver.
 	EnableCloudNetworkMonitoring bool
-	EnableInjector               bool
-	ServiceReportInterval        string
+	// EnableEbpfApm asks the backend for an obi receiver that traces the selected services.
+	EnableEbpfApm         bool
+	EnableInjector        bool
+	ServiceReportInterval string
 }
 
 // String() implements stringer interface for BaseConfig

@@ -36,7 +36,7 @@ import (
 // main.go because the builds compile only this file (go build cmd/<agent>/main.go).
 // Only the Linux factories add agent.ExtraReceivers; on other platforms OBI is a stub.
 // The receiver runs only when the backend config includes it
-// (agent-features.cloud-network-monitoring).
+// (agent-features.cloud-network-monitoring, agent-features.ebpf-apm).
 func init() {
 	agent.ExtraReceivers = append(agent.ExtraReceivers, obireceiver.NewFactory())
 }
@@ -364,6 +364,14 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			Usage:       "Enable cloud network monitoring (CNM) with the eBPF obi receiver. Linux only.",
 			EnvVars:     []string{"MW_AGENT_FEATURES_CLOUD_NETWORK_MONITORING"},
 			Destination: &cfg.EnableCloudNetworkMonitoring,
+			DefaultText: "false",
+			Value:       false,
+		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "agent-features.ebpf-apm",
+			Usage:       "Enable eBPF APM (traces) with the obi receiver. Linux only.",
+			EnvVars:     []string{"MW_AGENT_FEATURES_EBPF_APM"},
+			Destination: &cfg.EnableEbpfApm,
 			DefaultText: "false",
 			Value:       false,
 		}),
@@ -1323,6 +1331,10 @@ func prepareRuntimeEnv(cfg *agent.HostConfig, logger *zap.Logger) error {
 
 	if cfg.EnableCloudNetworkMonitoring {
 		os.Setenv("MW_AGENT_FEATURES_CLOUD_NETWORK_MONITORING", "true")
+	}
+
+	if cfg.EnableEbpfApm {
+		os.Setenv("MW_AGENT_FEATURES_EBPF_APM", "true")
 	}
 
 	// TODO: check if on Windows, socket scheme is different than "unix"
