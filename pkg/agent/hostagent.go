@@ -487,6 +487,10 @@ func (c *HostAgent) fetchIngestionRules(configType string) ([]byte, error) {
 		params.Add("enable_cloud_network_monitoring", "true")
 	}
 
+	if c.EnableEbpfApm {
+		params.Add("enable_ebpf_apm", "true")
+	}
+
 	params.Add("col_running", c.collectorRunningParam())
 
 	// Add Query Parameters to the URL

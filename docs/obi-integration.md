@@ -102,6 +102,12 @@ That is controlled by `agent-features.cloud-network-monitoring`
 on, the agent sends `enable_cloud_network_monitoring=true` to the backend,
 the same way as `enable_datadog_receiver`.
 
+eBPF APM (traces) uses the same receiver. `agent-features.ebpf-apm`
+(`MW_AGENT_FEATURES_EBPF_APM`, default `false`, host agent only) sends
+`enable_ebpf_apm=true`. The backend then adds `discovery.instrument` selectors
+for the services ticked on the Linux agent screen and a `traces/apm` pipeline.
+With both flags on, one `obi` receiver feeds both pipelines.
+
 ### 4. Generate the eBPF files before building (Makefile)
 
 ```make
