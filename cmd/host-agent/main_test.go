@@ -22,7 +22,7 @@ func (f *fakeCollector) StartCollector() error {
 }
 
 func (f *fakeCollector) StopCollector(err error) {
-	f.calls = append(f.calls, "stop")
+	f.calls = append(f.calls, "stop: "+err.Error())
 }
 
 func TestControlCollector(t *testing.T) {
@@ -31,30 +31,31 @@ func TestControlCollector(t *testing.T) {
 		err  error
 		want []string
 	}{
+		// the last stop of each case comes from closing errCh: the service stops
 		{
 			name: "failed restart-status check keeps the collector running",
 			err:  fmt.Errorf("%w: restart api returned non-200 status: 502", agent.ErrRestartStatusCheckFailure),
-			want: nil,
+			want: []string{"stop: agent service stopped"},
 		},
 		{
 			name: "config fetch failure keeps the collector running",
 			err:  fmt.Errorf("%w: boom", agent.ErrConfigFetchFailure),
-			want: nil,
+			want: []string{"stop: agent service stopped"},
 		},
 		{
 			name: "restart",
 			err:  agent.ErrRestartAgent,
-			want: []string{"stop", "start"},
+			want: []string{"stop: restart agent due to config change", "start", "stop: agent service stopped"},
 		},
 		{
 			name: "nil starts",
 			err:  nil,
-			want: []string{"start"},
+			want: []string{"start", "stop: agent service stopped"},
 		},
 		{
 			name: "other error stops",
 			err:  errors.New("something else"),
-			want: []string{"stop"},
+			want: []string{"stop: something else", "stop: agent service stopped"},
 		},
 	}
 
@@ -116,3 +117,53 @@ func TestProgramStopClosesErrChAfterSenders(t *testing.T) {
 		t.Fatal("Stop did not return")
 	}
 }
+
+// Stop waits for run to stop the collector, so the receivers remove their
+// probes and the exporters send what they hold, but no longer than
+// collectorStopTimeout.
+func TestProgramStopStopsCollector(t *testing.T) {
+	newProgram := func(collector collectorController) *program {
+		p := &program{
+			logger:    zap.NewNop(),
+			programWG: &sync.WaitGroup{},
+			errCh:     make(chan error),
+			stopCh:    make(chan struct{}),
+		}
+		p.programWG.Add(1)
+		go func() {
+			defer p.programWG.Done()
+			p.controlCollector(collector)
+		}()
+		return p
+	}
+
+	t.Run("waits for the collector", func(t *testing.T) {
+		fake := &fakeCollector{}
+		p := newProgram(fake)
+		p.errCh <- nil
+
+		assert.NoError(t, p.Stop(nil))
+		assert.Equal(t, []string{"start", "stop: agent service stopped"}, fake.calls)
+	})
+
+	t.Run("gives up after the timeout", func(t *testing.T) {
+		defer func(timeout time.Duration) { collectorStopTimeout = timeout }(collectorStopTimeout)
+		collectorStopTimeout = 100 * time.Millisecond
+		release := make(chan struct{})
+		defer close(release)
+		p := newProgram(&blockingCollector{release: release})
+
+		start := time.Now()
+		assert.NoError(t, p.Stop(nil))
+		assert.GreaterOrEqual(t, time.Since(start), collectorStopTimeout)
+	})
+}
+
+// blockingCollector never finishes stopping until release is closed
+type blockingCollector struct {
+	release chan struct{}
+}
+
+func (b *blockingCollector) StartCollector() error { return nil }
+
+func (b *blockingCollector) StopCollector(error) { <-b.release }
