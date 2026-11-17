@@ -15,6 +15,7 @@ import (
 	"strings"
 	"sync"
 	"text/tabwriter"
+	"time"
 
 	"github.com/middleware-labs/mw-agent/pkg/agent"
 	"github.com/middleware-labs/mw-injector/pkg/otelinject"
@@ -102,6 +103,11 @@ func (p *program) Start(s service.Service) error {
 	return nil
 }
 
+// collectorStopTimeout bounds how long Stop waits for the collector to shut
+// down, below the TimeoutStopSec=10 of mw-agent.service, after which systemd
+// kills the agent.
+var collectorStopTimeout = 8 * time.Second
+
 func (p *program) Stop(s service.Service) error {
 	// Stop should not block. Return with a few seconds.
 	p.logger.Info("stopping service", zap.Stringer("name", s))
@@ -112,7 +118,19 @@ func (p *program) Stop(s service.Service) error {
 	close(p.stopCh)
 	p.senders.Wait()
 	close(p.errCh)
-	p.programWG.Wait()
+
+	// run shuts the collector down, so that the receivers remove their
+	// probes and the exporters send the queued telemetry
+	stopped := make(chan struct{})
+	go func() {
+		p.programWG.Wait()
+		close(stopped)
+	}()
+	select {
+	case <-stopped:
+	case <-time.After(collectorStopTimeout):
+		p.logger.Warn("telemetry collection did not stop in time", zap.Duration("timeout", collectorStopTimeout))
+	}
 	return nil
 }
 
@@ -129,8 +147,10 @@ func (p *program) run() {
 }
 
 // controlCollector starts and stops collection based on what arrives on errCh,
-// until errCh is closed.
+// until errCh is closed, and then stops collection.
 func (p *program) controlCollector(collector collectorController) {
+	defer collector.StopCollector(agent.ErrServiceStopped)
+
 	for err := range p.errCh {
 		// if invalid config is received from the backend, then keep collector
 		// in its current state. If it is stopped, keep it stopped until we receive

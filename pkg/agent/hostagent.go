@@ -45,6 +45,9 @@ var (
 	// answers 200 even for a bad token, so such a failure is always transient
 	// and must not stop collection.
 	ErrRestartStatusCheckFailure = errors.New("failed to check restart status")
+	// ErrServiceStopped is the reason given to StopCollector when the agent's
+	// service stops: a normal shutdown, not a failure.
+	ErrServiceStopped = errors.New("agent service stopped")
 )
 
 // HostAgent implements Agent interface for Hosts (e.g Linux)
@@ -1106,17 +1109,24 @@ func (c *HostAgent) handleCollectorEnd(runErr error) {
 }
 
 func (c *HostAgent) StopCollector(err error) {
+	serviceStopped := errors.Is(err, ErrServiceStopped)
 	collector := c.runningCollector()
 	if collector != nil {
 		c.stopRequested.Store(true)
-		c.logger.Error("stopping telemetry collection", zap.Error(err))
+		if serviceStopped {
+			c.logger.Info("stopping telemetry collection", zap.Error(err))
+		} else {
+			c.logger.Error("stopping telemetry collection", zap.Error(err))
+		}
 		collector.Shutdown()
 		c.collectorWG.Wait()
 		c.logger.Info("stopped telemetry collection at", zap.Time("time", time.Now()))
 		c.setRunningCollector(nil)
 		return
 	}
-	c.logger.Error("received error while telemetry collection is not running", zap.Error(err))
+	if !serviceStopped {
+		c.logger.Error("received error while telemetry collection is not running", zap.Error(err))
+	}
 }
 
 func (c *HostAgent) fixTelemetryConfig(config map[string]interface{}) map[string]interface{} {
