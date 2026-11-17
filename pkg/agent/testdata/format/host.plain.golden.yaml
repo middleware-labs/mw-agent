@@ -7,7 +7,7 @@ processors:
   batch:
     send_batch_size: 1000
     timeout: 10s
-  resourcedetection:
+  resource_detection:
     detectors:
     - system
 receivers:
@@ -38,7 +38,7 @@ service:
       exporters:
       - otlp_grpc/2
       processors:
-      - resourcedetection
+      - resource_detection
       - batch
       receivers:
       - otlp

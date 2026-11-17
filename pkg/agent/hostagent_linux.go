@@ -26,7 +26,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
@@ -99,7 +98,6 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 		mysqlreceiver.NewFactory(),
 		elasticsearchreceiver.NewFactory(),
 		redisreceiver.NewFactory(),
-		jmxreceiver.NewFactory(),
 		apachereceiver.NewFactory(),
 		oracledbreceiver.NewFactory(),
 		statsdreceiver.NewFactory(),
@@ -121,6 +119,8 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 		receiverfactories = append(receiverfactories,
 			awsecscontainermetricsreceiver.NewFactory())
 	}
+
+	receiverfactories = append(receiverfactories, ExtraReceivers...)
 
 	for _, f := range receiverfactories {
 		factories.Receivers[f.Type()] = f

@@ -149,18 +149,19 @@ func (c BaseConfig) String() string {
 }
 
 type BaseConfig struct {
-	APIKey                    string
-	Target                    string
-	EnableSyntheticMonitoring bool
-	ConfigCheckInterval       string
-	APIURLForConfigCheck      string
-	AgentNamespaceName        string
-	DaemonsetName             string
-	DaemonsetConfigMapName    string
-	DeploymentName            string
-	DeploymentConfigMapName   string
-	ClusterName               string
-	EnableDataDogReceiver     bool
+	APIKey                       string
+	Target                       string
+	EnableSyntheticMonitoring    bool
+	ConfigCheckInterval          string
+	APIURLForConfigCheck         string
+	AgentNamespaceName           string
+	DaemonsetName                string
+	DaemonsetConfigMapName       string
+	DeploymentName               string
+	DeploymentConfigMapName      string
+	ClusterName                  string
+	EnableDataDogReceiver        bool
+	EnableCloudNetworkMonitoring bool
 }
 
 // KubeConfig stores configuration for all the host agent

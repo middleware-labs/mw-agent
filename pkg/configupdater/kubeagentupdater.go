@@ -217,6 +217,10 @@ func (c *KubeAgent) UpdateConfigMap(ctx context.Context, componentType Component
 		params.Add("enable_datadog_receiver", "true")
 	}
 
+	if c.BaseConfig.EnableCloudNetworkMonitoring {
+		params.Add("enable_cloud_network_monitoring", "true")
+	}
+
 	// Add Query Parameters to the URL
 	baseURL.RawQuery = params.Encode() // Escape Query Parameters
 

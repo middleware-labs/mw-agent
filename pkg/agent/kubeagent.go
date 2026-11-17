@@ -221,6 +221,8 @@ func (k *KubeAgent) GetFactories(_ context.Context) (otelcol.Factories, error) {
 		sqlqueryreceiver.NewFactory(),
 	}
 
+	receiverfactories = append(receiverfactories, ExtraReceivers...)
+
 	for _, f := range receiverfactories {
 		factories.Receivers[f.Type()] = f
 	}
@@ -408,6 +410,10 @@ func (c *KubeAgentMonitor) UpdateConfigMap(ctx context.Context, componentType Co
 
 	if c.EnableDataDogReceiver {
 		params.Add("enable_datadog_receiver", "true")
+	}
+
+	if c.EnableCloudNetworkMonitoring {
+		params.Add("enable_cloud_network_monitoring", "true")
 	}
 
 	// Add Query Parameters to the URL

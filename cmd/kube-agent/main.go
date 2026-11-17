@@ -13,6 +13,7 @@ import (
 	"github.com/urfave/cli/v2/altsrc"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	obireceiver "go.opentelemetry.io/obi/collector"
 
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
@@ -21,6 +22,16 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+// The obi (eBPF) receiver is added here, not in pkg/agent, so agents that don't use it
+// (opsai, synthetics) don't import OBI and don't need its generated eBPF files. It is in
+// main.go because the builds compile only this file (go build cmd/<agent>/main.go).
+// Only the Linux factories add agent.ExtraReceivers; on other platforms OBI is a stub.
+// The receiver runs only when the backend config includes it
+// (agent-features.cloud-network-monitoring).
+func init() {
+	agent.ExtraReceivers = append(agent.ExtraReceivers, obireceiver.NewFactory())
+}
 
 var agentVersion = "0.0.1"
 
@@ -149,6 +160,14 @@ func getFlags(cfg *agent.KubeConfig) []cli.Flag {
 			Usage:       "Enable datadog receiver in agent",
 			EnvVars:     []string{"MW_ENABLE_DATADOG_RECEIVER"},
 			Destination: &cfg.EnableDataDogReceiver,
+			DefaultText: "false",
+			Value:       false,
+		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "agent-features.cloud-network-monitoring",
+			Usage:       "Enable cloud network monitoring (CNM) with the eBPF obi receiver. Linux only.",
+			EnvVars:     []string{"MW_AGENT_FEATURES_CLOUD_NETWORK_MONITORING"},
+			Destination: &cfg.EnableCloudNetworkMonitoring,
 			DefaultText: "false",
 			Value:       false,
 		}),

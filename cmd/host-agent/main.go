@@ -15,10 +15,12 @@ import (
 	"strings"
 	"sync"
 	"text/tabwriter"
+	"time"
 
 	"github.com/middleware-labs/mw-agent/pkg/agent"
 	"github.com/middleware-labs/mw-injector/pkg/otelinject"
 	"github.com/middleware-labs/synthetics-agent/pkg/worker"
+	obireceiver "go.opentelemetry.io/obi/collector"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/kardianos/service"
@@ -29,6 +31,16 @@ import (
 	"go.uber.org/zap/exp/zapslog"
 	"go.uber.org/zap/zapcore"
 )
+
+// The obi (eBPF) receiver is added here, not in pkg/agent, so agents that don't use it
+// (opsai, synthetics) don't import OBI and don't need its generated eBPF files. It is in
+// main.go because the builds compile only this file (go build cmd/<agent>/main.go).
+// Only the Linux factories add agent.ExtraReceivers; on other platforms OBI is a stub.
+// The receiver runs only when the backend config includes it
+// (agent-features.cloud-network-monitoring, agent-features.ebpf-apm).
+func init() {
+	agent.ExtraReceivers = append(agent.ExtraReceivers, obireceiver.NewFactory())
+}
 
 // zapToSlog bridges a zap logger to an slog.Logger so packages that accept
 // *slog.Logger (like pkg/discovery in mw-injector) can share mw-agent's
@@ -91,6 +103,11 @@ func (p *program) Start(s service.Service) error {
 	return nil
 }
 
+// collectorStopTimeout bounds how long Stop waits for the collector to shut
+// down, below the TimeoutStopSec=10 of mw-agent.service, after which systemd
+// kills the agent.
+var collectorStopTimeout = 8 * time.Second
+
 func (p *program) Stop(s service.Service) error {
 	// Stop should not block. Return with a few seconds.
 	p.logger.Info("stopping service", zap.Stringer("name", s))
@@ -101,7 +118,19 @@ func (p *program) Stop(s service.Service) error {
 	close(p.stopCh)
 	p.senders.Wait()
 	close(p.errCh)
-	p.programWG.Wait()
+
+	// run shuts the collector down, so that the receivers remove their
+	// probes and the exporters send the queued telemetry
+	stopped := make(chan struct{})
+	go func() {
+		p.programWG.Wait()
+		close(stopped)
+	}()
+	select {
+	case <-stopped:
+	case <-time.After(collectorStopTimeout):
+		p.logger.Warn("telemetry collection did not stop in time", zap.Duration("timeout", collectorStopTimeout))
+	}
 	return nil
 }
 
@@ -118,8 +147,10 @@ func (p *program) run() {
 }
 
 // controlCollector starts and stops collection based on what arrives on errCh,
-// until errCh is closed.
+// until errCh is closed, and then stops collection.
 func (p *program) controlCollector(collector collectorController) {
+	defer collector.StopCollector(agent.ErrServiceStopped)
+
 	for err := range p.errCh {
 		// if invalid config is received from the backend, then keep collector
 		// in its current state. If it is stopped, keep it stopped until we receive
@@ -345,6 +376,22 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 			Usage:       "Enable datadog receiver in agent",
 			EnvVars:     []string{"MW_ENABLE_DATADOG_RECEIVER"},
 			Destination: &cfg.EnableDataDogReceiver,
+			DefaultText: "false",
+			Value:       false,
+		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "agent-features.cloud-network-monitoring",
+			Usage:       "Enable cloud network monitoring (CNM) with the eBPF obi receiver. Linux only.",
+			EnvVars:     []string{"MW_AGENT_FEATURES_CLOUD_NETWORK_MONITORING"},
+			Destination: &cfg.EnableCloudNetworkMonitoring,
+			DefaultText: "false",
+			Value:       false,
+		}),
+		altsrc.NewBoolFlag(&cli.BoolFlag{
+			Name:        "agent-features.ebpf-apm",
+			Usage:       "Enable eBPF APM (traces) with the obi receiver. Linux only.",
+			EnvVars:     []string{"MW_AGENT_FEATURES_EBPF_APM"},
+			Destination: &cfg.EnableEbpfApm,
 			DefaultText: "false",
 			Value:       false,
 		}),
@@ -1300,6 +1347,14 @@ func prepareRuntimeEnv(cfg *agent.HostConfig, logger *zap.Logger) error {
 
 	if cfg.EnableDataDogReceiver {
 		os.Setenv("MW_ENABLE_DATADOG_RECEIVER", "true")
+	}
+
+	if cfg.EnableCloudNetworkMonitoring {
+		os.Setenv("MW_AGENT_FEATURES_CLOUD_NETWORK_MONITORING", "true")
+	}
+
+	if cfg.EnableEbpfApm {
+		os.Setenv("MW_AGENT_FEATURES_EBPF_APM", "true")
 	}
 
 	// TODO: check if on Windows, socket scheme is different than "unix"

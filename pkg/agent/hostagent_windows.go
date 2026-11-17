@@ -29,7 +29,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
@@ -83,7 +82,6 @@ func (c *HostAgent) getFactories() (otelcol.Factories, error) {
 
 	receiverfactories := []receiver.Factory{
 		kafkametricsreceiver.NewFactory(),
-		jmxreceiver.NewFactory(),
 		otlpreceiver.NewFactory(),
 		nopreceiver.NewFactory(),
 		hostmetricsreceiver.NewFactory(),

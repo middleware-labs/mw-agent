@@ -13,6 +13,7 @@ import (
 
 	"github.com/grafana/pyroscope-go"
 	"go.opentelemetry.io/collector/otelcol"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 )
 
@@ -82,6 +83,11 @@ type AgentFeatures struct {
 	ServiceReporting    bool
 }
 
+// ExtraReceivers are receiver factories added by an agent's main package.
+// The host and kube agents add the obi (eBPF) receiver here on Linux, so
+// agents that don't use it (opsai, synthetics) don't import OBI.
+var ExtraReceivers []receiver.Factory
+
 // BaseConfig stores general configuration for all agent types
 type SyntheticMonitoring struct {
 	ApiURL              string
@@ -118,6 +124,10 @@ type BaseConfig struct {
 	ProfilngServerURL     string
 	InternalMetricsPort   uint
 	EnableDataDogReceiver bool
+	// EnableCloudNetworkMonitoring asks the backend for a config with the obi (eBPF) receiver.
+	EnableCloudNetworkMonitoring bool
+	// EnableEbpfApm asks the backend for an obi receiver that traces the selected services.
+	EnableEbpfApm         bool
 	EnableInjector        bool
 	ServiceReportInterval string
 }

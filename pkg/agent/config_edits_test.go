@@ -274,10 +274,10 @@ func TestEditRules(t *testing.T) {
 		},
 		{
 			name:  "list_set replaces the processors",
-			edits: `[{"op":"list_set","path":["service","pipelines","metrics","processors"],"value":["batch","resourcedetection"]}]`,
+			edits: `[{"op":"list_set","path":["service","pipelines","metrics","processors"],"value":["batch","resource_detection"]}]`,
 			want:  []string{EditApplied},
 			check: func(t *testing.T, f map[interface{}]interface{}) {
-				assert.Equal(t, []interface{}{"batch", "resourcedetection"}, yamlAt(f, "service", "pipelines", "metrics", "processors"))
+				assert.Equal(t, []interface{}{"batch", "resource_detection"}, yamlAt(f, "service", "pipelines", "metrics", "processors"))
 			},
 		},
 		{
@@ -356,9 +356,9 @@ func TestEditRefusedPaths(t *testing.T) {
 func TestEditListSetDropsHostTagsProcessor(t *testing.T) {
 	agent := newFormatTestAgent(t, func(c *HostConfig) { c.HostTags = "env:prod" })
 	body := readFormatFixture(t, "host.json")
-	r := render(t, agent, body, `[{"op":"list_set","path":["service","pipelines","metrics","processors"],"value":["batch","resource/host_tags","resourcedetection"]}]`)
+	r := render(t, agent, body, `[{"op":"list_set","path":["service","pipelines","metrics","processors"],"value":["batch","resource/host_tags","resource_detection"]}]`)
 	assert.Equal(t, []string{EditApplied}, opResults(r.Status.Ops))
-	assert.Equal(t, []interface{}{"resource/host_tags", "batch", "resourcedetection"},
+	assert.Equal(t, []interface{}{"resource/host_tags", "batch", "resource_detection"},
 		yamlAt(parseRendered(t, r.Final), "service", "pipelines", "metrics", "processors"))
 }
 
@@ -423,13 +423,13 @@ func TestEditsWorkedExample(t *testing.T) {
 			"file_log": map[string]interface{}{"include": []interface{}{"/var/log/*.log"}},
 		},
 		"processors": map[string]interface{}{
-			"batch":             map[string]interface{}{"timeout": "10s"},
-			"resourcedetection": map[string]interface{}{},
+			"batch":              map[string]interface{}{"timeout": "10s"},
+			"resource_detection": map[string]interface{}{},
 		},
 		"exporters": map[string]interface{}{"otlp_grpc/2": map[string]interface{}{"endpoint": "${env:MW_TARGET}"}},
 		"service": map[string]interface{}{"pipelines": map[string]interface{}{
 			"logs":    map[string]interface{}{"receivers": []interface{}{"otlp", "file_log"}, "processors": []interface{}{"batch"}, "exporters": []interface{}{"otlp_grpc/2"}},
-			"metrics": map[string]interface{}{"receivers": []interface{}{"otlp"}, "processors": []interface{}{"resourcedetection", "batch"}, "exporters": []interface{}{"otlp_grpc/2"}},
+			"metrics": map[string]interface{}{"receivers": []interface{}{"otlp"}, "processors": []interface{}{"resource_detection", "batch"}, "exporters": []interface{}{"otlp_grpc/2"}},
 		}},
 	}
 	rules := func(cfg map[string]interface{}) []byte {
@@ -440,14 +440,14 @@ func TestEditsWorkedExample(t *testing.T) {
 	const edits = `[{"op":"set",         "path":["processors","batch","timeout"], "value":"2s"},
  {"op":"remove",      "path":["receivers","file_log"]},
  {"op":"list_remove", "path":["service","pipelines","logs","receivers"], "value":"file_log"},
- {"op":"list_set",    "path":["service","pipelines","metrics","processors"], "value":["batch","resourcedetection"]}]`
+ {"op":"list_set",    "path":["service","pipelines","metrics","processors"], "value":["batch","resource_detection"]}]`
 
 	// what the user's edits do to a parsed base
 	expect := func(base map[interface{}]interface{}) map[interface{}]interface{} {
 		yamlAt(base, "processors", "batch").(map[interface{}]interface{})["timeout"] = "2s"
 		delete(yamlAt(base, "receivers").(map[interface{}]interface{}), "file_log")
 		yamlAt(base, "service", "pipelines", "logs").(map[interface{}]interface{})["receivers"] = []interface{}{"otlp"}
-		yamlAt(base, "service", "pipelines", "metrics").(map[interface{}]interface{})["processors"] = []interface{}{"batch", "resourcedetection"}
+		yamlAt(base, "service", "pipelines", "metrics").(map[interface{}]interface{})["processors"] = []interface{}{"batch", "resource_detection"}
 		return base
 	}
 	agent := newFormatTestAgent(t, nil)
@@ -474,7 +474,7 @@ func TestEditsWorkedExample(t *testing.T) {
 	assert.Nil(t, yamlAt(final2, "receivers", "file_log"), "file_log stays removed")
 	assert.Equal(t, "2s", yamlAt(final2, "processors", "batch", "timeout"), "user's 2s kept")
 	assert.Equal(t, []interface{}{"otlp", "postgresql"}, yamlAt(final2, "service", "pipelines", "metrics", "receivers"))
-	assert.Equal(t, []interface{}{"batch", "resourcedetection"}, yamlAt(final2, "service", "pipelines", "metrics", "processors"))
+	assert.Equal(t, []interface{}{"batch", "resource_detection"}, yamlAt(final2, "service", "pipelines", "metrics", "processors"))
 }
 
 // An edited config that fails to load or validate falls back to the base,

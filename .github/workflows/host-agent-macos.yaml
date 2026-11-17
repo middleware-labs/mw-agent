@@ -40,7 +40,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '^1.23.1' # The Go version to download (if necessary) and use.
+        go-version: '1.26.0' # The Go version to download (if necessary) and use.
 
     - name: Setting Release Number
       run: |

@@ -3,6 +3,7 @@ package agent
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -135,6 +136,44 @@ func TestColRunningParam(t *testing.T) {
 
 			want := map[bool]string{false: "0", true: "1"}[running]
 			assert.Equal(t, map[string]string{"/" + apiPathForRestart: want, "/" + apiPathForYAML: want}, got)
+		})
+	}
+}
+
+// The eBPF feature flags reach the backend as ingestion-rules query params.
+func TestEbpfFeatureParams(t *testing.T) {
+	tests := []struct {
+		name     string
+		cnm, apm bool
+	}{
+		{name: "off"},
+		{name: "cnm only", cnm: true},
+		{name: "apm only", apm: true},
+		{name: "both", cnm: true, apm: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var got url.Values
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				got = r.URL.Query()
+				w.Write([]byte(restartTestRules))
+			}))
+			t.Cleanup(srv.Close)
+			cfg := HostConfig{BaseConfig: BaseConfig{
+				APIKey: "k", APIURLForConfigCheck: srv.URL,
+				EnableCloudNetworkMonitoring: tt.cnm, EnableEbpfApm: tt.apm,
+			}}
+			cfg.ConfigCheckInterval = "1s"
+			cfg.OtelConfigFile = filepath.Join(t.TempDir(), "otel-config.yaml")
+			agent, err := NewHostAgent(cfg, zapcore.NewNopCore())
+			require.NoError(t, err)
+
+			_, err = agent.fetchIngestionRules("nodocker")
+			require.NoError(t, err)
+
+			param := map[bool]string{false: "", true: "true"}
+			assert.Equal(t, param[tt.cnm], got.Get("enable_cloud_network_monitoring"))
+			assert.Equal(t, param[tt.apm], got.Get("enable_ebpf_apm"))
 		})
 	}
 }
