@@ -31,7 +31,8 @@ jobs:
       matrix:
         # Tag pushes have no inputs, so they fall through to both architectures.
         arch: ${{ fromJSON(github.event.inputs.platform == 'amd64' && '["amd64"]' || github.event.inputs.platform == 'arm64' && '["arm64"]' || '["arm64","amd64"]') }}
-      max-parallel: 1
+      # Architectures build in parallel; the APT repo is updated once, in the publish-apt job.
+      fail-fast: true
 
     steps:
     - name: Free Disk Space (Ubuntu)
@@ -111,9 +112,23 @@ jobs:
 
     - name: Set up Go
       if: ${{ github.actor != 'nektos/act' }}
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version: 1.26.0
+        # setup-go's built-in cache keys on the runner arch, not GOARCH, so both
+        # matrix jobs would fight over one key. The step below caches per GOARCH.
+        cache: false
+
+    - name: Cache Go build and module cache
+      if: ${{ github.actor != 'nektos/act' }}
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: go-${{ runner.os }}-${{ matrix.arch }}-${{ hashFiles('agent/go.sum', 'supervisor/go.sum') }}
+        restore-keys: |
+          go-${{ runner.os }}-${{ matrix.arch }}-
 
     - name: Set up Git credentials for Go
       run: |
@@ -132,7 +147,7 @@ jobs:
       if: ${{ github.actor != 'nektos/act' }}
       run: |
         cd agent
-        CGO_ENABLED=0 GOPRIVATE=github.com/middleware-labs GOOS=linux GOARCH=${{ matrix.arch }} go build -ldflags="-s -w -X main.agentVersion=${RELEASE_VERSION}" -v -a -o ../${AGENT_BINARY} cmd/host-agent/main.go
+        CGO_ENABLED=0 GOPRIVATE=github.com/middleware-labs GOOS=linux GOARCH=${{ matrix.arch }} go build -ldflags="-s -w -X main.agentVersion=${RELEASE_VERSION}" -v -o ../${AGENT_BINARY} cmd/host-agent/main.go
 
     - name: Build Supervisor Binary
       if: ${{ github.actor != 'nektos/act' }}
@@ -141,15 +156,8 @@ jobs:
         CGO_ENABLED=0 GOPRIVATE=github.com/middleware-labs \
           GOOS=linux GOARCH=${{ matrix.arch }} \
           go build -ldflags="-s -w -X main.version=${RELEASE_VERSION}" \
-          -v -a -o ../${SUPERVISOR_BINARY} .
+          -v -o ../${SUPERVISOR_BINARY} .
 
-    - name: Clean Go cache to free space
-      if: ${{ github.actor != 'nektos/act' }}
-      run: |
-        go clean -cache -modcache
-        echo "=== Disk space after Go cleanup ==="
-        df -h /
-        
     - name: Copying code binary into target location
       run: |
           if [ ${{ github.actor }} == "nektos/act" ]
@@ -215,17 +223,41 @@ jobs:
         path: release/mw-agent
         retention-days: 1
 
-    - name: Clean up build artifacts to free space
-      if: ${{ github.actor != 'nektos/act' }}
-      run: |
-        # Remove the package directory (keep only the .deb file)
-        rm -rf build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}
-        rm -rf release/
-        echo "=== Disk space after build cleanup ==="
-        df -h /
+  # Single job that adds every .deb built above to the APT repo, so there is one
+  # clone, one publish and one push per run instead of one per architecture.
+  publish-apt:
+    needs: build
+    if: ${{ github.actor != 'nektos/act' }}
+    runs-on: ubuntu-22.04
+    # Serialise pushes to apt.middleware.io across overlapping runs (e.g. two tags pushed together).
+    concurrency:
+      group: apt-middleware-io-publish
+      cancel-in-progress: false
+
+    steps:
+    # The APT repo checkout is several GB; the fast removals are enough to make room.
+    - name: Free Disk Space (Ubuntu)
+      uses: jlumbroso/free-disk-space@main
+      with:
+        android: true
+        dotnet: true
+        haskell: true
+        tool-cache: true
+        large-packages: false
+        docker-images: false
+        swap-storage: false
+
+    - name: Download DEB artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: mw-agent-*-deb
+        path: debs
+        merge-multiple: true
+
+    - name: List DEBs to publish
+      run: ls -l debs
 
     - name: Set up aptly
-      if: ${{ github.actor != 'nektos/act' }}
       run: |
         # Download aptly binary
         wget https://github.com/aptly-dev/aptly/releases/download/v1.5.0/aptly_1.5.0_linux_amd64.tar.gz
@@ -239,12 +271,10 @@ jobs:
         rm -rf aptly_1.5.0_linux_amd64.tar.gz aptly_1.5.0_linux_amd64/
 
     - name: Verify aptly version
-      if: ${{ github.actor != 'nektos/act' }}
       run: aptly version
 
     # Reference : https://www.aptly.info/doc/
-    - name: Add DEB to MW APT Repo
-      if: ${{ github.actor != 'nektos/act' }}
+    - name: Add DEBs to MW APT Repo
       run: |
         echo "=== Disk space before APT repo operations ==="
         df -h /
@@ -283,7 +313,7 @@ jobs:
         df -h /
         
         aptly repo list
-        aptly repo add --force-replace mw-repo build/${PACKAGE_NAME}_${RELEASE_VERSION}_${{ matrix.arch }}.deb
+        aptly repo add --force-replace mw-repo debs/
         aptly repo list
         gpg --list-keys
         gpg --list-secret-keys
