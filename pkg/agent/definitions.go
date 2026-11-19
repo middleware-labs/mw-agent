@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/grafana/pyroscope-go"
@@ -73,6 +74,28 @@ func (p InfraPlatform) String() string {
 		return "ec2"
 	}
 	return "unknown"
+}
+
+// knownInfraPlatforms lists every platform ParseInfraPlatform accepts.
+var knownInfraPlatforms = []InfraPlatform{
+	InfraPlatformInstance,
+	InfraPlatformKubernetes,
+	InfraPlatformECSEC2,
+	InfraPlatformECSFargate,
+	InfraPlatformCycleIO,
+	InfraPlatformEC2,
+}
+
+// ParseInfraPlatform maps a name returned by InfraPlatform.String() back to
+// its InfraPlatform. ok is false for an empty or unknown name.
+func ParseInfraPlatform(platformName string) (infraPlatform InfraPlatform, ok bool) {
+	normalizedName := strings.ToLower(strings.TrimSpace(platformName))
+	for _, knownPlatform := range knownInfraPlatforms {
+		if knownPlatform.String() == normalizedName {
+			return knownPlatform, true
+		}
+	}
+	return InfraPlatformInstance, false
 }
 
 type AgentFeatures struct {
@@ -244,13 +267,28 @@ func isSocket(path string) bool {
 
 var isSocketFn = isSocket
 
+const (
+	// HostIDEnvVar, when set, is used as the host_id the agent sends to the
+	// Middleware API instead of resolving it locally. The OpAMP supervisor
+	// resolves the host ID once and passes it to the agent through this var.
+	HostIDEnvVar = "MW_HOST_ID"
+	// InfraPlatformEnvVar, when set to a value of InfraPlatform.String(),
+	// skips infra platform detection. Set by the OpAMP supervisor so the
+	// supervisor and the agent agree on the platform.
+	InfraPlatformEnvVar = "MW_INFRA_PLATFORM"
+)
+
+// ec2MetadataBaseURL is the AWS instance metadata service (IMDS) root.
+// It is a variable so tests can point it at an httptest server.
+var ec2MetadataBaseURL = "http://169.254.169.254/latest"
+
 // getIMDSv2Token retrieves an IMDSv2 token for AWS EC2 metadata service
 func getIMDSv2Token() (string, error) {
 	client := &http.Client{
 		Timeout: 2 * time.Second,
 	}
 
-	tokenURL := "http://169.254.169.254/latest/api/token"
+	tokenURL := ec2MetadataBaseURL + "/api/token"
 	req, err := http.NewRequest("PUT", tokenURL, nil)
 	if err != nil {
 		return "", err
@@ -286,7 +324,7 @@ func getEC2Metadata(metadataPath string) (string, error) {
 		Timeout: 2 * time.Second,
 	}
 
-	metadataURL := "http://169.254.169.254/latest/meta-data/" + metadataPath
+	metadataURL := ec2MetadataBaseURL + "/meta-data/" + metadataPath
 	req, err := http.NewRequest("GET", metadataURL, nil)
 	if err != nil {
 		return "", err
@@ -326,8 +364,67 @@ func getHostname() string {
 	return hostname
 }
 
-// GetHostnameForPlatform returns hostname based on the infra platform
+// getEC2Hostname returns the IMDS "hostname" (the private DNS name, such as
+// ip-172-31-23-233.eu-north-1.compute.internal). It is the value the OTel
+// contrib ec2 resourcedetection detector reports as host.id, so the agent's
+// host_id matches the host.id on its telemetry.
+func getEC2Hostname() (string, error) {
+	ec2Hostname, err := getEC2Metadata("hostname")
+	if err != nil {
+		return "", err
+	}
+	ec2Hostname = strings.TrimSpace(ec2Hostname)
+	if ec2Hostname == "" {
+		return "", fmt.Errorf("EC2 metadata returned an empty hostname")
+	}
+	return ec2Hostname, nil
+}
+
+// cachedEC2Hostname holds the first IMDS hostname read successfully. The
+// private DNS name does not change while the instance runs, and the agent asks
+// for it on every ingestion-rules and restart-status call. Without the cache a
+// single IMDS timeout would send that call with os.Hostname() instead, and the
+// config returned for that name would drop the host-level integrations.
+var cachedEC2Hostname struct {
+	mu       sync.Mutex
+	hostname string
+}
+
+// resolveEC2Hostname returns the cached IMDS hostname, or reads and caches it.
+// A failed read is not cached, so a later call tries IMDS again.
+func resolveEC2Hostname() (string, error) {
+	cachedEC2Hostname.mu.Lock()
+	defer cachedEC2Hostname.mu.Unlock()
+
+	if cachedEC2Hostname.hostname != "" {
+		return cachedEC2Hostname.hostname, nil
+	}
+
+	ec2Hostname, err := getEC2Hostname()
+	if err != nil {
+		return "", err
+	}
+	cachedEC2Hostname.hostname = ec2Hostname
+	return ec2Hostname, nil
+}
+
+// GetHostnameForPlatform returns the host ID the agent sends to the
+// Middleware API. MW_HOST_ID wins when set; on EC2 it is the IMDS hostname,
+// read once and reused, falling back to os.Hostname() until IMDS answers;
+// elsewhere it is os.Hostname().
 func GetHostnameForPlatform(infraPlatform InfraPlatform) string {
+	if hostIDOverride := strings.TrimSpace(os.Getenv(HostIDEnvVar)); hostIDOverride != "" {
+		return hostIDOverride
+	}
+
+	if infraPlatform == InfraPlatformEC2 {
+		ec2Hostname, err := resolveEC2Hostname()
+		if err != nil {
+			return getHostname()
+		}
+		return ec2Hostname
+	}
+
 	return getHostname()
 }
 

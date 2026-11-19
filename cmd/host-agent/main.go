@@ -494,7 +494,16 @@ func getFlags(execPath string, cfg *agent.HostConfig) []cli.Flag {
 	}
 }
 
-func detectInfraPlatform() agent.InfraPlatform {
+func detectInfraPlatform(logger *zap.Logger) agent.InfraPlatform {
+	if platformOverride := os.Getenv(agent.InfraPlatformEnvVar); strings.TrimSpace(platformOverride) != "" {
+		if infraPlatform, ok := agent.ParseInfraPlatform(platformOverride); ok {
+			return infraPlatform
+		}
+		logger.Warn("ignoring unknown infra platform, detecting it instead",
+			zap.String("env", agent.InfraPlatformEnvVar),
+			zap.String("value", platformOverride))
+	}
+
 	awsEnv := os.Getenv("AWS_EXECUTION_ENV")
 	if awsEnv == "AWS_ECS_EC2" {
 		return agent.InfraPlatformECSEC2
@@ -879,7 +888,7 @@ func main() {
 						go profiler.StartProfiling("mw-host-agent", cfg.Target, cfg.HostTags)
 					}
 
-					infraPlatform := detectInfraPlatform()
+					infraPlatform := detectInfraPlatform(logger)
 
 					var hostname string
 
@@ -1034,7 +1043,7 @@ func main() {
 					if err := prepareRuntimeEnv(&cfg, logger); err != nil {
 						return err
 					}
-					infraPlatform := detectInfraPlatform()
+					infraPlatform := detectInfraPlatform(logger)
 					hostAgent, err := agent.NewHostAgent(cfg, zapCore,
 						agent.WithHostAgentVersion(agentVersion),
 						agent.WithHostAgentInfraPlatform(infraPlatform))
@@ -1126,7 +1135,7 @@ func main() {
 					}
 					hostAgent, err := agent.NewHostAgent(cfg, zapCore,
 						agent.WithHostAgentVersion(agentVersion),
-						agent.WithHostAgentInfraPlatform(detectInfraPlatform()))
+						agent.WithHostAgentInfraPlatform(detectInfraPlatform(logger)))
 					if err != nil {
 						return err
 					}
