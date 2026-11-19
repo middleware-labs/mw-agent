@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/grafana/pyroscope-go"
@@ -379,16 +380,45 @@ func getEC2Hostname() (string, error) {
 	return ec2Hostname, nil
 }
 
+// cachedEC2Hostname holds the first IMDS hostname read successfully. The
+// private DNS name does not change while the instance runs, and the agent asks
+// for it on every ingestion-rules and restart-status call. Without the cache a
+// single IMDS timeout would send that call with os.Hostname() instead, and the
+// config returned for that name would drop the host-level integrations.
+var cachedEC2Hostname struct {
+	mu       sync.Mutex
+	hostname string
+}
+
+// resolveEC2Hostname returns the cached IMDS hostname, or reads and caches it.
+// A failed read is not cached, so a later call tries IMDS again.
+func resolveEC2Hostname() (string, error) {
+	cachedEC2Hostname.mu.Lock()
+	defer cachedEC2Hostname.mu.Unlock()
+
+	if cachedEC2Hostname.hostname != "" {
+		return cachedEC2Hostname.hostname, nil
+	}
+
+	ec2Hostname, err := getEC2Hostname()
+	if err != nil {
+		return "", err
+	}
+	cachedEC2Hostname.hostname = ec2Hostname
+	return ec2Hostname, nil
+}
+
 // GetHostnameForPlatform returns the host ID the agent sends to the
 // Middleware API. MW_HOST_ID wins when set; on EC2 it is the IMDS hostname,
-// falling back to os.Hostname() if IMDS fails; elsewhere it is os.Hostname().
+// read once and reused, falling back to os.Hostname() until IMDS answers;
+// elsewhere it is os.Hostname().
 func GetHostnameForPlatform(infraPlatform InfraPlatform) string {
 	if hostIDOverride := strings.TrimSpace(os.Getenv(HostIDEnvVar)); hostIDOverride != "" {
 		return hostIDOverride
 	}
 
 	if infraPlatform == InfraPlatformEC2 {
-		ec2Hostname, err := getEC2Hostname()
+		ec2Hostname, err := resolveEC2Hostname()
 		if err != nil {
 			return getHostname()
 		}

@@ -37,11 +37,51 @@ func newFakeIMDS(t *testing.T, metadataByPath map[string]string) {
 	setEC2MetadataBaseURL(t, fakeIMDSServer.URL+"/latest")
 }
 
+// setEC2MetadataBaseURL points IMDS at baseURL and clears the cached EC2
+// hostname, so each test starts as a freshly started agent.
 func setEC2MetadataBaseURL(t *testing.T, baseURL string) {
 	t.Helper()
 	originalBaseURL := ec2MetadataBaseURL
 	ec2MetadataBaseURL = baseURL
-	t.Cleanup(func() { ec2MetadataBaseURL = originalBaseURL })
+	clearCachedEC2Hostname()
+	t.Cleanup(func() {
+		ec2MetadataBaseURL = originalBaseURL
+		clearCachedEC2Hostname()
+	})
+}
+
+func clearCachedEC2Hostname() {
+	cachedEC2Hostname.mu.Lock()
+	defer cachedEC2Hostname.mu.Unlock()
+	cachedEC2Hostname.hostname = ""
+}
+
+func unreachableIMDSURL(t *testing.T) string {
+	t.Helper()
+	unreachableServer := httptest.NewServer(http.NotFoundHandler())
+	unreachableURL := unreachableServer.URL
+	unreachableServer.Close()
+	return unreachableURL + "/latest"
+}
+
+func TestGetHostnameForPlatformEC2KeepsCachedHostnameWhenIMDSFailsLater(t *testing.T) {
+	t.Setenv(HostIDEnvVar, "")
+	newFakeIMDS(t, map[string]string{"hostname": "ip-172-31-23-233.eu-north-1.compute.internal"})
+	require.Equal(t, "ip-172-31-23-233.eu-north-1.compute.internal", GetHostnameForPlatform(InfraPlatformEC2))
+
+	// Later calls must not fall back to os.Hostname() when IMDS stops answering.
+	ec2MetadataBaseURL = unreachableIMDSURL(t)
+	assert.Equal(t, "ip-172-31-23-233.eu-north-1.compute.internal", GetHostnameForPlatform(InfraPlatformEC2))
+}
+
+func TestGetHostnameForPlatformEC2RetriesIMDSAfterFailedRead(t *testing.T) {
+	t.Setenv(HostIDEnvVar, "")
+	setEC2MetadataBaseURL(t, unreachableIMDSURL(t))
+	require.Equal(t, osHostname(t), GetHostnameForPlatform(InfraPlatformEC2))
+
+	// The failed read is not cached: once IMDS answers, the EC2 name is used.
+	newFakeIMDS(t, map[string]string{"hostname": "ip-172-31-23-233.eu-north-1.compute.internal"})
+	assert.Equal(t, "ip-172-31-23-233.eu-north-1.compute.internal", GetHostnameForPlatform(InfraPlatformEC2))
 }
 
 func osHostname(t *testing.T) string {
